@@ -1,24 +1,53 @@
-name: Package and release
+name: Validate and package
 
 on:
+  pull_request:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  package:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua 5.1
+        run: sudo apt-get update && sudo apt-get install -y lua5.1
+      - name: Run Lua regression tests
+        run: lua5.1 Tests/run.lua
+      - name: Check Lua syntax
+        run: find STierBlizzSettings -name '*.lua' -print0 | xargs -0 -n1 luac5.1 -p
+      - name: Verify safety policy
+        run: |
+          ! grep -R --line-number -E 'loadstring|\<load[[:space:]]*\(' STierBlizzSettings Tests
+          ! grep -R --line-number -E 'SetCVar\("(graphicsQuality|raidGraphicsQuality)' STierBlizzSettings
+      - name: Build ZIP
+        run: |
+          mkdir -p dist
+          zip -qr dist/STierBlizzSettings-ci.zip STierBlizzSettings
+          unzip -l dist/STierBlizzSettings-ci.zip
+          unzip -l dist/STierBlizzSettings-ci.zip | grep -q 'STierBlizzSettings/STierBlizzSettings.toc'
+          ! unzip -l dist/STierBlizzSettings-ci.zip | grep -E '(Tests|\.github|docs)/'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: STierBlizzSettings-validation-zip
+          path: dist/STierBlizzSettings-ci.zip
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Package addon
-        uses: BigWigsMods/packager@master
+        uses: BigWigsMods/packager@v2
         env:
           CF_API_KEY: ${{ secrets.CF_API_KEY }}
-          WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
           WOWI_API_TOKEN: ${{ secrets.WOWI_API_TOKEN }}
+          WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
+          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}

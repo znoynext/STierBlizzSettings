@@ -1,6 +1,6 @@
 # Architecture
 
-`Core` owns startup, compatibility checks, SavedVariables and diagnostics. `Settings` contains the curated registry, validation, read/write verification, diffs, backups and transactions. `Profiles` owns schema, migration, built-ins and personal profiles. `ImportExport` implements deterministic serialization and a data-only parser; it never calls `loadstring`. `Integrations` holds version-gated Edit Mode, keybinding and Settings-panel adapters. `UI` is lazily created and uses Blizzard templates.
+`Core` owns startup, compatibility checks, SavedVariables and diagnostics. `Settings` contains the curated registry, validation, read/write verification, diffs, backups and transactions. `Profiles` owns schema, migration, built-ins and personal profiles. `ImportExport` implements deterministic serialization and a data-only parser; it never calls `loadstring`. `Integrations` includes Settings-panel registration; Edit Mode and keybinding profile operations are intentionally unavailable until fully integrated. `UI` is lazily created and uses Blizzard templates.
 
 Application is one operation: validate → read/diff → save one backup → write individual CVars → read back → keep module-separated report. In combat the whole operation is queued for `PLAYER_REGEN_ENABLED`, never partially applied.
 

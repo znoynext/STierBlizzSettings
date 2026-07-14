@@ -12,5 +12,10 @@ function STBS:ParseSerialized(input)
   local result,err=value(0);ws();if err or pos<=#input then return nil,err or "trailing" end;return result
 end
 function STBS:ImportProfile(text)
-  if type(text)~="string" or #text>self.MAX_IMPORT_BYTES or text:sub(1,#self.EXPORT_PREFIX)~=self.EXPORT_PREFIX then return nil,"prefix" end;local checksum,encoded=text:match("^STBS1:([0-9a-f]+):(.+)$");if not checksum then return nil,"format" end;local raw,e=self:Base64Decode(encoded);if not raw or self:Checksum(raw)~=checksum then return nil,"integrity" end;local payload,parse=self:ParseSerialized(raw);if not payload or type(payload)~="table" or payload.exportVersion~=self.EXPORT_VERSION or payload.gameFlavor~="retail" then return nil,parse or "payload" end;local profile,why=self:MigrateProfile(payload.profile);if not profile then return nil,why end;local valid,reason=self:ValidateProfile(profile);if not valid then return nil,reason end;return payload
+  if type(text)~="string" or #text>self.MAX_IMPORT_BYTES or text:sub(1,#self.EXPORT_PREFIX)~=self.EXPORT_PREFIX then return nil,"prefix" end;local checksum,encoded=text:match("^STBS1:([0-9a-f]+):(.+)$");if not checksum then return nil,"format" end;local raw,e=self:Base64Decode(encoded);if not raw or self:Checksum(raw)~=checksum then return nil,"integrity" end;local payload,parse=self:ParseSerialized(raw);if not payload or type(payload)~="table" or payload.exportVersion~=self.EXPORT_VERSION or payload.gameFlavor~="retail" then return nil,parse or "payload" end
+  if type(payload.selectedModules) ~= "table" then return nil,"modules" end
+  local selected, count = {}, 0
+  for key, value in pairs(payload.selectedModules) do if (key ~= "graphics" and key ~= "interfaceGameplay") or type(value) ~= "boolean" then return nil,"modules" end; if value then count=count+1 end;selected[key]=value end
+  if count == 0 or selected.graphics == nil or selected.interfaceGameplay == nil then return nil,"modules" end
+  payload.selectedModules = selected; local profile,why=self:MigrateProfile(payload.profile);if not profile then return nil,why end;local valid,reason=self:ValidateProfile(profile);if not valid then return nil,reason end;return payload
 end

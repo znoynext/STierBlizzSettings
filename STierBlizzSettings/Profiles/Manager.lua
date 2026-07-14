@@ -5,6 +5,31 @@ function STBS:FlattenProfile(profile, modules, keepMode)
   local out={}; local sections=profile.sections or {}; if modules.graphics then local g=sections.graphics or {}; for k,v in pairs(g.base or {}) do out[k]=v end; if (not keepMode and g.mode==self.GRAPHICS_MODE_SPLIT) or (keepMode==self.GRAPHICS_MODE_SPLIT) then for k,v in pairs(g.raid or {}) do out[k]=v end end; if not keepMode then out.RAIDsettingsEnabled=g.mode==self.GRAPHICS_MODE_SPLIT and "1" or "0" end end
   if modules.interfaceGameplay then for _,n in ipairs({"interface","camera","gameplay","controls","combat","nameplates","chat"}) do for k,v in pairs(sections[n] or {}) do out[k]=v end end end; return out
 end
+function STBS:GetPreferredAntiAliasing()
+  if type(_G.AntiAliasingSupported) ~= "function" then return nil end
+  local ok, _, cmaa, cmaa2 = pcall(_G.AntiAliasingSupported); if not ok then return nil end
+  if cmaa2 then return { ffxAntiAliasingMode="4", MSAAQuality="0" } end
+  if cmaa then return { ffxAntiAliasingMode="3", MSAAQuality="0" } end
+  return { ffxAntiAliasingMode="2", MSAAQuality="0" }
+end
+function STBS:PlanImport(payload, modules, graphicsMode)
+  if type(payload) ~= "table" then return nil,"payload" end
+  local settings = self:FlattenProfile(payload.profile, modules, graphicsMode == "current" and self:GetSelectedMode() or nil)
+  if graphicsMode == "current" and modules.graphics then settings.RAIDsettingsEnabled = self:GetSelectedMode() == self.GRAPHICS_MODE_SPLIT and "1" or "0" end
+  return self:BuildDiff(settings), settings
+end
 function STBS:SaveCurrent(name, modules)
   local p=self:NewProfile("personal_"..tostring(time()),"personal",name or (self:L("PERSONAL").." "..date("%Y-%m-%d %H:%M"))); local values=self:CaptureModules(modules); p.sections.graphics={mode=self:GetSelectedMode(),base={},raid={},storedInactiveRaidSettings={}}; for k,v in pairs(values) do local s=self.RegistryByKey[k]; if s.module=="graphics" then if s.category=="raidGraphics" then p.sections.graphics.raid[k]=v else p.sections.graphics.base[k]=v end elseif s.category=="camera" then p.sections.camera[k]=v else p.sections.interface[k]=v end end; self:InitializeDatabase().profiles[p.id]=p; return p
+end
+function STBS:ListPersonalProfiles()
+  local profiles = {}; for id, profile in pairs(self:InitializeDatabase().profiles) do table.insert(profiles, profile) end
+  table.sort(profiles, function(a,b) return (a.updatedAt or 0) > (b.updatedAt or 0) end); return profiles
+end
+function STBS:RenameProfile(id, name)
+  if type(name) ~= "string" or name == "" or #name > 80 then return self:Result(false,"name") end
+  local profile = self:InitializeDatabase().profiles[id]; if not profile then return self:Result(false,"missing") end
+  profile.displayName=name; profile.updatedAt=time(); return self:Result(true,"renamed",profile)
+end
+function STBS:DeleteProfile(id)
+  local profiles=self:InitializeDatabase().profiles; if not profiles[id] then return self:Result(false,"missing") end; profiles[id]=nil; return self:Result(true,"deleted")
 end

@@ -8,5 +8,7 @@ end
 -- Lua 5.1 compatible deterministic integrity check (not cryptography).
 function STBS:Checksum(data) local h=2166136261; for i=1,#data do h=(h*31 + data:byte(i)) % 4294967296 end; return string.format("%08x",h) end
 function STBS:ExportProfile(profile, modules)
-  local payload={exportVersion=self.EXPORT_VERSION,profileSchemaVersion=profile.schemaVersion,addonVersion=self.VERSION,gameFlavor="retail",clientBuild=self:GetBuild(),selectedModules=modules,profile=profile}; local raw=self:Serialize(payload); return self.EXPORT_PREFIX..self:Checksum(raw)..":"..self:Base64Encode(raw)
+  modules = modules or { graphics=true, interfaceGameplay=true }
+  local selected = { graphics = modules.graphics == true, interfaceGameplay = modules.interfaceGameplay == true }
+  local payload={exportVersion=self.EXPORT_VERSION,profileSchemaVersion=profile.schemaVersion,addonVersion=self.VERSION,gameFlavor="retail",clientBuild=self:GetBuild(),selectedModules=selected,profile=profile}; local raw=self:Serialize(payload); return self.EXPORT_PREFIX..self:Checksum(raw)..":"..self:Base64Encode(raw)
 end
