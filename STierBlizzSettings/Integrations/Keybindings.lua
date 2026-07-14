@@ -1,0 +1,3 @@
+local _, STBS = ...
+function STBS:CaptureKeybindings() return nil,"disabled-by-default" end
+function STBS:ApplyKeybindings() return false,"explicit-opt-in-required" end

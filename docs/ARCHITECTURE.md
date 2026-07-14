@@ -1,0 +1,7 @@
+# Architecture
+
+`Core` owns startup, compatibility checks, SavedVariables and diagnostics. `Settings` contains the curated registry, validation, read/write verification, diffs, backups and transactions. `Profiles` owns schema, migration, built-ins and personal profiles. `ImportExport` implements deterministic serialization and a data-only parser; it never calls `loadstring`. `Integrations` holds version-gated Edit Mode, keybinding and Settings-panel adapters. `UI` is lazily created and uses Blizzard templates.
+
+Application is one operation: validate → read/diff → save one backup → write individual CVars → read back → keep module-separated report. In combat the whole operation is queued for `PLAYER_REGEN_ENABLED`, never partially applied.
+
+Graphics is isolated from Interface & Gameplay. The only default interface CVar is `cameraSmoothStyle=0`; all sensitive or personal categories remain captured-only or disabled.

@@ -1,0 +1,3 @@
+local _, STBS = ...
+function STBS:CaptureEditMode() if not self:SupportsEditMode() then return nil,"unsupported" end; local layouts=C_EditMode.GetLayouts(); return self:Copy(layouts) end
+function STBS:RestoreEditMode(layouts, confirmed) if not confirmed then return false,"confirmation" end; if not self:SupportsEditMode() or type(layouts)~="table" then return false,"unsupported" end; C_EditMode.SaveLayouts(layouts); return true end

@@ -1,0 +1,3 @@
+local _, STBS = ...
+function STBS:L(key) return (self.Locale[GetLocale and GetLocale() or "enUS"] or self.Locale.enUS)[key] or self.Locale.enUS[key] or key end
+function STBS:Print(key) if DEFAULT_CHAT_FRAME then DEFAULT_CHAT_FRAME:AddMessage("|cff33ff99STBS:|r " .. self:L(key)) end end

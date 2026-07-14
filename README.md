@@ -1,14 +1,21 @@
-# STierBlizzSettings
+# S-Tier Blizz Settings
 
-Закрытый репозиторий для будущего проекта. На старте в нём включены базовые правила работы с секретами и проверками безопасности.
+S-Tier Blizz Settings is a lightweight World of Warcraft Retail addon for applying curated built-in Blizzard graphics and interface settings. It does not replace the Blizzard UI and requires no external UI addon.
 
-## Начало работы
+## Features
 
-1. Не добавляйте в Git пароли, токены, ключи или реальные файлы `.env`.
-2. Для локальных настроек используйте `.env.example` как шаблон, но храните фактические значения только у себя.
-3. Работайте через отдельные ветки и pull request — основная ветка предназначена для проверенных изменений.
+- Separate **Graphics** and **Interface & Gameplay** modules.
+- **One Profile Everywhere** and **Optimized Raid Mode** graphics modes.
+- Transactional application with a backup before every change, plus restore history.
+- Personal profile capture, deterministic `STBS1:` export and defensive data-only import.
+- English and Russian UI, slash commands `/stier` and `/stbs`, diagnostics, optional Edit Mode adapter and opt-in-only keybinding adapter.
 
-## Документы
+Use `/stier` to open the window. Use `/stier graphics`, `interface`, `apply`, `save`, `export`, `import`, `backup`, `restore`, or `debug` for a specific screen/action.
 
-- [Политика безопасности](SECURITY.md)
-- [Владельцы кода](.github/CODEOWNERS)
+The addon intentionally preserves display hardware, resolution, refresh rate, V-Sync, FPS limits, latency modes, audio, accessibility, keybindings, UI scale, mouse controls and other personal settings. No telemetry, network access, ads, premium functions or donation prompts are included.
+
+Supported baseline: Retail 12.0.7, interface 120007 (Blizzard UI source build 68453). Test in the live client before relying on settings for competitive content.
+
+S-Tier Blizz Settings is an independent community addon and is not affiliated with or endorsed by Blizzard Entertainment.
+
+See [Russian README](README.ru.md), [test plan](docs/TEST_PLAN.md), and [release instructions](docs/RELEASE.md).

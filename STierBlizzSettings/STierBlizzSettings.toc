@@ -1,0 +1,35 @@
+## Interface: 120007
+## Title: S-Tier Blizz Settings
+## Notes: One-click optimal built-in WoW graphics and interface settings, profiles, backup, import, and export.
+## Author: S-Tier Blizz Settings Team
+## Version: 1.0.0
+## SavedVariables: STierBlizzSettingsDB
+## SavedVariablesPerCharacter: STierBlizzSettingsCharDB
+## X-Category: Interface Enhancements
+
+Core/Constants.lua
+Localization/enUS.lua
+Localization/ruRU.lua
+Core/Bootstrap.lua
+Core/Compatibility.lua
+Core/Database.lua
+Settings/Registry.lua
+Settings/Validator.lua
+Settings/Reader.lua
+Settings/Writer.lua
+Settings/Diff.lua
+Settings/Backup.lua
+Profiles/Schema.lua
+Profiles/Migration.lua
+Profiles/Recommended.lua
+Profiles/Manager.lua
+ImportExport/Serializer.lua
+ImportExport/Codec.lua
+ImportExport/Validation.lua
+Integrations/EditMode.lua
+Integrations/Keybindings.lua
+Integrations/BlizzardSettings.lua
+Settings/Transaction.lua
+Core/Diagnostics.lua
+UI/MainWindow.lua
+Core/Events.lua
