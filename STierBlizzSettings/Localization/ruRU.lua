@@ -14,3 +14,4 @@ STBS.Locale.ruRU = {
   DIFF_HEADER="Предпросмотр изменений", PROFILE_SUMMARY="Сводка профиля", BACKUP_HISTORY="История резервных копий", NO_BACKUPS="Резервных копий пока нет.", NO_PROFILES="Сохранённых личных профилей пока нет.", SELECTED="Выбрано", SIZE="Размер", BASE_GRAPHICS="Основная графика", RAID_GRAPHICS="Графика рейдов и полей боя", CAMERA="Камера", OTHER_INTERFACE="Интерфейс и игра", STATUS="Статус",
   PERSONAL="Личный профиль", UNSUPPORTED="Эта функция недоступна в данном клиенте.", EDITMODE_UNAVAILABLE="Управление профилями режима редактирования недоступно в этой alpha-версии.", KEYBINDING_UNAVAILABLE="Управление профилями биндов недоступно в этой alpha-версии.",
 }
+STBS.Locale.ruRU.TRANSACTION_ROLLED_BACK = "Операция отменена: одну из настроек не удалось подтвердить."

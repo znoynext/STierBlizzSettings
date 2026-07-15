@@ -88,6 +88,6 @@ function STBS:ShowImportPreview(payload)
   self:SetPage(self:L("IMPORT"),"|cff82c5ff"..self:L("PROFILE_SUMMARY").."|r\n"..tostring(payload.profile.displayName).."\n"..self:L("CHANGED")..": "..changed.."\n\n"..self:FormatDiff(plan).."\n\n"..self:L("IMPORT_CONFIRMATION"),actions)
 end
 function STBS:ShowReport(r)
-  if not r.ok then self:SetPage(self:L("TITLE"),r.code=="queued" and self:L("PENDING") or r.code=="pending-exists" and self:L("PENDING") or self:L("INVALID_IMPORT"));return end
-  local d=r.data;self:SetPage(self:L("TITLE"),"|cff33ff99"..self:L("REPORT_GRAPHICS").."|r\n"..resultSummary(d.graphics).."\n\n|cff33ff99"..self:L("REPORT_INTERFACE").."|r\n"..resultSummary(d.interfaceGameplay),{{label=self:L("HOME"),fn=function()STBS:ShowHome()end}})
+  if not r.ok and not r.data then self:SetPage(self:L("TITLE"),r.code=="queued" and self:L("PENDING") or r.code=="pending-exists" and self:L("PENDING") or self:L("INVALID_IMPORT"));return end
+  local d=r.data;local warning=not r.ok and "|cffff4040"..self:L("TRANSACTION_ROLLED_BACK").."|r\n\n" or "";self:SetPage(self:L("TITLE"),warning.."|cff33ff99"..self:L("REPORT_GRAPHICS").."|r\n"..resultSummary(d.graphics).."\n\n|cff33ff99"..self:L("REPORT_INTERFACE").."|r\n"..resultSummary(d.interfaceGameplay),{{label=self:L("HOME"),fn=function()STBS:ShowHome()end}})
 end
