@@ -2,6 +2,17 @@
 
 Лёгкий аддон WoW Retail для применения проверенных встроенных настроек Blizzard. Он не заменяет интерфейс Blizzard и не требует ElvUI, WeakAuras или других UI-аддонов.
 
+## Установка — WoW Retail
+
+1. Скачайте [STierBlizzSettings-v0.1.0-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.1.0-alpha.zip) и распакуйте архив.
+2. Переместите **саму папку `STierBlizzSettings`** в папку AddOns WoW Retail:
+
+   - Windows: `World of Warcraft\_retail_\Interface\AddOns\`
+   - macOS: `World of Warcraft/_retail_/Interface/AddOns/`
+
+3. Проверьте итоговый путь: `.../AddOns/STierBlizzSettings/STierBlizzSettings.toc`. Внутри не должно быть второй вложенной папки `STierBlizzSettings`.
+4. Запустите WoW, на экране выбора персонажа откройте **«Модификации»** и включите **S-Tier Blizz Settings**. Затем в игре введите `/stier` или нажмите кнопку у миникарты.
+
 ## Локализация
 
 Аддон автоматически использует язык клиента WoW. Полный перевод есть для английского (США/Великобритания), русского, французского, немецкого, испанского (Европа и Латинская Америка), бразильского португальского, корейского, упрощённого и традиционного китайского. Для неподдерживаемых языков используется полный английский интерфейс. Регион, учётная запись и сеть для этого не используются.

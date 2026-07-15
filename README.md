@@ -2,6 +2,17 @@
 
 S-Tier Blizz Settings is a lightweight World of Warcraft Retail addon for applying curated built-in Blizzard graphics and interface settings. It does not replace the Blizzard UI and requires no external UI addon.
 
+## Install — WoW Retail
+
+1. Download [STierBlizzSettings-v0.1.0-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.1.0-alpha.zip) and extract it.
+2. Copy **the `STierBlizzSettings` folder itself** to your Retail AddOns directory:
+
+   - Windows: `World of Warcraft\_retail_\Interface\AddOns\`
+   - macOS: `World of Warcraft/_retail_/Interface/AddOns/`
+
+3. Confirm the final path is exactly `.../AddOns/STierBlizzSettings/STierBlizzSettings.toc` — there must not be a second nested `STierBlizzSettings` folder.
+4. Start WoW, choose your character, click **AddOns**, and enable **S-Tier Blizz Settings**. Then type `/stier` in game or click the minimap button.
+
 ## Localization
 
 The addon follows the language selected in the WoW client automatically. Full translations are included for English (US/UK), Russian, French, German, Spanish (EU and Latin America), Brazilian Portuguese, Korean, Simplified Chinese and Traditional Chinese. Unsupported locales use English as a complete fallback. No region, account, or network data is collected.
