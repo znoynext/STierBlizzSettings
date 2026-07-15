@@ -11,6 +11,13 @@ Core/Constants.lua
 Localization/enUS.lua
 Localization/ruRU.lua
 Localization/frFR.lua
+Localization/deDE.lua
+Localization/esES.lua
+Localization/esMX.lua
+Localization/ptBR.lua
+Localization/koKR.lua
+Localization/zhCN.lua
+Localization/zhTW.lua
 Core/Bootstrap.lua
 Core/Compatibility.lua
 Core/Database.lua

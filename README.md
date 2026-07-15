@@ -4,7 +4,7 @@ S-Tier Blizz Settings is a lightweight World of Warcraft Retail addon for applyi
 
 ## Localization
 
-The addon follows the language selected in the WoW client automatically: Russian clients use Russian, French clients use French, and English or unsupported locales use English as a complete fallback. No region, account, or network data is collected.
+The addon follows the language selected in the WoW client automatically. Full translations are included for English (US/UK), Russian, French, German, Spanish (EU and Latin America), Brazilian Portuguese, Korean, Simplified Chinese and Traditional Chinese. Unsupported locales use English as a complete fallback. No region, account, or network data is collected.
 
 ## Features
 
