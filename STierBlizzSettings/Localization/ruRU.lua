@@ -15,3 +15,5 @@ STBS.Locale.ruRU = {
   PERSONAL="Личный профиль", UNSUPPORTED="Эта функция недоступна в данном клиенте.", EDITMODE_UNAVAILABLE="Управление профилями режима редактирования недоступно в этой alpha-версии.", KEYBINDING_UNAVAILABLE="Управление профилями биндов недоступно в этой alpha-версии.",
 }
 STBS.Locale.ruRU.TRANSACTION_ROLLED_BACK = "Операция отменена: одну из настроек не удалось подтвердить."
+STBS.Locale.ruRU.WELCOME="Чтобы настроить S-Tier Blizz Settings, введите /stier или нажмите кнопку у миникарты."
+STBS.Locale.ruRU.MINIMAP_TOOLTIP="Нажмите левой кнопкой, чтобы открыть настройки."

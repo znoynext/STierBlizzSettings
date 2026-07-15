@@ -40,4 +40,5 @@ Integrations/BlizzardSettings.lua
 Settings/Transaction.lua
 Core/Diagnostics.lua
 UI/MainWindow.lua
+Core/MinimapButton.lua
 Core/Events.lua

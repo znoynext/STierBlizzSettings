@@ -6,6 +6,10 @@ S-Tier Blizz Settings is a lightweight World of Warcraft Retail addon for applyi
 
 The addon follows the language selected in the WoW client automatically. Full translations are included for English (US/UK), Russian, French, German, Spanish (EU and Latin America), Brazilian Portuguese, Korean, Simplified Chinese and Traditional Chinese. Unsupported locales use English as a complete fallback. No region, account, or network data is collected.
 
+## Opening the addon
+
+After the interface loads, the chat displays a local-language reminder: type `/stier` or click the minimap button. Left-clicking the button opens the addon.
+
 ## Features
 
 - Separate **Graphics** and **Interface & Gameplay** modules.

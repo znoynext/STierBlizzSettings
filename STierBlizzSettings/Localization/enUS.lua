@@ -14,3 +14,5 @@ STBS.Locale.enUS = {
   DIFF_HEADER="Change preview", PROFILE_SUMMARY="Profile summary", BACKUP_HISTORY="Backup history", NO_BACKUPS="No backups yet.", NO_PROFILES="No saved personal profiles yet.", SELECTED="Selected", SIZE="Size", BASE_GRAPHICS="Base graphics", RAID_GRAPHICS="Raid & battleground graphics", CAMERA="Camera", OTHER_INTERFACE="Interface & gameplay", STATUS="Status",
   PERSONAL="Personal profile", UNSUPPORTED="This feature is unavailable in this client.", EDITMODE_UNAVAILABLE="Edit Mode profile management is unavailable in this alpha.", KEYBINDING_UNAVAILABLE="Keybinding profile management is unavailable in this alpha.", TRANSACTION_ROLLED_BACK="The operation was reverted because a setting could not be verified.",
 }
+STBS.Locale.enUS.WELCOME="To configure S-Tier Blizz Settings, type /stier or click the minimap button."
+STBS.Locale.enUS.MINIMAP_TOOLTIP="Left-click to open settings."

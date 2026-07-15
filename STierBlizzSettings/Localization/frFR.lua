@@ -14,3 +14,5 @@ STBS.Locale.frFR = {
   DIFF_HEADER="Aperçu des modifications", PROFILE_SUMMARY="Résumé du profil", BACKUP_HISTORY="Historique des sauvegardes", NO_BACKUPS="Aucune sauvegarde pour le moment.", NO_PROFILES="Aucun profil personnel enregistré.", SELECTED="Sélection", SIZE="Taille", BASE_GRAPHICS="Graphismes de base", RAID_GRAPHICS="Graphismes des raids et champs de bataille", CAMERA="Caméra", OTHER_INTERFACE="Interface et jeu", STATUS="État",
   PERSONAL="Profil personnel", UNSUPPORTED="Cette fonctionnalité n'est pas disponible dans ce client.", EDITMODE_UNAVAILABLE="La gestion des profils du mode Édition n'est pas disponible dans cette version alpha.", KEYBINDING_UNAVAILABLE="La gestion des profils de raccourcis clavier n'est pas disponible dans cette version alpha.", TRANSACTION_ROLLED_BACK="L'opération a été annulée, car un réglage n'a pas pu être vérifié.",
 }
+STBS.Locale.frFR.WELCOME="Pour configurer S-Tier Blizz Settings, tapez /stier ou cliquez sur le bouton de la minicarte."
+STBS.Locale.frFR.MINIMAP_TOOLTIP="Cliquez avec le bouton gauche pour ouvrir les réglages."
