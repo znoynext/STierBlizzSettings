@@ -4,7 +4,7 @@
 
 ## Установка — WoW Retail
 
-1. Скачайте [STierBlizzSettings-v0.1.1-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.1.1-alpha.zip) и распакуйте архив.
+1. Скачайте [STierBlizzSettings-v0.1.2-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.1.2-alpha.zip) и распакуйте архив.
 2. Переместите **саму папку `STierBlizzSettings`** в папку AddOns WoW Retail:
 
    - Windows: `World of Warcraft\_retail_\Interface\AddOns\`
