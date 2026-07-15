@@ -4,7 +4,7 @@ S-Tier Blizz Settings is a lightweight World of Warcraft Retail addon for applyi
 
 ## Install — WoW Retail
 
-1. Download [STierBlizzSettings-v0.1.0-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.1.0-alpha.zip) and extract it.
+1. Download [STierBlizzSettings-v0.1.1-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.1.1-alpha.zip) and extract it.
 2. Copy **the `STierBlizzSettings` folder itself** to your Retail AddOns directory:
 
    - Windows: `World of Warcraft\_retail_\Interface\AddOns\`

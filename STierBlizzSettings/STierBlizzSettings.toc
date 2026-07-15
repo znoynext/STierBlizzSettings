@@ -2,7 +2,7 @@
 ## Title: S-Tier Blizz Settings
 ## Notes: One-click optimal built-in WoW graphics and interface settings, profiles, backup, import, and export.
 ## Author: S-Tier Blizz Settings Team
-## Version: 0.1.0-alpha
+## Version: 0.1.1-alpha
 ## SavedVariables: STierBlizzSettingsDB
 ## SavedVariablesPerCharacter: STierBlizzSettingsCharDB
 ## X-Category: Interface Enhancements
