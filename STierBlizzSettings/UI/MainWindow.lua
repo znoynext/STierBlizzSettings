@@ -1,7 +1,12 @@
 local _, STBS = ...
 local function button(parent, text, x, y, width, callback)
-  local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
-  b:SetSize(width or 200, 24); b:SetPoint("TOPLEFT", x, y); b:SetText(text); b:SetScript("OnClick", callback)
+  local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
+  b:SetSize(width or 200, 30); b:SetPoint("TOPLEFT", x, y)
+  b:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=12,insets={left=3,right=3,top=3,bottom=3}})
+  b:SetBackdropColor(0.025,0.07,0.13,0.96);b:SetBackdropBorderColor(0.9,0.62,0.12,0.95)
+  b.label=b:CreateFontString(nil,"OVERLAY","GameFontHighlight");b.label:SetPoint("CENTER",0,1);b.label:SetText(text);b.label:SetTextColor(1,0.78,0.16)
+  b:SetScript("OnClick", callback);b:SetScript("OnEnter",function(self)self:SetBackdropColor(0.06,0.16,0.28,1);self:SetBackdropBorderColor(1,0.82,0.25,1)end);b:SetScript("OnLeave",function(self)if self.active then self:SetBackdropColor(0.08,0.17,0.3,1) else self:SetBackdropColor(0.025,0.07,0.13,0.96) end;self:SetBackdropBorderColor(0.9,0.62,0.12,0.95)end)
+  function b:SetActive(active) self.active=active;self:SetBackdropColor(active and 0.08 or 0.025,active and 0.17 or 0.07,active and 0.3 or 0.13,active and 1 or 0.96);self.label:SetTextColor(active and 1 or 0.82,active and 0.8 or 0.66,active and 0.18 or 0.12) end
   return b
 end
 local categoryNames = { graphics="BASE_GRAPHICS", raidGraphics="RAID_GRAPHICS", camera="CAMERA", interface="OTHER_INTERFACE", gameplay="OTHER_INTERFACE", controls="OTHER_INTERFACE", combat="OTHER_INTERFACE", nameplates="OTHER_INTERFACE", chat="OTHER_INTERFACE" }
@@ -12,22 +17,28 @@ local function resultSummary(data)
 end
 function STBS:CreateUI()
   if self.ui then return end
-  local f = CreateFrame("Frame", "STierBlizzSettingsFrame", UIParent, "BasicFrameTemplateWithInset")
-  f:SetSize(720, 580); f:SetPoint("CENTER"); f:SetMovable(true); f:EnableMouse(true); f:RegisterForDrag("LeftButton"); f:SetScript("OnDragStart", f.StartMoving); f:SetScript("OnDragStop", f.StopMovingOrSizing); f:Hide(); f.TitleText:SetText(self:L("TITLE"))
-  f.header = f:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge"); f.header:SetPoint("TOPLEFT",18,-42)
-  f.status = f:CreateFontString(nil,"OVERLAY","GameFontNormalSmall"); f.status:SetPoint("TOPRIGHT",-18,-47); f.status:SetTextColor(0.5,0.8,1)
-  local scroll = CreateFrame("ScrollFrame",nil,f,"UIPanelScrollFrameTemplate"); scroll:SetPoint("TOPLEFT",14,-72); scroll:SetSize(680,300); local content=CreateFrame("Frame",nil,scroll); content:SetWidth(650);content:SetHeight(300);scroll:SetScrollChild(content)
-  f.scroll, f.content = scroll, content; f.body=content:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall");f.body:SetPoint("TOPLEFT",6,-4);f.body:SetWidth(635);f.body:SetJustifyH("LEFT");f.body:SetJustifyV("TOP")
+  local f = CreateFrame("Frame", "STierBlizzSettingsFrame", UIParent, "BackdropTemplate")
+  f:SetSize(860,620); f:SetPoint("CENTER"); f:SetMovable(true); f:SetClampedToScreen(true);f:EnableMouse(true); f:RegisterForDrag("LeftButton"); f:SetScript("OnDragStart", f.StartMoving); f:SetScript("OnDragStop", f.StopMovingOrSizing); f:Hide()
+  f:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=16,insets={left=6,right=6,top=6,bottom=6}});f:SetBackdropColor(0.01,0.025,0.055,0.98);f:SetBackdropBorderColor(0.92,0.65,0.16,1)
+  f.title=f:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge");f.title:SetPoint("TOP",0,-20);f.title:SetText(self:L("TITLE"));f.title:SetTextColor(1,0.76,0.15)
+  local close=CreateFrame("Button",nil,f,"UIPanelCloseButton");close:SetPoint("TOPRIGHT",4,4)
+  local panel=CreateFrame("Frame",nil,f,"BackdropTemplate");panel:SetPoint("TOPLEFT",18,-112);panel:SetSize(824,345);panel:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=12,insets={left=4,right=4,top=4,bottom=4}});panel:SetBackdropColor(0.008,0.02,0.045,0.94);panel:SetBackdropBorderColor(0.75,0.48,0.08,0.9)
+  f.emblem=panel:CreateTexture(nil,"ARTWORK");f.emblem:SetTexture("Interface\\Icons\\INV_Misc_Gear_01");f.emblem:SetSize(112,112);f.emblem:SetPoint("CENTER",0,-14);f.emblem:SetAlpha(0.12)
+  f.header = f:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge"); f.header:SetPoint("TOP",0,-132);f.header:SetTextColor(1,0.78,0.2)
+  f.status = f:CreateFontString(nil,"OVERLAY","GameFontNormalSmall"); f.status:SetPoint("TOP",0,-166); f.status:SetTextColor(0.35,0.7,1)
+  local scroll = CreateFrame("ScrollFrame",nil,panel,"UIPanelScrollFrameTemplate"); scroll:SetPoint("TOPLEFT",18,-62); scroll:SetSize(780,258); local content=CreateFrame("Frame",nil,scroll); content:SetWidth(750);content:SetHeight(258);scroll:SetScrollChild(content)
+  f.scroll, f.content = scroll, content; f.body=content:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall");f.body:SetPoint("TOPLEFT",8,-6);f.body:SetWidth(730);f.body:SetJustifyH("LEFT");f.body:SetJustifyV("TOP")
   f.pageButtons = {}; f.navButtons = {}; self.ui=f
   local nav = {{"HOME",function()STBS:ShowHome()end},{"GRAPHICS",function()STBS:ShowGraphics()end},{"INTERFACE",function()STBS:ShowInterface()end},{"PROFILES",function()STBS:ShowProfiles()end},{"BACKUPS",function()STBS:ShowBackups()end},{"DIAGNOSTICS",function()STBS:ShowDiagnostics()end}}
-  for i,item in ipairs(nav) do table.insert(f.navButtons,button(f,self:L(item[1]),16+(i-1)*116,-530,110,item[2])) end
+  for i,item in ipairs(nav) do local b=button(f,self:L(item[1]),20+(i-1)*137,-67,130,item[2]);b.label:SetFontObject(GameFontNormalSmall);b.page=self:L(item[1]);table.insert(f.navButtons,b) end
 end
 function STBS:SetPage(title, text, actions, status)
   self:CreateUI(); local f=self.ui; f.header:SetText(title); f.status:SetText(status or "")
   if f.copyBox then f.copyBox:Hide() end
   f.body:SetText(text or ""); f.content:SetHeight(math.max(300, f.body:GetStringHeight()+16)); f.scroll:SetVerticalScroll(0); f:Show()
+  for _,nav in ipairs(f.navButtons) do nav:SetActive(nav.page==title) end
   for _,old in ipairs(f.pageButtons) do old:Hide() end; f.pageButtons={}
-  for i,action in ipairs(actions or {}) do table.insert(f.pageButtons,button(f,action.label,18+((i-1)%3)*228,-392-math.floor((i-1)/3)*32,218,action.fn)) end
+  for i,action in ipairs(actions or {}) do table.insert(f.pageButtons,button(f,action.label,36+((i-1)%2)*400,-485-math.floor((i-1)/2)*37,388,action.fn)) end
 end
 function STBS:FormatDiff(plan)
   local lines={"|cff82c5ff"..self:L("DIFF_HEADER").."|r"}
