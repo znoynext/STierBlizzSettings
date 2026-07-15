@@ -55,10 +55,25 @@ function STBS:FormatDiff(plan)
   return table.concat(lines,"\n")
 end
 function STBS:ShowHome()
-  local mode=self:GetSelectedMode()==self.GRAPHICS_MODE_UNIFIED and self:L("UNIFIED") or self:GetSelectedMode()==self.GRAPHICS_MODE_SPLIT and self:L("SPLIT") or self:L("MODE_UNSET")
+  local selectedMode=self:GetSelectedMode()
+  local mode=selectedMode==self.GRAPHICS_MODE_UNIFIED and self:L("UNIFIED") or selectedMode==self.GRAPHICS_MODE_SPLIT and self:L("SPLIT") or self:L("MODE_UNSET")
   local text="|cff82c5ff"..self:L("HOME_TEXT").."|r\n\n"..self:L("MODE")..": |cffffd100"..mode.."|r"
-  if self.pending then text=text.."\n\n|cffffd100"..self:L("PENDING").."|r" end
-  self:SetPage(self:L("HOME"),text,{{label=self:L("PREVIEW")..": "..self:L("APPLY_ALL"),fn=function()STBS:ShowOfficialPreview("all")end},{label=self:L("PREVIEW")..": "..self:L("APPLY_GRAPHICS"),fn=function()STBS:ShowOfficialPreview("graphics")end},{label=self:L("PREVIEW")..": "..self:L("APPLY_INTERFACE"),fn=function()STBS:ShowOfficialPreview("interface")end},{label=self:L("CANCEL_PENDING"),fn=function()local r=STBS:CancelPendingOperation();STBS:ShowHome();if not r.ok then STBS.ui.status:SetText(STBS:L("NO_PENDING")) end end}})
+  local actions={}
+  if not selectedMode then
+    text=text.."\n\n"..self:L("GRAPHICS_TEXT")
+    table.insert(actions,{label=self:L("UNIFIED"),fn=function()STBS:SetSelectedMode(STBS.GRAPHICS_MODE_UNIFIED);STBS:ShowOfficialPreview("all")end})
+    table.insert(actions,{label=self:L("SPLIT"),fn=function()STBS:SetSelectedMode(STBS.GRAPHICS_MODE_SPLIT);STBS:ShowOfficialPreview("all")end})
+  else
+    text=text.."\n\n"..self:L("HARDWARE_PRESERVED")
+    table.insert(actions,{label=self:L("PREVIEW")..": "..self:L("APPLY_ALL"),fn=function()STBS:ShowOfficialPreview("all")end})
+    table.insert(actions,{label=self:L("GRAPHICS")..": "..(selectedMode==STBS.GRAPHICS_MODE_UNIFIED and self:L("SPLIT") or self:L("UNIFIED")),fn=function()STBS:SetSelectedMode(selectedMode==STBS.GRAPHICS_MODE_UNIFIED and STBS.GRAPHICS_MODE_SPLIT or STBS.GRAPHICS_MODE_UNIFIED);STBS:ShowOfficialPreview("all")end})
+    table.insert(actions,{label=self:L("PREVIEW")..": "..self:L("APPLY_INTERFACE"),fn=function()STBS:ShowOfficialPreview("interface")end})
+  end
+  if self.pending then
+    text=text.."\n\n|cffffd100"..self:L("PENDING").."|r"
+    table.insert(actions,{label=self:L("CANCEL_PENDING"),fn=function()STBS:CancelPendingOperation();STBS:ShowHome()end})
+  end
+  self:SetPage(self:L("HOME"),text,actions)
   if not self.settingsRegistered then self.settingsRegistered=self:RegisterBlizzardSettings(self.ui) end
 end
 function STBS:ShowOfficialPreview(kind)
