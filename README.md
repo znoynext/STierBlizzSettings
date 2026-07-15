@@ -2,6 +2,10 @@
 
 S-Tier Blizz Settings is a lightweight World of Warcraft Retail addon for applying curated built-in Blizzard graphics and interface settings. It does not replace the Blizzard UI and requires no external UI addon.
 
+## Localization
+
+The addon follows the language selected in the WoW client automatically: Russian clients use Russian, French clients use French, and English or unsupported locales use English as a complete fallback. No region, account, or network data is collected.
+
 ## Features
 
 - Separate **Graphics** and **Interface & Gameplay** modules.

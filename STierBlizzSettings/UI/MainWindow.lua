@@ -31,7 +31,7 @@ function STBS:SetPage(title, text, actions, status)
 end
 function STBS:FormatDiff(plan)
   local lines={"|cff82c5ff"..self:L("DIFF_HEADER").."|r"}
-  for _,entry in ipairs(plan or {}) do table.insert(lines,entry.setting.key..": "..tostring(entry.current or self:L("UNAVAILABLE")).." → "..entry.value.." ("..entry.status..")") end
+  for _,entry in ipairs(plan or {}) do table.insert(lines,entry.setting.key..": "..tostring(entry.current or self:L("UNAVAILABLE")).." → "..entry.value.." ("..self:L(string.upper(entry.status))..")") end
   return table.concat(lines,"\n")
 end
 function STBS:ShowHome()

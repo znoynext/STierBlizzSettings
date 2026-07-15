@@ -10,6 +10,7 @@
 Core/Constants.lua
 Localization/enUS.lua
 Localization/ruRU.lua
+Localization/frFR.lua
 Core/Bootstrap.lua
 Core/Compatibility.lua
 Core/Database.lua
