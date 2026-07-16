@@ -28,3 +28,17 @@ function STBS:BackupHasModule(backup, module)
   for key in pairs(backup.values) do local setting=self.RegistryByKey[key];if setting and setting.module==module then return true end end
   return false
 end
+
+function STBS:GetLatestBackupIndex(module)
+  for index, backup in ipairs(self:InitializeDatabase().backups) do
+    if not module or self:BackupHasModule(backup, module) then return index end
+  end
+  return nil
+end
+
+function STBS:DeleteBackup(index)
+  local db = self:InitializeDatabase()
+  index = tonumber(index)
+  if not index or index ~= math.floor(index) or index < 1 or index > #db.backups then return self:Result(false,"missing") end
+  return self:Result(true,"deleted",table.remove(db.backups,index))
+end

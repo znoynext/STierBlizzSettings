@@ -37,10 +37,10 @@ function STBS:ApplySettings(settings, modules, trigger, options)
   local db=self:InitializeDatabase();table.insert(db.transactions,1,{time=time(),trigger=trigger,modules=self:Copy(modules),result=self:Copy(result),code="applied"});while #db.transactions>20 do table.remove(db.transactions) end;return self:Result(true,"applied",result)
 end
 function STBS:CancelPendingOperation() if not self.pending then return self:Result(false,"no-pending") end; self.pending=nil; return self:Result(true,"cancelled") end
-function STBS:ApplyOfficial(kind)
+function STBS:ApplyOfficial(kind, options)
   local modules=kind=="graphics" and {graphics=true} or kind=="interface" and {interfaceGameplay=true} or {graphics=true,interfaceGameplay=true};local settings={}
   if modules.graphics then local mode=self:GetSelectedMode();if not mode then return self:Result(false,"mode") end;settings=self:FlattenProfile(self:GetOfficialGraphics(mode),{graphics=true}) end
   if modules.interfaceGameplay then local interface=self:FlattenProfile(self:GetOfficialInterface(),{interfaceGameplay=true});for k,v in pairs(interface) do settings[k]=v end end
   local officialValid, officialWhy=self:ValidateSettings(settings,true);if not officialValid then return self:Result(false,officialWhy) end
-  return self:ApplySettings(settings,modules,"official-"..kind)
+  return self:ApplySettings(settings,modules,"official-"..kind,options)
 end

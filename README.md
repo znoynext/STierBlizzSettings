@@ -1,42 +1,43 @@
 # S-Tier Blizz Settings
 
-S-Tier Blizz Settings is a lightweight World of Warcraft Retail addon for applying curated built-in Blizzard graphics and interface settings. It does not replace the Blizzard UI and requires no external UI addon.
+A lightweight WoW Retail addon that applies a curated balance of FPS, image quality and combat readability using only standard Blizzard graphics settings.
 
-## Install — WoW Retail
+![Balanced graphics preview](docs/images/graphics-preview.png)
 
-1. Download [STierBlizzSettings-v0.2.0-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.2.0-alpha.zip) and extract it.
-2. Copy **the `STierBlizzSettings` folder itself** to your Retail AddOns directory:
+> Illustrative preview. Actual FPS and appearance depend on your hardware, location and gameplay situation.
 
-   - Windows: `World of Warcraft\_retail_\Interface\AddOns\`
-   - macOS: `World of Warcraft/_retail_/Interface/AddOns/`
+## Install
 
-3. Confirm the final path is exactly `.../AddOns/STierBlizzSettings/STierBlizzSettings.toc` — there must not be a second nested `STierBlizzSettings` folder.
-4. Start WoW, choose your character, click **AddOns**, and enable **S-Tier Blizz Settings**. Then type `/stier` in game or click the minimap button.
+1. Download [STierBlizzSettings-v0.3.0-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.3.0-alpha.zip).
+2. Extract it into `World of Warcraft/_retail_/Interface/AddOns/`.
+3. Verify the final path is `.../AddOns/STierBlizzSettings/STierBlizzSettings.toc`.
+4. Enable the addon and open it with `/stier` or the minimap button.
 
-## Localization
+## What works
 
-The addon follows the language selected in the WoW client automatically. Full translations are included for English (US/UK), Russian, French, German, Spanish (EU and Latin America), Brazilian Portuguese, Korean, Simplified Chinese and Traditional Chinese. Unsupported locales use English as a complete fallback. No region, account, or network data is collected.
+- Two focused tabs: **Graphics** and **Profiles**.
+- Balanced graphics everywhere or a lighter Blizzard raid/battleground profile.
+- Reviewed change preview and an explicit confirmation before applying.
+- Transactional writes with automatic backup and read-back verification.
+- One-click **Undo graphics changes**.
+- Local before/after FPS estimate, shown as `Average FPS: 74 → 91, +17 FPS (+23%)`.
+- Personal graphics profiles plus backup history in one screen.
+- Apply, rename, export and delete profiles; restore or delete backups.
+- Strict data-only `STBS1:` import. Imported text is never executed.
+- A draggable minimap button and a compact animated Blizzard-style dashboard.
 
-## Opening the addon
+The addon preserves monitor, resolution, refresh rate, V-Sync, FPS limits, latency mode and other hardware-dependent or personal settings. Projected textures, useful particle density and outlines remain enabled in the official profiles.
 
-After the interface loads, the chat displays a local-language reminder: type `/stier` or click the minimap button. Left-clicking the button opens the addon.
+**Interface & Gameplay is temporarily hidden while it is being redesigned.** Its existing internal compatibility remains intact so old data is not destroyed.
 
-## Features
+## FPS measurement
 
-- Separate **Graphics** and **Interface & Gameplay** modules.
-- **One Profile Everywhere** and **Optimized Raid Mode** graphics modes.
-- A built-in Interface & Gameplay profile for cooldown numbers, target-of-target, player silhouette, enemy nameplates and stable camera behavior.
-- Transactional application with a backup before every change, plus restore history.
-- Hardware capability checks using the same Retail validation functions as Blizzard's graphics menu; unsupported values are skipped.
-- Personal profile capture, deterministic `STBS1:` export and defensive data-only import with strict schema, size, depth and metadata validation.
-- A localized dashboard, scalable profile and backup lists, slash commands `/stier` and `/stbs`, import preview, and diagnostics.
+The addon samples the Retail `GetFramerate()` API before and for eight seconds after applying graphics. This is a local estimate, not a guaranteed benchmark. Stay in the same place and avoid entering combat during the measurement for a more useful comparison.
 
-Use `/stier` to open the window. Use `/stier graphics`, `interface`, `apply`, `save`, `export`, `import`, `backup`, `restore`, or `debug` for a specific screen/action.
+## Safety and status
 
-The addon intentionally preserves display hardware, resolution, refresh rate, V-Sync, FPS limits, latency modes, audio, accessibility, keybindings, UI scale, mouse controls and other personal settings. No telemetry, network access, ads, premium functions or donation prompts are included.
+No telemetry, network access, ads, premium features, donation prompts or gameplay automation are included. Every supported setting is curated and validated against current Blizzard Retail UI sources; unavailable values fail closed.
 
-**Alpha status:** this is not a production v1.0 release. Supported baseline: Retail 12.0.7, interface 120007 (Blizzard UI source build 68453). Live-client testing is required before competitive use. Edit Mode and keybinding profile management are intentionally unavailable in this alpha.
+Current version: **0.3.0-alpha**. Baseline: Retail 12.0.7, Interface 120007, Blizzard UI build 68453. Live-client visual testing is still required before declaring v1.0 production-ready.
 
-S-Tier Blizz Settings is an independent community addon and is not affiliated with or endorsed by Blizzard Entertainment.
-
-See [Russian README](README.ru.md), [profile research](docs/RECOMMENDED_PROFILE_RESEARCH.md), [UI/UX research](docs/UI_UX_RESEARCH.md), [test plan](docs/TEST_PLAN.md), and [release instructions](docs/RELEASE.md).
+See the [Russian README](README.ru.md), [preset research](docs/RECOMMENDED_PROFILE_RESEARCH.md), [architecture](docs/ARCHITECTURE.md), [UI/UX notes](docs/UI_UX_RESEARCH.md) and [test plan](docs/TEST_PLAN.md).

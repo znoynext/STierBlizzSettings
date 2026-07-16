@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0-alpha
+
+- Rebuilt the dashboard around two focused tabs: Graphics and Profiles.
+- Added an eight-second local before/after FPS estimate using Blizzard's documented `GetFramerate()` API.
+- Added an explicit apply confirmation, a one-click graphics undo action and automatic safety backups.
+- Combined personal profiles and backup history; profiles can now be applied and backups can be restored or deleted with confirmation.
+- Added a new draggable minimap emblem, an illustrative graphics preview and subtle window/button animations.
+- Temporarily hid Interface & Gameplay from the user workflow while preserving its stored data and internal compatibility.
+- Expanded regression coverage for FPS metrics, combined navigation and backup deletion.
+
 ## 0.2.0-alpha
 
 - Expanded the built-in Interface & Gameplay profile with verified Retail combat-readability settings while preserving personal, accessibility, audio and hardware options.

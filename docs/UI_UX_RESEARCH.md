@@ -10,13 +10,16 @@ Reviewed 2026-07-16. The addon keeps a custom lightweight dashboard but follows 
 
 ## Product-specific decisions
 
-- First use is two steps: choose unified or split graphics, then review and confirm.
-- Graphics and Interface & Gameplay are always separate scopes; the combined action creates one backup and one transaction.
+- First use is three explicit decisions: choose unified or split graphics, review the exact diff, then confirm in a native popup.
+- The dashboard has only two top-level destinations: Graphics and Profiles. The removed Home screen duplicated the graphics workflow; backups and profiles share one history screen while remaining distinct data types.
 - Change previews are grouped by Blizzard category and use the client's localized setting labels.
 - Unsupported values are visibly skipped; failed writes trigger rollback and a separate result state.
-- Profile and backup lists never cap selection to the first items; actions scroll inside a fixed-size dashboard.
+- Profile and backup lists never cap selection to the first items; actions scroll inside a fixed-size dashboard. Both kinds support explicit deletion confirmation.
 - Imported names are treated as untrusted display text so WoW color/hyperlink markup cannot spoof the UI.
-- Destructive profile deletion requires confirmation. Settings restore remains reversible because it creates a safety backup first.
+- A visible Undo action restores the latest graphics backup. Settings restore remains reversible because it creates a safety backup first.
+- The local FPS card reports measured before/after averages and labels them as an estimate rather than promising a universal gain.
+- Motion is limited to a short window fade and button hover feedback so the UI feels responsive without distracting from the decision flow.
+- Visual styling stays inside Blizzard's native vocabulary: `UIPanelButtonTemplate`, game font objects, rock/dialog backgrounds, tooltip borders, gold headings and the standard minimap tracking border. Custom art is limited to the addon emblem and the framed illustrative preview.
 
 ## Intentionally not adopted
 
