@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0-alpha
+
+- Added PRO, Optimized and Quality presets across the reviewed Graphics, Graphics Quality and Advanced controls while preserving resolution, render scale, display, FPS caps and other hardware-dependent choices.
+- Added opt-in Zone Graphics mappings for world/cities, dungeons, raids, PvP/arenas and scenarios/delves; switching happens only on content-type changes and every real apply is transactional and backed up.
+- Shortened the quick FPS comparison to five seconds and added an accurate 20-second frame-time comparison with correctly derived 1% Low.
+- Added an optional compact bottom-screen FPS/ping indicator using real `GetFramerate()` and Home/World `GetNetStats()` values with independent red-to-green color feedback.
+- Increased native WoW font hierarchy, added page/status fades and reorganized the first visible actions into a simple three-row flow.
+- Expanded localization, source research, architecture, benchmark documentation and regression coverage.
+
 ## 0.3.1-alpha
 
 - Replaced the illustrative preview with a real in-game screenshot and redesigned the gold `S` emblem from the supplied visual reference.

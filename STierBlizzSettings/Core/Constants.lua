@@ -2,8 +2,8 @@ local ADDON, STBS = ...
 STBS = STBS or {}
 _G[ADDON] = STBS
 STBS.ADDON = ADDON
-STBS.VERSION = "0.3.1-alpha"
-STBS.DB_SCHEMA = 1
+STBS.VERSION = "0.4.0-alpha"
+STBS.DB_SCHEMA = 2
 STBS.PROFILE_SCHEMA = 1
 STBS.EXPORT_PREFIX = "STBS1:"
 STBS.EXPORT_VERSION = 1
@@ -18,6 +18,11 @@ STBS.MAX_LOG_ENTRIES = 100
 STBS.DEFAULT_BACKUP_LIMIT = 10
 STBS.GRAPHICS_MODE_UNIFIED = "unified"
 STBS.GRAPHICS_MODE_SPLIT = "split"
+STBS.GRAPHICS_PRESET_PRO = "pro"
+STBS.GRAPHICS_PRESET_OPTIMIZED = "optimized"
+STBS.GRAPHICS_PRESET_QUALITY = "quality"
+STBS.BENCHMARK_QUICK = "quick"
+STBS.BENCHMARK_ACCURATE = "accurate"
 STBS.Modules = { graphics = true, interfaceGameplay = true }
 function STBS:Result(ok, code, data) return { ok = ok, code = code, data = data } end
 function STBS:Copy(value, seen)

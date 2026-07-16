@@ -1,8 +1,8 @@
 ## Interface: 120007
 ## Title: S-Tier Blizz Settings
-## Notes: One-click optimal built-in WoW graphics settings with profiles, backups, FPS comparison, import, and export.
+## Notes: Three built-in WoW graphics presets, safe zone switching, profiles, backups, FPS/1% Low comparison, and a live FPS/ping meter.
 ## Author: S-Tier Blizz Settings Team
-## Version: 0.3.1-alpha
+## Version: 0.4.0-alpha
 ## SavedVariables: STierBlizzSettingsDB
 ## SavedVariablesPerCharacter: STierBlizzSettingsCharDB
 ## X-Category: Interface Enhancements
@@ -24,6 +24,7 @@ Core/Bootstrap.lua
 Core/Compatibility.lua
 Core/Database.lua
 Core/FPSBenchmark.lua
+Core/ZoneGraphics.lua
 Settings/Registry.lua
 Settings/Validator.lua
 Settings/Reader.lua
@@ -43,5 +44,6 @@ Integrations/BlizzardSettings.lua
 Settings/Transaction.lua
 Core/Diagnostics.lua
 UI/MainWindow.lua
+UI/PerformanceWidget.lua
 Core/MinimapButton.lua
 Core/Events.lua

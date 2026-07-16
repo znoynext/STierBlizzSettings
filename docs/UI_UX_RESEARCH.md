@@ -8,20 +8,23 @@ Reviewed 2026-07-16. The addon keeps a custom lightweight dashboard but follows 
 - [AdvancedInterfaceOptions](https://github.com/Stanzilla/AdvancedInterfaceOptions) groups settings by category, exposes search/browser-style navigation, uses inline tooltips and integrates with Blizzard options. S-Tier adopts clear category grouping and scalable scrolling, while intentionally avoiding a raw CVar browser because only curated documented settings may be applied.
 - [Leatrix Plus](https://www.curseforge.com/wow/addons/leatrix-plus) demonstrates fast access through slash commands and a minimap entry point, compact option presentation and immediate feedback. S-Tier retains slash/minimap access and concise pages, but keeps every apply operation behind preview and confirmation because it changes a coordinated set of settings.
 - [EnhanceQoL](https://github.com/R41z0r/EnhanceQoL) uses a large title/body hierarchy, generous card spacing, concise dashboard copy and clearly separated status tiles. S-Tier adopts those information-hierarchy principles without copying its navigation art, layout code or visual identity.
+- [Hyperframe](https://www.curseforge.com/wow/addons/hyperframe), Graphics Presets: Smart Switching and DynamicGraphicsSettings demonstrate demand for content-aware profiles. S-Tier adopts explicit content mappings, but keeps them opt-in, transaction-backed and limited to actual zone transitions so the picture does not pump continuously.
+- [FPS & Latency Meter](https://github.com/nailuj1992/FpsLatencyMeter) confirms the maintained Retail pattern of `GetFramerate()` plus Home/World values from `GetNetStats()`. S-Tier uses one compact optional indicator, throttles it to twice per second and colors FPS and ping independently.
+- WoW performance benchmark guidance and frame-time methodology informed the accurate 1% Low calculation: the slowest frame times are averaged before conversion back to FPS, instead of treating one sampled minimum as 1% Low.
 
 ## Product-specific decisions
 
-- First use is three explicit decisions: choose unified or split graphics, review a short outcome summary, then confirm in a native popup.
-- The dashboard has three top-level destinations: Graphics, Profiles and About. The removed Home screen duplicated the graphics workflow; backups and profiles share one history screen while remaining distinct data types.
+- First use is three explicit decisions: choose one of three presets, choose quick or accurate measurement, then review and confirm in a native popup. Unified/split mode is a compact secondary toggle.
+- The dashboard has four top-level destinations: Graphics, Profiles, Zone Graphics and About. The removed Home screen duplicated the graphics workflow; backups and profiles share one history screen while remaining distinct data types.
 - Change previews report counts and user-visible outcomes instead of listing every CVar.
 - Unsupported values are visibly skipped; failed writes trigger rollback and a separate result state.
 - Profile and backup lists never cap selection to the first items; actions scroll inside a fixed-size dashboard. Both kinds support explicit deletion confirmation.
 - Imported names are treated as untrusted display text so WoW color/hyperlink markup cannot spoof the UI.
 - A visible Undo action restores the latest graphics backup. Settings restore remains reversible because it creates a safety backup first.
-- The FPS card shows the current value live in a large font and keeps the last before/after average as a smaller local estimate.
+- The FPS card shows the current value live in a large font and keeps the last before/after average plus accurate 1% Low as a smaller local estimate. A separate bottom-screen FPS/ping indicator is optional.
 - Every user action produces an in-window success, warning or error state. Choosing a mode explicitly says that nothing has been applied yet; apply, reload, save, backup, restore, delete, rename and export have distinct completion copy.
 - The About page explains evidence, scope, backup/undo behavior, preserved hardware controls and the limits of the FPS claim.
-- Motion is limited to a short window fade and button hover feedback so the UI feels responsive without distracting from the decision flow.
+- Motion is limited to short window/page fades, status feedback and button hover feedback so the UI feels responsive without distracting from the decision flow.
 - Visual styling stays inside Blizzard's native vocabulary: `UIPanelButtonTemplate`, `GameFontNormalHuge2`, other game font objects, rock/dialog backgrounds, tooltip borders, gold headings and the standard minimap tracking border. Custom art is limited to the addon emblem and a framed real in-game screenshot.
 
 ## Intentionally not adopted

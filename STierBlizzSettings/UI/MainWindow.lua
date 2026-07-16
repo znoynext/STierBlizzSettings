@@ -18,7 +18,7 @@ end
 local function button(parent,text,x,y,width,callback,style)
   local b=CreateFrame("Button",nil,parent,"UIPanelButtonTemplate")
   b:SetSize(width or 200,34);b:SetPoint("TOPLEFT",x,y)
-  b:SetText(text);b.label=b:GetFontString();b.label:SetFontObject(style=="primary" and GameFontNormal or GameFontHighlight)
+  b:SetText(text);b.label=b:GetFontString();b.label:SetFontObject(style=="primary" and GameFontNormalLarge or GameFontNormal)
   b.label:SetTextColor(style=="danger" and 1 or style=="primary" and 1 or 0.92,style=="danger" and 0.36 or style=="primary" and 0.82 or 0.82,style=="danger" and 0.3 or style=="primary" and 0 or 0.68)
   local highlight=b:GetHighlightTexture();local hoverGroup=highlight and highlight:CreateAnimationGroup();if hoverGroup then local hover=hoverGroup:CreateAnimation("Alpha");hover:SetFromAlpha(0.35);hover:SetToAlpha(1);hover:SetDuration(0.14);hover:SetSmoothing("OUT") end
   b:SetScript("OnClick",callback)
@@ -30,7 +30,7 @@ end
 
 local function navButton(parent,text,icon,y,pageKey,callback)
   local b=button(parent,text,14,y,170,callback);b:SetSize(170,44);b.pageKey=pageKey
-  b.label:ClearAllPoints();b.label:SetPoint("LEFT",44,0);b.label:SetJustifyH("LEFT");b.label:SetFontObject(GameFontNormal)
+  b.label:ClearAllPoints();b.label:SetPoint("LEFT",44,0);b.label:SetJustifyH("LEFT");b.label:SetFontObject(GameFontNormalLarge)
   b.icon=b:CreateTexture(nil,"ARTWORK");b.icon:SetTexture(icon);b.icon:SetSize(24,24);b.icon:SetPoint("LEFT",12,0)
   return b
 end
@@ -64,32 +64,36 @@ function STBS:CreateUI()
   local panel=CreateFrame("Frame",nil,f,"BackdropTemplate");panel:SetPoint("TOPLEFT",222,-92);panel:SetSize(720,538);panel:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=12,insets={left=3,right=3,top=3,bottom=3}});panel:SetBackdropColor(0.035,0.028,0.018,0.98);panel:SetBackdropBorderColor(0.52,0.4,0.2,0.95)
 
   f.header=panel:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.header:SetPoint("TOPLEFT",22,-20);f.header:SetTextColor(1,0.82,0)
-  f.status=panel:CreateFontString(nil,"OVERLAY","GameFontHighlight");f.status:SetPoint("TOPLEFT",24,-50);f.status:SetWidth(660);f.status:SetJustifyH("LEFT");f.status:SetTextColor(0.78,0.72,0.58)
-  local scroll=CreateFrame("ScrollFrame",nil,panel,"UIPanelScrollFrameTemplate");scroll:SetPoint("TOPLEFT",18,-76);scroll:SetSize(675,350)
+  f.status=panel:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge");f.status:SetPoint("TOPLEFT",24,-50);f.status:SetWidth(660);f.status:SetJustifyH("LEFT");f.status:SetTextColor(0.78,0.72,0.58)
+  local scroll=CreateFrame("ScrollFrame",nil,panel,"UIPanelScrollFrameTemplate");scroll:SetPoint("TOPLEFT",18,-76);scroll:SetSize(675,310)
   local content=CreateFrame("Frame",nil,scroll);content:SetWidth(644);content:SetHeight(350);scroll:SetScrollChild(content);f.scroll,f.content=scroll,content
+  local pageFade=content:CreateAnimationGroup();pageFade:SetToFinalAlpha(true);local pageAlpha=pageFade:CreateAnimation("Alpha");pageAlpha:SetFromAlpha(0.35);pageAlpha:SetToAlpha(1);pageAlpha:SetDuration(0.16);pageAlpha:SetSmoothing("OUT");f.pageFade=pageFade
   f.previewBorder=CreateFrame("Frame",nil,content,"BackdropTemplate");f.previewBorder:SetPoint("TOPLEFT",61,-2);f.previewBorder:SetSize(512,293);f.previewBorder:SetBackdrop({edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=14,insets={left=3,right=3,top=3,bottom=3}});f.previewBorder:SetBackdropBorderColor(0.72,0.52,0.2,1);f.previewBorder:Hide()
   f.preview=f.previewBorder:CreateTexture(nil,"ARTWORK");f.preview:SetTexture(ASSET.."GraphicsPreview");f.preview:SetPoint("TOPLEFT",6,-6);f.preview:SetSize(500,281)
   f.previewShade=content:CreateTexture(nil,"OVERLAY");f.previewShade:SetPoint("BOTTOMLEFT",f.preview,"BOTTOMLEFT");f.previewShade:SetPoint("BOTTOMRIGHT",f.preview,"BOTTOMRIGHT");f.previewShade:SetHeight(54);f.previewShade:SetColorTexture(0.004,0.015,0.028,0.72);f.previewShade:Hide()
   f.previewTitle=content:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.previewTitle:SetPoint("BOTTOMLEFT",f.preview,"BOTTOMLEFT",16,18);f.previewTitle:SetText(self:L("VISUAL_PREVIEW"));f.previewTitle:SetTextColor(1,0.82,0);f.previewTitle:Hide()
   f.metricCard=CreateFrame("Frame",nil,content,"BackdropTemplate");f.metricCard:SetSize(625,94);f.metricCard:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=12,insets={left=3,right=3,top=3,bottom=3}});f.metricCard:SetBackdropColor(0.045,0.038,0.022,0.98);f.metricCard:SetBackdropBorderColor(0.72,0.52,0.2,1);f.metricCard:Hide()
-  f.metricTitle=f.metricCard:CreateFontString(nil,"OVERLAY","GameFontNormal");f.metricTitle:SetPoint("TOPLEFT",14,-12);f.metricTitle:SetText(self:L("LIVE_FPS"));f.metricTitle:SetTextColor(1,0.82,0)
+  f.metricTitle=f.metricCard:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.metricTitle:SetPoint("TOPLEFT",14,-12);f.metricTitle:SetText(self:L("LIVE_FPS"));f.metricTitle:SetTextColor(1,0.82,0)
   f.metricValue=f.metricCard:CreateFontString(nil,"OVERLAY","GameFontNormalHuge2");f.metricValue:SetPoint("TOPRIGHT",-16,-14);f.metricValue:SetTextColor(0.45,1,0.72)
-  f.metricSub=f.metricCard:CreateFontString(nil,"OVERLAY","GameFontHighlight");f.metricSub:SetPoint("BOTTOMLEFT",14,14);f.metricSub:SetWidth(590);f.metricSub:SetJustifyH("LEFT");f.metricSub:SetTextColor(0.82,0.82,0.75)
-  f.body=content:CreateFontString(nil,"OVERLAY","GameFontHighlight");f.body:SetWidth(625);f.body:SetJustifyH("LEFT");f.body:SetJustifyV("TOP");f.body:SetSpacing(5)
+  f.metricSub=f.metricCard:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge");f.metricSub:SetPoint("BOTTOMLEFT",14,14);f.metricSub:SetWidth(590);f.metricSub:SetJustifyH("LEFT");f.metricSub:SetTextColor(0.82,0.82,0.75)
+  f.body=content:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge");f.body:SetWidth(625);f.body:SetJustifyH("LEFT");f.body:SetJustifyV("TOP");f.body:SetSpacing(6)
 
-  local rule=panel:CreateTexture(nil,"ARTWORK");rule:SetColorTexture(0.55,0.4,0.18,0.75);rule:SetPoint("TOPLEFT",22,-436);rule:SetSize(672,1)
-  local actionScroll=CreateFrame("ScrollFrame",nil,panel,"UIPanelScrollFrameTemplate");actionScroll:SetPoint("TOPLEFT",18,-446);actionScroll:SetSize(675,82)
+  local rule=panel:CreateTexture(nil,"ARTWORK");rule:SetColorTexture(0.55,0.4,0.18,0.75);rule:SetPoint("TOPLEFT",22,-396);rule:SetSize(672,1)
+  local actionScroll=CreateFrame("ScrollFrame",nil,panel,"UIPanelScrollFrameTemplate");actionScroll:SetPoint("TOPLEFT",18,-406);actionScroll:SetSize(675,122)
   local actionContent=CreateFrame("Frame",nil,actionScroll);actionContent:SetWidth(644);actionContent:SetHeight(82);actionScroll:SetScrollChild(actionContent);f.actionScroll,f.actionContent=actionScroll,actionContent
   f.pageButtons={};f.navButtons={};self.ui=f
   table.insert(f.navButtons,navButton(side,self:L("GRAPHICS"),"Interface\\Icons\\INV_Misc_EngGizmos_30",-16,"graphics",function()STBS:ShowGraphics()end))
   table.insert(f.navButtons,navButton(side,self:L("PROFILES"),"Interface\\Icons\\INV_Misc_Book_09",-68,"profiles",function()STBS:ShowProfiles()end))
-  table.insert(f.navButtons,navButton(side,self:L("ABOUT"),"Interface\\Icons\\INV_Misc_Note_05",-120,"about",function()STBS:ShowAbout()end))
+  table.insert(f.navButtons,navButton(side,self:L("ZONE_GRAPHICS"),"Interface\\Icons\\INV_Misc_Map_01",-120,"zone",function()STBS:ShowZoneGraphics()end))
+  table.insert(f.navButtons,navButton(side,self:L("ABOUT"),"Interface\\Icons\\INV_Misc_Note_05",-172,"about",function()STBS:ShowAbout()end))
 end
 
 function STBS:SetPage(title,text,actions,status,options)
   self:CreateUI();local f=self.ui;options=options or {};f.currentPageKey=options.pageKey
+  f.pageFade:Stop();f.content:SetAlpha(1);f.pageFade:Play()
   f.header:SetText(title);f.status:SetText(status or "")
   if options.statusKind=="success" then f.status:SetTextColor(0.35,1,0.62) elseif options.statusKind=="error" then f.status:SetTextColor(1,0.35,0.3) elseif options.statusKind=="warning" then f.status:SetTextColor(1,0.78,0.24) else f.status:SetTextColor(0.78,0.72,0.58) end
+  if options.statusKind and type(_G.UIFrameFadeIn)=="function" then UIFrameFadeIn(f.status,0.18,0.35,1) end
   if f.copyBox then f.copyBox:Hide() end;f.scroll:Show();f.previewBorder:Hide();f.previewShade:Hide();f.previewTitle:Hide();f.metricCard:Hide()
   local bodyY=-6
   if options.preview then
@@ -100,12 +104,14 @@ function STBS:SetPage(title,text,actions,status,options)
   f.content:SetHeight(math.max(350,-bodyY+f.body:GetStringHeight()+20));f.scroll:SetVerticalScroll(0);f.actionScroll:SetVerticalScroll(0);f:Show()
   for _,nav in ipairs(f.navButtons) do nav:SetActive(nav.pageKey==options.pageKey) end
   for _,old in ipairs(f.pageButtons) do old:Hide() end;f.pageButtons={}
-  local row,col=0,0
+  local row,col,columns=0,0,2
   for _,action in ipairs(actions or {}) do
-    if action.wide and col>0 then row=row+1;col=0 end
-    local width=action.wide and 625 or 305;local x=action.wide and 0 or col*318
+    local wantedColumns=action.third and 3 or 2
+    if (action.wide or wantedColumns~=columns) and col>0 then row=row+1;col=0 end
+    columns=wantedColumns
+    local width=action.wide and 625 or action.third and 200 or 305;local x=action.wide and 0 or action.third and col*210 or col*318
     local created=button(f.actionContent,action.label,x,-row*40,width,action.fn,action.style);created:SetDisabled(action.disabled);created:SetActive(action.active);table.insert(f.pageButtons,created)
-    if action.wide then row=row+1;col=0 else col=col+1;if col==2 then row=row+1;col=0 end end
+    if action.wide then row=row+1;col=0 else col=col+1;if col==columns then row=row+1;col=0 end end
   end
   if col>0 then row=row+1 end;f.actionContent:SetHeight(math.max(82,row*40));f.actionScroll:SetVerticalScroll(0)
 end
@@ -123,20 +129,24 @@ function STBS:ShowInterface() return self:ShowGraphics() end
 
 function STBS:ShowGraphics()
   self:StartFPSBaselineSampling()
-  local mode=self:GetSelectedMode();local modeName=mode==self.GRAPHICS_MODE_UNIFIED and self:L("UNIFIED") or mode==self.GRAPHICS_MODE_SPLIT and self:L("SPLIT") or self:L("MODE_UNSET")
-  local modeHelp=mode==self.GRAPHICS_MODE_UNIFIED and self:L("MODE_UNIFIED_HELP") or mode==self.GRAPHICS_MODE_SPLIT and self:L("MODE_SPLIT_HELP") or self:L("GRAPHICS_TEXT")
-  local metric=self:GetLastFPSMetric();local metricText=self.fpsAfterMeasurement and self:L("FPS_MEASURING") or self:FormatFPSMetric(metric)
-  local text="|cffffd36b"..self:L("QUICK_START").."|r\n"..self:L("QUICK_START_TEXT").."\n\n|cffffd36b"..self:L("SAVE_OWN_TITLE").."|r\n"..self:L("SAVE_OWN_TEXT").."\n\n|cff9aa7b8"..modeName.." — "..modeHelp.."|r"
+  local mode=self:GetSelectedMode();local preset=self:GetSelectedPreset();local benchmark=self:GetBenchmarkMode();local preferences=self:InitializeDatabase().preferences
+  local metric=self:GetLastFPSMetric();local measuring=self.fpsAfterMeasurement or self.fpsAccurateMeasurement;local metricText=measuring and self:L("FPS_MEASURING") or self:FormatFPSMetric(metric)
+  local text="|cffffd36b"..self:L("QUICK_START").."|r\n"..self:L("QUICK_START_TEXT").."\n\n|cffffd36b"..self:L("SAVE_OWN_TITLE").."|r\n"..self:L("SAVE_OWN_TEXT").."\n\n|cff9aa7b8"..self:L("GRAPHICS_SELECTION_SUMMARY").."|r"
   local latest=self:GetLatestBackupIndex("graphics")
   local actions={
-    {label=self:L("UNIFIED"),fn=function()STBS:SetSelectedMode(STBS.GRAPHICS_MODE_UNIFIED);STBS.flashMessage=STBS:L("MODE_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=mode==self.GRAPHICS_MODE_UNIFIED},
-    {label=self:L("SPLIT"),fn=function()STBS:SetSelectedMode(STBS.GRAPHICS_MODE_SPLIT);STBS.flashMessage=STBS:L("MODE_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=mode==self.GRAPHICS_MODE_SPLIT},
-    {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ShowOfficialPreview("graphics")end,style="primary",wide=true,disabled=not mode},
+    {label=self:L("PRESET_PRO"),third=true,fn=function()STBS:SetSelectedPreset(STBS.GRAPHICS_PRESET_PRO);STBS.flashMessage=STBS:L("PRESET_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=preset==self.GRAPHICS_PRESET_PRO},
+    {label=self:L("PRESET_OPTIMIZED"),third=true,fn=function()STBS:SetSelectedPreset(STBS.GRAPHICS_PRESET_OPTIMIZED);STBS.flashMessage=STBS:L("PRESET_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=preset==self.GRAPHICS_PRESET_OPTIMIZED},
+    {label=self:L("PRESET_QUALITY"),third=true,fn=function()STBS:SetSelectedPreset(STBS.GRAPHICS_PRESET_QUALITY);STBS.flashMessage=STBS:L("PRESET_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=preset==self.GRAPHICS_PRESET_QUALITY},
+    {label=mode==self.GRAPHICS_MODE_SPLIT and self:L("SPLIT") or self:L("UNIFIED"),third=true,fn=function()local nextMode=STBS:GetSelectedMode()==STBS.GRAPHICS_MODE_SPLIT and STBS.GRAPHICS_MODE_UNIFIED or STBS.GRAPHICS_MODE_SPLIT;STBS:SetSelectedMode(nextMode);STBS.flashMessage=STBS:L("MODE_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end},
+    {label=benchmark==self.BENCHMARK_ACCURATE and self:L("BENCHMARK_ACCURATE") or self:L("BENCHMARK_QUICK"),third=true,fn=function()local nextMode=STBS:GetBenchmarkMode()==STBS.BENCHMARK_QUICK and STBS.BENCHMARK_ACCURATE or STBS.BENCHMARK_QUICK;STBS:SetBenchmarkMode(nextMode);STBS.flashMessage=STBS:L("BENCHMARK_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end},
+    {label=preferences.performanceWidgetEnabled and self:L("HIDE_WIDGET") or self:L("SHOW_WIDGET"),third=true,fn=function()local enabled=not STBS:InitializeDatabase().preferences.performanceWidgetEnabled;STBS:SetPerformanceWidgetEnabled(enabled);STBS.flashMessage=enabled and STBS:L("WIDGET_ENABLED") or STBS:L("WIDGET_DISABLED");STBS.flashKind="success";STBS:ShowGraphics()end},
+    {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ShowOfficialPreview("graphics")end,style="primary",wide=true,disabled=measuring},
   }
-  if self.reloadRecommended then table.insert(actions,{label=self:L("RELOAD_UI"),fn=function()STBS:ConfirmReloadUI()end,style="primary",wide=true,disabled=self.fpsAfterMeasurement and true or false}) end
+  if self.reloadRecommended then table.insert(actions,{label=self:L("RELOAD_UI"),fn=function()STBS:ConfirmReloadUI()end,style="primary",wide=true,disabled=measuring and true or false}) end
   table.insert(actions,{label=self:L("UNDO"),fn=function()STBS:ConfirmUndoGraphics()end,disabled=not latest})
   table.insert(actions,{label=self:L("PROFILES"),fn=function()STBS:ShowProfiles()end})
-  local status=self.flashMessage or (self.fpsAfterMeasurement and self:L("FPS_MEASURING") or self:L("READY"));local statusKind=self.flashKind;self.flashMessage=nil;self.flashKind=nil
+  local phase=self.fpsAccuratePhase=="before" and self:L("FPS_MEASURING_BEFORE") or self.fpsAccuratePhase=="after" and self:L("FPS_MEASURING_AFTER") or self:L("FPS_MEASURING")
+  local status=self.flashMessage or (measuring and phase or self:L("READY"));local statusKind=self.flashKind or (measuring and "warning" or nil);self.flashMessage=nil;self.flashKind=nil
   self:SetPage(self:L("GRAPHICS_TITLE"),text,actions,status,{pageKey="graphics",preview=true,metricText=metricText,metricPositive=not metric or (metric.delta or 0)>=0,statusKind=statusKind})
   self:SetLiveFPSCallback(function(value)
     if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="graphics" then STBS.ui.metricValue:SetText(value and string.format(STBS:L("LIVE_FPS_FORMAT"),math.floor(value+0.5)) or STBS:L("FPS_READING")) end
@@ -146,7 +156,7 @@ end
 
 function STBS:ShowOfficialPreview()
   local mode=self:GetSelectedMode();if not mode then self:ShowGraphics();return end
-  local settings=self:FlattenProfile(self:GetOfficialGraphics(mode),{graphics=true});local plan=self:BuildDiff(settings)
+  local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,self:GetSelectedPreset()),{graphics=true});local plan=self:BuildDiff(settings)
   self:SetLiveFPSCallback(nil)
   self:SetPage(self:L("PREVIEW"),self:FormatDiff(plan),{
     {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ConfirmApplyGraphics(#plan)end,style="primary",wide=true},
@@ -160,8 +170,24 @@ function STBS:ConfirmApplyGraphics(count)
 end
 
 function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode)
-  local before=self:TakeFPSBaseline();local result
-  if settings then result=self:ApplySettings(settings,{graphics=true},trigger or "personal-graphics",{fpsBefore=before}) else result=self:ApplyOfficial("graphics",{fpsBefore=before}) end
+  local function applyNow(options)
+    if settings then return self:ApplySettings(settings,{graphics=true},trigger or "personal-graphics",options) end
+    return self:ApplyOfficial("graphics",options)
+  end
+  if self:GetBenchmarkMode()==self.BENCHMARK_ACCURATE then
+    if type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown() then
+      local queued=applyNow();if selectedMode then self:SetSelectedMode(selectedMode) end;self.flashMessage=self:L("PENDING_FPS");self.flashKind="warning";self:ShowGraphics();return queued
+    end
+    self.flashMessage=self:L("FPS_MEASURING_BEFORE");self.flashKind="warning";self:ShowGraphics()
+    local started=self:StartAccurateFPSComparison(function()return applyNow()end,function(metric,result)
+      if result and result.ok then STBS.reloadRecommended=true;if selectedMode then STBS:SetSelectedMode(selectedMode) end;STBS.flashMessage=metric and STBS:L("ACCURATE_COMPLETE") or STBS:L("SETTINGS_APPLIED_NO_MEASURE");STBS.flashKind="success"
+      else STBS.flashMessage=STBS:L("APPLY_FAILED");STBS.flashKind="error" end
+      if STBS.ui and STBS.ui:IsShown() then STBS:ShowGraphics() end
+    end)
+    if not started then self.flashMessage=self:L("FPS_UNAVAILABLE");self.flashKind="error";self:ShowGraphics() end
+    return self:Result(started,started and "measuring" or "fps-unavailable")
+  end
+  local before=self:TakeFPSBaseline();local result=applyNow({fpsBefore=before})
   if result.ok then
     self.reloadRecommended=true
     if selectedMode then self:SetSelectedMode(selectedMode) end
@@ -253,6 +279,31 @@ function STBS:ShowProfiles()
   for i,backup in ipairs(backups) do if self:BackupHasModule(backup,"graphics") then local index=i;table.insert(actions,{label=self:L("BACKUP_LABEL").." #"..index.." · "..date("%m-%d %H:%M",backup.timestamp),fn=function()STBS.selectedItemType="backup";STBS.selectedBackupIndex=index;STBS.flashMessage=string.format(STBS:L("ITEM_SELECTED"),STBS:L("BACKUP_LABEL").." #"..index);STBS.flashKind="success";STBS:ShowProfiles()end}) end end
   local status=self.flashMessage or self:L("SELECT_ITEM");local statusKind=self.flashKind;self.flashMessage=nil;self.flashKind=nil
   self:SetPage(self:L("BACKUPS_AND_PROFILES"),table.concat(lines,"\n"),actions,status,{pageKey="profiles",statusKind=statusKind})
+end
+
+function STBS:GetPresetLabel(preset)
+  if preset==self.GRAPHICS_PRESET_PRO then return self:L("PRESET_PRO") end
+  if preset==self.GRAPHICS_PRESET_QUALITY then return self:L("PRESET_QUALITY") end
+  return self:L("PRESET_OPTIMIZED")
+end
+
+function STBS:ShowZoneGraphics()
+  self:SetLiveFPSCallback(nil);self:StopFPSBaselineSampling()
+  local config=self:GetZoneGraphicsConfig();local category=self:GetZoneCategory()
+  local categoryKeys={world="ZONE_WORLD",party="ZONE_PARTY",raid="ZONE_RAID",pvp="ZONE_PVP",scenario="ZONE_SCENARIO"}
+  local text="|cffffd36b"..self:L("ZONE_CURRENT").."|r\n"..self:L(categoryKeys[category]).." · "..self:GetPresetLabel(config.assignments[category]).."\n\n"..self:L("ZONE_GRAPHICS_HELP").."\n\n|cff9aa7b8"..self:L("ZONE_SAFE_NOTE").."|r"
+  local actions={{label=config.enabled and self:L("ZONE_DISABLE") or self:L("ZONE_ENABLE"),style="primary",wide=true,fn=function()local enabled=not STBS:GetZoneGraphicsConfig().enabled;STBS:SetZoneGraphicsEnabled(enabled);if enabled then STBS:ApplyZoneGraphics("zone-enabled")else STBS.zoneStatus={ok=true,code="disabled"}end;STBS:ShowZoneGraphics()end}}
+  for _,key in ipairs({"world","party","raid","pvp","scenario"}) do local item=key;table.insert(actions,{label=self:L(categoryKeys[item])..": "..self:GetPresetLabel(config.assignments[item]),active=item==category,fn=function()STBS:CycleZonePreset(item);STBS.zoneStatus={ok=true,code="mapping",category=item,preset=STBS:GetZoneGraphicsConfig().assignments[item]};STBS:ShowZoneGraphics()end}) end
+  table.insert(actions,{label=self:L("ZONE_APPLY_NOW"),style="primary",wide=true,disabled=not config.enabled,fn=function()STBS:ApplyZoneGraphics("zone-manual");STBS:ShowZoneGraphics()end})
+  local zoneStatus=self.zoneStatus;local status=config.enabled and self:L("ZONE_ENABLED") or self:L("ZONE_DISABLED");local kind=config.enabled and "success" or nil
+  if zoneStatus then
+    if zoneStatus.code=="unchanged" then status=self:L("ZONE_ALREADY_ACTIVE");kind="success"
+    elseif zoneStatus.code=="applied" then status=string.format(self:L("ZONE_APPLIED"),zoneStatus.changed or 0);kind="success"
+    elseif zoneStatus.code=="queued" then status=self:L("ZONE_QUEUED");kind="warning"
+    elseif zoneStatus.code=="mapping" then status=self:L("ZONE_MAPPING_SAVED");kind="success"
+    elseif zoneStatus.ok==false then status=self:L("APPLY_FAILED");kind="error" end
+  end
+  self:SetPage(self:L("ZONE_GRAPHICS_TITLE"),text,actions,status,{pageKey="zone",statusKind=kind})
 end
 
 function STBS:ShowAbout()

@@ -4,17 +4,20 @@ Baseline reviewed 2026-07-16 against Blizzard UI source `live` (12.0.7 build 684
 
 ## What “best” means
 
-There is no hardware-independent setting set that can guarantee the maximum FPS with zero visual difference. A CPU-limited raid, a GPU-limited 4K scene and an integrated-GPU laptop have different bottlenecks. The official profile is therefore a conservative, evidence-traceable baseline: reduce expensive effects with limited gameplay value, retain combat information and high texture clarity, and preserve every hardware-, display- or preference-dependent control. The in-addon FPS comparison measures the actual local result instead of presenting a promised percentage.
+There is no hardware-independent setting set that can guarantee the maximum FPS with zero visual difference. A CPU-limited raid, a GPU-limited 4K scene and an integrated-GPU laptop have different bottlenecks. The three official profiles are therefore evidence-traceable baselines: PRO reduces expensive effects most aggressively, Optimized is the default quality/performance balance, and Quality raises useful image detail without blindly selecting every maximum. All three retain combat information and high texture clarity while preserving every hardware-, display- or preference-dependent control. The in-addon FPS comparison measures the actual local result instead of presenting a promised percentage.
 
 The Blizzard source proves which controls exist, their CVar names, ranges, support gates and interaction rules. It does not prove a universal FPS gain. Controlled hardware benchmarks are the only valid way to quantify that claim; the required method is documented in [OPTIMAL_PROFILE_BENCHMARK.md](OPTIMAL_PROFILE_BENCHMARK.md).
 
-| CVar group | UI label | selected | impact / confidence |
+| CVar group | UI label | PRO / Optimized / Quality | impact / confidence |
 |---|---|---:|---|
-| `graphics*ShadowQuality`, `raidGraphics*ShadowQuality` | Shadow Quality | 2 / 0 | visual and GPU load; verified identifier/value range in UI |
-| `*LiquidDetail`, `*ParticleDensity`, `*SSAO`, `*DepthEffects`, `*ComputeEffects` | Advanced Graphics | documented profile values | visual/GPU load; client validation still applied |
-| `*OutlineMode`, `*ProjectedTextures` | Outline Mode / Projected Textures | 2 / 1 | combat visibility; enforced safety rule |
-| `*SpellDensity` | Spell Density | 2 / 1 | combat visibility; only when feature API says supported |
-| `*ViewDistance`, `*EnvironmentDetail`, `*GroundClutter` | sliders | 6/4/3 and 4/3/2 | visual/CPU-GPU; slider labels may differ from stored values |
+| `graphics*ShadowQuality` | Shadow Quality | 1 / 2 / 3 | visual and GPU load; verified identifier/value range in UI |
+| `*LiquidDetail` | Liquid Detail | 1 / 2 / 3 | visible GPU effect scaled across presets |
+| `*ParticleDensity` | Particle Density | 3 / 4 / 5 | never disabled; preserves readable combat effects |
+| `*SSAO`, `*DepthEffects`, `*ComputeEffects` | Advanced Graphics | 0 / 1 / 2 | costly effects scaled together; client validation still applied |
+| `*OutlineMode`, `*ProjectedTextures` | Outline Mode / Projected Textures | 2 / 1 in every preset | combat visibility; enforced safety rule |
+| `*SpellDensity` | Spell Density | 1 / 2 / 2 | combat visibility; only when feature API says supported |
+| `*ViewDistance` | View Distance | 4 / 6 / 8 | CPU/GPU and world readability balance |
+| `*EnvironmentDetail`, `*GroundClutter` | detail sliders | 3/2, 4/3, 7/6 | visual/CPU-GPU; slider labels may differ from stored values |
 | `ffxAntiAliasingMode`, `MSAAQuality`, `msaaAlphaTest` | Antialiasing | best supported CMAA, MSAA off, alpha-test off | capability-gated image AA; avoids MSAA cost and disables its dependent option |
 | `cameraSmoothStyle` | Camera Follow Style | 0 | reversibly disables automatic camera adjustment |
 
@@ -43,6 +46,8 @@ The Blizzard source proves which controls exist, their CVar names, ranges, suppo
 | Advanced | Graphics API, Physics Interaction, Graphics Card | preserve | hardware/driver choice; API/card changes can require restart; physics is visible content |
 | Advanced | Foreground, Background and Target FPS controls | preserve | user caps are part of power, temperature and pacing policy, not raw quality |
 | Advanced | Contrast, Brightness and Gamma | preserve | calibration/accessibility controls |
+
+Each preset also contains a separate lower-cost raid/battleground set when split mode is selected. Zone Graphics reuses these exact reviewed presets; it never constructs hidden values. It is opt-in, detects Delves with the current `C_PartyInfo.IsDelveInProgress()` API, maps the documented `IsInInstance()` content types (`party`, `raid`, `pvp`, `arena`, `scenario`) and applies only when a real CVar diff exists. Unknown types fail back to the world mapping.
 
 The audit covers every control registered in Retail `Graphics.lua`. Resolution is a Blizzard proxy backed by `C_VideoOptions`, not a normal CVar, so the addon deliberately does not pretend that it can safely port or restore it through the CVar registry.
 

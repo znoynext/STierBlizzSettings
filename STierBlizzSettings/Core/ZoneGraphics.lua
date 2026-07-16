@@ -1,0 +1,56 @@
+local _, STBS = ...
+
+local categories={"world","party","raid","pvp","scenario"}
+
+function STBS:GetZoneGraphicsConfig()
+  return self:InitializeDatabase().preferences.zoneGraphics
+end
+
+function STBS:GetZoneCategory()
+  if type(_G.C_PartyInfo)=="table" and type(_G.C_PartyInfo.IsDelveInProgress)=="function" then
+    local ok,isDelve=pcall(_G.C_PartyInfo.IsDelveInProgress);if ok and isDelve then return "scenario" end
+  end
+  if type(_G.IsInInstance)~="function" then return "world" end
+  local ok,inInstance,instanceType=pcall(_G.IsInInstance)
+  if not ok or not inInstance then return "world" end
+  if instanceType=="party" or instanceType=="raid" or instanceType=="scenario" then return instanceType end
+  if instanceType=="pvp" or instanceType=="arena" then return "pvp" end
+  return "world"
+end
+
+function STBS:SetZoneGraphicsEnabled(enabled)
+  self:GetZoneGraphicsConfig().enabled=enabled==true
+  return true
+end
+
+function STBS:CycleZonePreset(category)
+  local known=false;for _,value in ipairs(categories) do if value==category then known=true break end end
+  if not known then return false end
+  local config=self:GetZoneGraphicsConfig();local current=config.assignments[category]
+  if current==self.GRAPHICS_PRESET_PRO then current=self.GRAPHICS_PRESET_OPTIMIZED
+  elseif current==self.GRAPHICS_PRESET_OPTIMIZED then current=self.GRAPHICS_PRESET_QUALITY
+  else current=self.GRAPHICS_PRESET_PRO end
+  config.assignments[category]=current;return current
+end
+
+function STBS:ApplyZoneGraphics(trigger)
+  local config=self:GetZoneGraphicsConfig();if not config.enabled then return self:Result(false,"disabled") end
+  local category=self:GetZoneCategory();local preset=config.assignments[category]
+  if not self:IsGraphicsPreset(preset) then return self:Result(false,"preset") end
+  local mode=self:GetSelectedMode() or self.GRAPHICS_MODE_SPLIT
+  local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,preset),{graphics=true})
+  local valid,why=self:ValidateSettings(settings,true);if not valid then return self:Result(false,why) end
+  local plan=self:BuildDiff(settings);local changed=0
+  for _,entry in ipairs(plan) do if entry.status=="changed" then changed=changed+1 end end
+  self.activeZoneCategory=category;self.activeZonePreset=preset
+  if changed==0 then
+    self.zoneStatus={ok=true,code="unchanged",category=category,preset=preset,changed=0}
+    if self.ui and self.ui:IsShown() and self.ui.currentPageKey=="zone" then self:ShowZoneGraphics() end
+    return self:Result(true,"unchanged",self.zoneStatus)
+  end
+  local result=self:ApplySettings(settings,{graphics=true},trigger or "zone-graphics")
+  self.zoneStatus={ok=result.ok,code=result.code,category=category,preset=preset,changed=changed}
+  if result.ok then self:SetSelectedPreset(preset);self.reloadRecommended=true end
+  if self.ui and self.ui:IsShown() and self.ui.currentPageKey=="zone" then self:ShowZoneGraphics() end
+  return result
+end
