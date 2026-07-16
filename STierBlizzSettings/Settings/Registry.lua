@@ -10,6 +10,7 @@ local entries = {
   c("shadowrt","graphics","graphics",range(0,3),{officialProfileAllowed=true,graphicsValidation="cvar",blizzardLabel="RT_SHADOW_QUALITY"}),
   c("ffxAntiAliasingMode","graphics","graphics",range(0,4),{officialProfileAllowed=true,capability="aa",blizzardLabel="FXAA_CMAA_LABEL"}),
   c("MSAAQuality","graphics","graphics",{["0"]=true},{officialProfileAllowed=true,capability="aa",blizzardLabel="MSAA_LABEL"}),
+  c("msaaAlphaTest","graphics","graphics",{["0"]=true,["1"]=true},{valueType="booleanString",officialProfileAllowed=true,graphicsValidation="cvar",blizzardLabel="MULTISAMPLE_ALPHA_TEST"}),
   c("cameraSmoothStyle", "interfaceGameplay", "camera", { ["0"]=true,["1"]=true,["2"]=true,["4"]=true }, { officialProfileAllowed=true, blizzardLabel="CAMERA_FOLLOWING_STYLE" }),
   c("countdownForCooldowns", "interfaceGameplay", "interface", { ["0"]=true,["1"]=true }, { valueType="booleanString", officialProfileAllowed=true, blizzardLabel="COUNTDOWN_FOR_COOLDOWNS_TEXT" }),
   c("showTargetOfTarget", "interfaceGameplay", "combat", { ["0"]=true,["1"]=true }, { valueType="booleanString", officialProfileAllowed=true, blizzardLabel="SHOW_TARGET_OF_TARGET_TEXT" }),

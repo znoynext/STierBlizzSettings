@@ -7,6 +7,7 @@ frame:SetScript("OnEvent",function(_,event,arg)
     SlashCmdList.STIERBLIZZSETTINGS=function(msg)
       msg=(msg or ""):lower()
       if msg=="profiles" or msg=="backup" or msg=="restore" or msg=="save" or msg=="export" or msg=="import" then STBS:ShowProfiles()
+      elseif msg=="about" then STBS:ShowAbout()
       elseif msg=="debug" then STBS:ShowDiagnostics()
       else STBS:ShowGraphics() end
     end
@@ -15,6 +16,7 @@ frame:SetScript("OnEvent",function(_,event,arg)
     local pending=STBS.pending;STBS.pending=nil
     local result=STBS:ApplySettings(pending.settings,pending.modules,pending.trigger,pending.options)
     if result.ok and pending.options and pending.options.fpsBefore then
+      STBS.reloadRecommended=true;STBS.flashMessage=STBS:L("SETTINGS_APPLIED");STBS.flashKind="success"
       STBS:StartFPSPostMeasurement(pending.options.fpsBefore,function()if STBS.ui and STBS.ui:IsShown() then STBS:ShowGraphics() end end)
     end
   end

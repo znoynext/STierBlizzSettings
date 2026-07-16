@@ -56,6 +56,15 @@ function STBS:GetLastFPSMetric()
   return db and type(db.lastFPSMetric) == "table" and db.lastFPSMetric or nil
 end
 
+function STBS:SetLiveFPSCallback(callback)
+  self.liveFPSCallback = type(callback) == "function" and callback or nil
+  if self.liveFPSCallback then self.liveFPSCallback(self:ReadFramerate()) end
+end
+
+function STBS:NotifyLiveFPS(value)
+  if self.liveFPSCallback then self.liveFPSCallback(value) end
+end
+
 function STBS:StopFPSBaselineSampling()
   if self.fpsBaselineTicker and self.fpsBaselineTicker.Cancel then self.fpsBaselineTicker:Cancel() end
   self.fpsBaselineTicker = nil
@@ -66,6 +75,7 @@ function STBS:StartFPSBaselineSampling()
   self.fpsBaselineSamples = {}
   local function sample()
     local value = self:ReadFramerate()
+    self:NotifyLiveFPS(value)
     if value then table.insert(self.fpsBaselineSamples, value);while #self.fpsBaselineSamples > BASELINE_SAMPLES do table.remove(self.fpsBaselineSamples,1) end end
   end
   sample()
@@ -103,6 +113,7 @@ function STBS:StartFPSPostMeasurement(beforeSamples, callback)
   end
   local function sample(ticker)
     local value = self:ReadFramerate()
+    self:NotifyLiveFPS(value)
     if value then table.insert(afterSamples, value) end
     count = count + 1
     if count >= AFTER_SAMPLES then

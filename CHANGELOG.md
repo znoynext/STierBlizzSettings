@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.1-alpha
+
+- Replaced the illustrative preview with a real in-game screenshot and redesigned the gold `S` emblem from the supplied visual reference.
+- Added a live current-FPS display, retained the local before/after estimate, and removed the unsupported arrow glyph from FPS text.
+- Added a concise first-use guide, larger WoW-native typography, a non-technical apply summary, and a documented About page.
+- Added consistent success/warning/error feedback for apply, selection, save, rename, backup, restore, delete, export, import, and undo actions.
+- Fixed Save Graphics, Rename and Import on current Retail by using the modern StaticPopup edit-box API; whitespace-only profile names are rejected.
+- Added a post-apply Reload UI action that unlocks after FPS measurement, with confirmation.
+- Audited every Graphics, Graphics Quality and Advanced control in Retail 12.0.7; added Multisample Alpha-Test handling and documented optimized versus deliberately preserved controls.
+- Expanded regression tests for live FPS callbacks, safe FPS formatting, profile naming and About navigation.
+
 ## 0.3.0-alpha
 
 - Rebuilt the dashboard around two focused tabs: Graphics and Profiles.

@@ -24,8 +24,12 @@ function STBS:PlanImport(payload, modules, graphicsMode)
 end
 function STBS:SaveCurrent(name, modules)
   local validModules = self:ValidateModules(modules); if not validModules then return nil,"modules" end
-  if modules.graphics and not self:GetSelectedMode() then return nil,"mode" end
+  if modules.graphics and not self:GetSelectedMode() then
+    local currentRaid=self:ReadSetting(self.RegistryByKey.RAIDsettingsEnabled)
+    self:SetSelectedMode(currentRaid=="1" and self.GRAPHICS_MODE_SPLIT or self.GRAPHICS_MODE_UNIFIED)
+  end
   name = name or (self:L("PERSONAL").." "..date("%Y-%m-%d %H:%M"))
+  if type(name) == "string" then name = name:match("^%s*(.-)%s*$") end
   if type(name) ~= "string" or name == "" or #name > self.MAX_PROFILE_NAME_BYTES or name:find("[%c]") then return nil,"name" end
   local db=self:InitializeDatabase();db.profileSequence=db.profileSequence+1
   local p=self:NewProfile("personal_"..tostring(time()).."_"..tostring(db.profileSequence),"personal",name)
@@ -39,6 +43,7 @@ function STBS:ListPersonalProfiles()
   table.sort(profiles, function(a,b) return (tonumber(a.updatedAt) or 0) > (tonumber(b.updatedAt) or 0) end); return profiles
 end
 function STBS:RenameProfile(id, name)
+  if type(name) == "string" then name = name:match("^%s*(.-)%s*$") end
   if type(name) ~= "string" or name == "" or #name > self.MAX_PROFILE_NAME_BYTES or name:find("[%c]") then return self:Result(false,"name") end
   local profile = self:InitializeDatabase().profiles[id]; if type(profile)~="table" then return self:Result(false,"missing") end
   profile.displayName=name; profile.updatedAt=time(); return self:Result(true,"renamed",profile)

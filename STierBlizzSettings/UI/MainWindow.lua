@@ -4,6 +4,17 @@ local ASSET = "Interface\\AddOns\\STierBlizzSettings\\Assets\\"
 local categoryNames={graphics="BASE_GRAPHICS",raidGraphics="RAID_GRAPHICS"}
 local categoryOrder={"graphics","raidGraphics"}
 
+local function popupEditBox(dialog)
+  if dialog and type(dialog.GetEditBox)=="function" then return dialog:GetEditBox() end
+  return dialog and (dialog.editBox or dialog.EditBox)
+end
+
+local function popupAcceptOnEnter(editBox)
+  local dialog=editBox and editBox:GetParent()
+  local accept=dialog and type(dialog.GetButton1)=="function" and dialog:GetButton1()
+  if accept then accept:Click() end
+end
+
 local function button(parent,text,x,y,width,callback,style)
   local b=CreateFrame("Button",nil,parent,"UIPanelButtonTemplate")
   b:SetSize(width or 200,34);b:SetPoint("TOPLEFT",x,y)
@@ -41,7 +52,7 @@ function STBS:CreateUI()
   f:SetBackdrop({bgFile="Interface\\FrameGeneral\\UI-Background-Rock",edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border",tile=true,tileSize=256,edgeSize=32,insets={left=11,right=12,top=12,bottom=11}});f:SetBackdropColor(0.42,0.42,0.42,1);f:SetBackdropBorderColor(1,1,1,1)
   local fade=f:CreateAnimationGroup();fade:SetToFinalAlpha(true);local alpha=fade:CreateAnimation("Alpha");alpha:SetFromAlpha(0);alpha:SetToAlpha(1);alpha:SetDuration(0.18);alpha:SetSmoothing("OUT");f.fade=fade
   f:SetScript("OnShow",function(self)self:SetAlpha(1);self.fade:Stop();self.fade:Play()end)
-  f:SetScript("OnHide",function()STBS:StopFPSBaselineSampling()end)
+  f:SetScript("OnHide",function()STBS:SetLiveFPSCallback(nil);STBS:StopFPSBaselineSampling()end)
 
   local top=CreateFrame("Frame",nil,f,"BackdropTemplate");top:SetPoint("TOPLEFT",18,-18);top:SetSize(924,62);top:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=12,insets={left=3,right=3,top=3,bottom=3}});top:SetBackdropColor(0.05,0.04,0.025,0.98);top:SetBackdropBorderColor(0.72,0.52,0.2,1)
   f.logo=top:CreateTexture(nil,"ARTWORK");f.logo:SetTexture(ASSET.."STierIcon");f.logo:SetSize(48,48);f.logo:SetPoint("LEFT",12,0)
@@ -53,17 +64,18 @@ function STBS:CreateUI()
   local panel=CreateFrame("Frame",nil,f,"BackdropTemplate");panel:SetPoint("TOPLEFT",222,-92);panel:SetSize(720,538);panel:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=12,insets={left=3,right=3,top=3,bottom=3}});panel:SetBackdropColor(0.035,0.028,0.018,0.98);panel:SetBackdropBorderColor(0.52,0.4,0.2,0.95)
 
   f.header=panel:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.header:SetPoint("TOPLEFT",22,-20);f.header:SetTextColor(1,0.82,0)
-  f.status=panel:CreateFontString(nil,"OVERLAY","GameFontNormalSmall");f.status:SetPoint("TOPLEFT",24,-50);f.status:SetTextColor(0.78,0.72,0.58)
+  f.status=panel:CreateFontString(nil,"OVERLAY","GameFontHighlight");f.status:SetPoint("TOPLEFT",24,-50);f.status:SetWidth(660);f.status:SetJustifyH("LEFT");f.status:SetTextColor(0.78,0.72,0.58)
   local scroll=CreateFrame("ScrollFrame",nil,panel,"UIPanelScrollFrameTemplate");scroll:SetPoint("TOPLEFT",18,-76);scroll:SetSize(675,350)
   local content=CreateFrame("Frame",nil,scroll);content:SetWidth(644);content:SetHeight(350);scroll:SetScrollChild(content);f.scroll,f.content=scroll,content
-  f.previewBorder=CreateFrame("Frame",nil,content,"BackdropTemplate");f.previewBorder:SetPoint("TOPLEFT",61,-2);f.previewBorder:SetSize(512,262);f.previewBorder:SetBackdrop({edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=14,insets={left=3,right=3,top=3,bottom=3}});f.previewBorder:SetBackdropBorderColor(0.72,0.52,0.2,1);f.previewBorder:Hide()
-  f.preview=f.previewBorder:CreateTexture(nil,"ARTWORK");f.preview:SetTexture(ASSET.."GraphicsPreview");f.preview:SetPoint("TOPLEFT",6,-6);f.preview:SetSize(500,250)
+  f.previewBorder=CreateFrame("Frame",nil,content,"BackdropTemplate");f.previewBorder:SetPoint("TOPLEFT",61,-2);f.previewBorder:SetSize(512,293);f.previewBorder:SetBackdrop({edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=14,insets={left=3,right=3,top=3,bottom=3}});f.previewBorder:SetBackdropBorderColor(0.72,0.52,0.2,1);f.previewBorder:Hide()
+  f.preview=f.previewBorder:CreateTexture(nil,"ARTWORK");f.preview:SetTexture(ASSET.."GraphicsPreview");f.preview:SetPoint("TOPLEFT",6,-6);f.preview:SetSize(500,281)
   f.previewShade=content:CreateTexture(nil,"OVERLAY");f.previewShade:SetPoint("BOTTOMLEFT",f.preview,"BOTTOMLEFT");f.previewShade:SetPoint("BOTTOMRIGHT",f.preview,"BOTTOMRIGHT");f.previewShade:SetHeight(54);f.previewShade:SetColorTexture(0.004,0.015,0.028,0.72);f.previewShade:Hide()
   f.previewTitle=content:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.previewTitle:SetPoint("BOTTOMLEFT",f.preview,"BOTTOMLEFT",16,18);f.previewTitle:SetText(self:L("VISUAL_PREVIEW"));f.previewTitle:SetTextColor(1,0.82,0);f.previewTitle:Hide()
-  f.metricCard=CreateFrame("Frame",nil,content,"BackdropTemplate");f.metricCard:SetSize(625,66);f.metricCard:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=12,insets={left=3,right=3,top=3,bottom=3}});f.metricCard:SetBackdropColor(0.045,0.038,0.022,0.98);f.metricCard:SetBackdropBorderColor(0.72,0.52,0.2,1);f.metricCard:Hide()
-  f.metricTitle=f.metricCard:CreateFontString(nil,"OVERLAY","GameFontNormalSmall");f.metricTitle:SetPoint("TOPLEFT",14,-10);f.metricTitle:SetText(self:L("FPS_ESTIMATE"));f.metricTitle:SetTextColor(0.78,0.72,0.58)
-  f.metricValue=f.metricCard:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.metricValue:SetPoint("BOTTOMLEFT",14,12);f.metricValue:SetTextColor(0.45,1,0.72)
-  f.body=content:CreateFontString(nil,"OVERLAY","GameFontHighlightSmall");f.body:SetWidth(625);f.body:SetJustifyH("LEFT");f.body:SetJustifyV("TOP")
+  f.metricCard=CreateFrame("Frame",nil,content,"BackdropTemplate");f.metricCard:SetSize(625,94);f.metricCard:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=12,insets={left=3,right=3,top=3,bottom=3}});f.metricCard:SetBackdropColor(0.045,0.038,0.022,0.98);f.metricCard:SetBackdropBorderColor(0.72,0.52,0.2,1);f.metricCard:Hide()
+  f.metricTitle=f.metricCard:CreateFontString(nil,"OVERLAY","GameFontNormal");f.metricTitle:SetPoint("TOPLEFT",14,-12);f.metricTitle:SetText(self:L("LIVE_FPS"));f.metricTitle:SetTextColor(1,0.82,0)
+  f.metricValue=f.metricCard:CreateFontString(nil,"OVERLAY","GameFontNormalHuge2");f.metricValue:SetPoint("TOPRIGHT",-16,-14);f.metricValue:SetTextColor(0.45,1,0.72)
+  f.metricSub=f.metricCard:CreateFontString(nil,"OVERLAY","GameFontHighlight");f.metricSub:SetPoint("BOTTOMLEFT",14,14);f.metricSub:SetWidth(590);f.metricSub:SetJustifyH("LEFT");f.metricSub:SetTextColor(0.82,0.82,0.75)
+  f.body=content:CreateFontString(nil,"OVERLAY","GameFontHighlight");f.body:SetWidth(625);f.body:SetJustifyH("LEFT");f.body:SetJustifyV("TOP");f.body:SetSpacing(5)
 
   local rule=panel:CreateTexture(nil,"ARTWORK");rule:SetColorTexture(0.55,0.4,0.18,0.75);rule:SetPoint("TOPLEFT",22,-436);rule:SetSize(672,1)
   local actionScroll=CreateFrame("ScrollFrame",nil,panel,"UIPanelScrollFrameTemplate");actionScroll:SetPoint("TOPLEFT",18,-446);actionScroll:SetSize(675,82)
@@ -71,16 +83,18 @@ function STBS:CreateUI()
   f.pageButtons={};f.navButtons={};self.ui=f
   table.insert(f.navButtons,navButton(side,self:L("GRAPHICS"),"Interface\\Icons\\INV_Misc_EngGizmos_30",-16,"graphics",function()STBS:ShowGraphics()end))
   table.insert(f.navButtons,navButton(side,self:L("PROFILES"),"Interface\\Icons\\INV_Misc_Book_09",-68,"profiles",function()STBS:ShowProfiles()end))
+  table.insert(f.navButtons,navButton(side,self:L("ABOUT"),"Interface\\Icons\\INV_Misc_Note_05",-120,"about",function()STBS:ShowAbout()end))
 end
 
 function STBS:SetPage(title,text,actions,status,options)
   self:CreateUI();local f=self.ui;options=options or {};f.currentPageKey=options.pageKey
   f.header:SetText(title);f.status:SetText(status or "")
+  if options.statusKind=="success" then f.status:SetTextColor(0.35,1,0.62) elseif options.statusKind=="error" then f.status:SetTextColor(1,0.35,0.3) elseif options.statusKind=="warning" then f.status:SetTextColor(1,0.78,0.24) else f.status:SetTextColor(0.78,0.72,0.58) end
   if f.copyBox then f.copyBox:Hide() end;f.scroll:Show();f.previewBorder:Hide();f.previewShade:Hide();f.previewTitle:Hide();f.metricCard:Hide()
   local bodyY=-6
   if options.preview then
-    f.previewBorder:Show();f.previewShade:Show();f.previewTitle:Show();f.metricCard:ClearAllPoints();f.metricCard:SetPoint("TOPLEFT",5,-272);f.metricCard:Show();bodyY=-352
-    f.metricValue:SetText(options.metricText or self:L("FPS_UNAVAILABLE"));f.metricValue:SetTextColor(options.metricPositive==false and 1 or 0.45,options.metricPositive==false and 0.42 or 1,options.metricPositive==false and 0.4 or 0.72)
+    f.previewBorder:Show();f.previewShade:Show();f.previewTitle:Show();f.metricCard:ClearAllPoints();f.metricCard:SetPoint("TOPLEFT",5,-304);f.metricCard:Show();bodyY=-410
+    f.metricValue:SetText(self:L("FPS_READING"));f.metricSub:SetText(options.metricText or self:L("FPS_UNAVAILABLE"));f.metricSub:SetTextColor(options.metricPositive==false and 1 or 0.82,options.metricPositive==false and 0.42 or 0.82,options.metricPositive==false and 0.4 or 0.75)
   end
   f.body:ClearAllPoints();f.body:SetPoint("TOPLEFT",7,bodyY);f.body:SetText(text or "")
   f.content:SetHeight(math.max(350,-bodyY+f.body:GetStringHeight()+20));f.scroll:SetVerticalScroll(0);f.actionScroll:SetVerticalScroll(0);f:Show()
@@ -97,14 +111,11 @@ function STBS:SetPage(title,text,actions,status,options)
 end
 
 function STBS:FormatDiff(plan)
-  local lines={"|cff65cfff"..self:L("DIFF_HEADER").."|r"};local lastCategory
+  local changed,unchanged,unavailable=0,0,0
   for _,entry in ipairs(plan or {}) do
-    local category=entry.setting.category
-    if category~=lastCategory then table.insert(lines,"\n|cffffd36b"..self:L(categoryNames[category] or "BASE_GRAPHICS").."|r");lastCategory=category end
-    local color=entry.status=="changed" and "|cff35e6ad" or entry.status=="failed" and "|cffff6666" or "|cff9aa7b8"
-    table.insert(lines,color..self:GetSettingLabel(entry.setting)..":|r "..tostring(entry.current or self:L("UNAVAILABLE")).." → "..entry.value.."  |cff718096("..self:L(string.upper(entry.status))..")|r")
+    if entry.status=="changed" then changed=changed+1 elseif entry.status=="identical" then unchanged=unchanged+1 else unavailable=unavailable+1 end
   end
-  return table.concat(lines,"\n")
+  return string.format(self:L("PLAN_SUMMARY"),changed,unchanged,unavailable).."\n\n|cff35e6ad- |r"..self:L("PERFORMANCE_TUNED").."\n|cff35e6ad- |r"..self:L("QUALITY_PRESERVED").."\n|cff35e6ad- |r"..self:L("HARDWARE_UNCHANGED")
 end
 
 function STBS:ShowHome() return self:ShowGraphics() end
@@ -115,27 +126,32 @@ function STBS:ShowGraphics()
   local mode=self:GetSelectedMode();local modeName=mode==self.GRAPHICS_MODE_UNIFIED and self:L("UNIFIED") or mode==self.GRAPHICS_MODE_SPLIT and self:L("SPLIT") or self:L("MODE_UNSET")
   local modeHelp=mode==self.GRAPHICS_MODE_UNIFIED and self:L("MODE_UNIFIED_HELP") or mode==self.GRAPHICS_MODE_SPLIT and self:L("MODE_SPLIT_HELP") or self:L("GRAPHICS_TEXT")
   local metric=self:GetLastFPSMetric();local metricText=self.fpsAfterMeasurement and self:L("FPS_MEASURING") or self:FormatFPSMetric(metric)
-  local text="|cffffd36b"..self:L("MODE")..":|r "..modeName.."\n"..modeHelp.."\n\n"..self:L("VISUAL_PREVIEW_NOTE").."\n\n|cff8295a8"..self:L("FPS_MEASURE_HELP").."|r\n\n"..self:L("HARDWARE_PRESERVED").."\n"..self:L("GRAPHICS_ONLY_NOTICE")
+  local text="|cffffd36b"..self:L("QUICK_START").."|r\n"..self:L("QUICK_START_TEXT").."\n\n|cffffd36b"..self:L("SAVE_OWN_TITLE").."|r\n"..self:L("SAVE_OWN_TEXT").."\n\n|cff9aa7b8"..modeName.." — "..modeHelp.."|r"
   local latest=self:GetLatestBackupIndex("graphics")
   local actions={
-    {label=self:L("UNIFIED"),fn=function()STBS:SetSelectedMode(STBS.GRAPHICS_MODE_UNIFIED);STBS:ShowGraphics()end,active=mode==self.GRAPHICS_MODE_UNIFIED},
-    {label=self:L("SPLIT"),fn=function()STBS:SetSelectedMode(STBS.GRAPHICS_MODE_SPLIT);STBS:ShowGraphics()end,active=mode==self.GRAPHICS_MODE_SPLIT},
+    {label=self:L("UNIFIED"),fn=function()STBS:SetSelectedMode(STBS.GRAPHICS_MODE_UNIFIED);STBS.flashMessage=STBS:L("MODE_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=mode==self.GRAPHICS_MODE_UNIFIED},
+    {label=self:L("SPLIT"),fn=function()STBS:SetSelectedMode(STBS.GRAPHICS_MODE_SPLIT);STBS.flashMessage=STBS:L("MODE_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=mode==self.GRAPHICS_MODE_SPLIT},
     {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ShowOfficialPreview("graphics")end,style="primary",wide=true,disabled=not mode},
-    {label=self:L("UNDO"),fn=function()STBS:ConfirmUndoGraphics()end,disabled=not latest},
-    {label=self:L("PROFILES"),fn=function()STBS:ShowProfiles()end},
   }
-  local status=self.flashMessage or (self.fpsAfterMeasurement and self:L("FPS_MEASURING") or metric and self:L("MEASURED_LOCALLY") or "");self.flashMessage=nil
-  self:SetPage(self:L("GRAPHICS"),text,actions,status,{pageKey="graphics",preview=true,metricText=metricText,metricPositive=not metric or (metric.delta or 0)>=0})
+  if self.reloadRecommended then table.insert(actions,{label=self:L("RELOAD_UI"),fn=function()STBS:ConfirmReloadUI()end,style="primary",wide=true,disabled=self.fpsAfterMeasurement and true or false}) end
+  table.insert(actions,{label=self:L("UNDO"),fn=function()STBS:ConfirmUndoGraphics()end,disabled=not latest})
+  table.insert(actions,{label=self:L("PROFILES"),fn=function()STBS:ShowProfiles()end})
+  local status=self.flashMessage or (self.fpsAfterMeasurement and self:L("FPS_MEASURING") or self:L("READY"));local statusKind=self.flashKind;self.flashMessage=nil;self.flashKind=nil
+  self:SetPage(self:L("GRAPHICS_TITLE"),text,actions,status,{pageKey="graphics",preview=true,metricText=metricText,metricPositive=not metric or (metric.delta or 0)>=0,statusKind=statusKind})
+  self:SetLiveFPSCallback(function(value)
+    if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="graphics" then STBS.ui.metricValue:SetText(value and string.format(STBS:L("LIVE_FPS_FORMAT"),math.floor(value+0.5)) or STBS:L("FPS_READING")) end
+  end)
   if not self.settingsRegistered then self.settingsRegistered=self:RegisterBlizzardSettings() end
 end
 
 function STBS:ShowOfficialPreview()
   local mode=self:GetSelectedMode();if not mode then self:ShowGraphics();return end
   local settings=self:FlattenProfile(self:GetOfficialGraphics(mode),{graphics=true});local plan=self:BuildDiff(settings)
+  self:SetLiveFPSCallback(nil)
   self:SetPage(self:L("PREVIEW"),self:FormatDiff(plan),{
     {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ConfirmApplyGraphics(#plan)end,style="primary",wide=true},
     {label=self:L("BACK"),fn=function()STBS:ShowGraphics()end},
-  },self:L("STATUS")..": "..#plan.." "..self:L("SETTINGS_COUNT"),{pageKey="graphics"})
+  },self:L("REVIEW_READY"),{pageKey="graphics"})
 end
 
 function STBS:ConfirmApplyGraphics(count)
@@ -147,42 +163,47 @@ function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode)
   local before=self:TakeFPSBaseline();local result
   if settings then result=self:ApplySettings(settings,{graphics=true},trigger or "personal-graphics",{fpsBefore=before}) else result=self:ApplyOfficial("graphics",{fpsBefore=before}) end
   if result.ok then
+    self.reloadRecommended=true
     if selectedMode then self:SetSelectedMode(selectedMode) end
     local measuring=self:StartFPSPostMeasurement(before,function()if STBS.ui and STBS.ui:IsShown() then STBS:ShowGraphics() end end)
-    self.flashMessage=measuring and self:L("SETTINGS_APPLIED") or (self:L("REPORT_GRAPHICS").." | "..self:L("FPS_UNAVAILABLE"))
+    self.flashMessage=measuring and self:L("SETTINGS_APPLIED") or self:L("SETTINGS_APPLIED_NO_MEASURE");self.flashKind="success"
     self:ShowGraphics()
   elseif result.code=="queued" then
     if selectedMode then self:SetSelectedMode(selectedMode) end
-    self.flashMessage=self:L("PENDING_FPS");self:ShowGraphics()
+    self.flashMessage=self:L("PENDING_FPS");self.flashKind="warning";self:ShowGraphics()
   else self:ShowReport(result) end
   return result
 end
 
+function STBS:ConfirmReloadUI()
+  StaticPopupDialogs["STBS_RELOAD_UI"]={text=self:L("RELOAD_CONFIRM"),subText=self:L("RELOAD_CONFIRM_TEXT"),button1=self:L("RELOAD_UI"),button2=CANCEL,OnAccept=function()if type(_G.ReloadUI)=="function" then _G.ReloadUI() else STBS.flashMessage=STBS:L("RELOAD_FAILED");STBS.flashKind="error";STBS:ShowGraphics() end end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3}
+  StaticPopup_Show("STBS_RELOAD_UI")
+end
+
 function STBS:ConfirmUndoGraphics()
-  local index=self:GetLatestBackupIndex("graphics");if not index then self.flashMessage=self:L("UNDO_UNAVAILABLE");self:ShowGraphics();return end
-  StaticPopupDialogs["STBS_UNDO_GRAPHICS"]={text=self:L("UNDO_CONFIRM"),subText=self:L("UNDO_CONFIRM_TEXT"),button1=ACCEPT,button2=CANCEL,OnAccept=function()local result=STBS:RestoreBackup(index,{graphics=true});STBS.flashMessage=result.ok and STBS:L("RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS:ShowGraphics()end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3}
+  local index=self:GetLatestBackupIndex("graphics");if not index then self.flashMessage=self:L("UNDO_UNAVAILABLE");self.flashKind="warning";self:ShowGraphics();return end
+  StaticPopupDialogs["STBS_UNDO_GRAPHICS"]={text=self:L("UNDO_CONFIRM"),subText=self:L("UNDO_CONFIRM_TEXT"),button1=ACCEPT,button2=CANCEL,OnAccept=function()local result=STBS:RestoreBackup(index,{graphics=true});STBS.flashMessage=result.ok and STBS:L("RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3}
   StaticPopup_Show("STBS_UNDO_GRAPHICS")
 end
 
 function STBS:OpenSaveDialog()
-  if not self:GetSelectedMode() then self:ShowGraphics();return end
-  StaticPopupDialogs["STBS_SAVE"]={text=self:L("PROFILE_NAME"),button1=ACCEPT,button2=CANCEL,hasEditBox=true,maxLetters=self.MAX_PROFILE_NAME_BYTES,OnAccept=function(p)local profile=STBS:SaveCurrent(p.editBox:GetText(),{graphics=true});if profile then STBS.selectedItemType="profile";STBS.selectedProfileId=profile.id end;STBS:ShowProfiles()end,OnShow=function(p)p.editBox:SetText("");p.editBox:SetFocus()end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_SAVE")
+  StaticPopupDialogs["STBS_SAVE"]={text=self:L("PROFILE_NAME"),subText=self:L("PROFILE_SAVE_HELP"),button1=ACCEPT,button2=CANCEL,hasEditBox=true,maxLetters=self.MAX_PROFILE_NAME_BYTES,EditBoxOnEnterPressed=popupAcceptOnEnter,EditBoxOnTextChanged=StaticPopup_StandardNonEmptyTextHandler,OnAccept=function(p)local box=popupEditBox(p);local profile,why=STBS:SaveCurrent(box and box:GetText(),{graphics=true});if profile then STBS.selectedItemType="profile";STBS.selectedProfileId=profile.id;STBS.flashMessage=string.format(STBS:L("PROFILE_SAVED"),STBS:SafeText(profile.displayName));STBS.flashKind="success" else STBS.flashMessage=STBS:L("PROFILE_SAVE_FAILED").." ("..tostring(why)..")";STBS.flashKind="error" end;STBS:ShowProfiles()end,OnShow=function(p)local box=popupEditBox(p);if box then box:SetText("");box:SetFocus() end end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_SAVE")
 end
 
 function STBS:OpenRenameDialog(profile)
-  StaticPopupDialogs["STBS_RENAME"]={text=self:L("PROFILE_NAME"),button1=ACCEPT,button2=CANCEL,hasEditBox=true,maxLetters=self.MAX_PROFILE_NAME_BYTES,OnAccept=function(p)STBS:RenameProfile(profile.id,p.editBox:GetText());STBS:ShowProfiles()end,OnShow=function(p)p.editBox:SetText(profile.displayName);p.editBox:SetFocus();p.editBox:HighlightText()end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_RENAME")
+  StaticPopupDialogs["STBS_RENAME"]={text=self:L("PROFILE_NAME"),button1=ACCEPT,button2=CANCEL,hasEditBox=true,maxLetters=self.MAX_PROFILE_NAME_BYTES,EditBoxOnEnterPressed=popupAcceptOnEnter,EditBoxOnTextChanged=StaticPopup_StandardNonEmptyTextHandler,OnAccept=function(p)local box=popupEditBox(p);local result=STBS:RenameProfile(profile.id,box and box:GetText());STBS.flashMessage=result.ok and STBS:L("PROFILE_RENAMED") or STBS:L("PROFILE_RENAME_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowProfiles()end,OnShow=function(p)local box=popupEditBox(p);if box then box:SetText(profile.displayName);box:SetFocus();box:HighlightText() end end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_RENAME")
 end
 
 function STBS:ConfirmDeleteProfile(profile)
-  StaticPopupDialogs["STBS_DELETE_PROFILE"]={text=self:L("DELETE")..": "..self:SafeText(profile.displayName).."?",button1=ACCEPT,button2=CANCEL,OnAccept=function()STBS:DeleteProfile(profile.id);STBS.selectedProfileId=nil;STBS.selectedItemType=nil;STBS:ShowProfiles()end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_DELETE_PROFILE")
+  StaticPopupDialogs["STBS_DELETE_PROFILE"]={text=self:L("DELETE")..": "..self:SafeText(profile.displayName).."?",button1=ACCEPT,button2=CANCEL,OnAccept=function()local result=STBS:DeleteProfile(profile.id);STBS.selectedProfileId=nil;STBS.selectedItemType=nil;STBS.flashMessage=result.ok and STBS:L("PROFILE_DELETED") or STBS:L("ACTION_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowProfiles()end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_DELETE_PROFILE")
 end
 
 function STBS:ConfirmDeleteBackup(index)
-  StaticPopupDialogs["STBS_DELETE_BACKUP"]={text=self:L("DELETE_BACKUP"),subText=self:L("DELETE_BACKUP_CONFIRM"),button1=ACCEPT,button2=CANCEL,OnAccept=function()STBS:DeleteBackup(index);STBS.selectedBackupIndex=nil;STBS.selectedItemType=nil;STBS:ShowProfiles()end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_DELETE_BACKUP")
+  StaticPopupDialogs["STBS_DELETE_BACKUP"]={text=self:L("DELETE_BACKUP"),subText=self:L("DELETE_BACKUP_CONFIRM"),button1=ACCEPT,button2=CANCEL,OnAccept=function()local result=STBS:DeleteBackup(index);STBS.selectedBackupIndex=nil;STBS.selectedItemType=nil;STBS.flashMessage=result.ok and STBS:L("BACKUP_DELETED") or STBS:L("ACTION_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowProfiles()end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_DELETE_BACKUP")
 end
 
 function STBS:ConfirmRestoreBackup(index)
-  StaticPopupDialogs["STBS_RESTORE_BACKUP"]={text=self:L("RESTORE_SELECTED"),button1=ACCEPT,button2=CANCEL,OnAccept=function()local result=STBS:RestoreBackup(index,{graphics=true});STBS.flashMessage=result.ok and STBS:L("RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS:ShowGraphics()end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_RESTORE_BACKUP")
+  StaticPopupDialogs["STBS_RESTORE_BACKUP"]={text=self:L("RESTORE_SELECTED"),button1=ACCEPT,button2=CANCEL,OnAccept=function()local result=STBS:RestoreBackup(index,{graphics=true});STBS.flashMessage=result.ok and STBS:L("RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_RESTORE_BACKUP")
 end
 
 function STBS:GetGraphicsProfiles()
@@ -195,7 +216,7 @@ function STBS:GetGraphicsProfiles()
 end
 
 function STBS:ShowProfiles()
-  self:StartFPSBaselineSampling()
+  self:SetLiveFPSCallback(nil);self:StopFPSBaselineSampling()
   local profiles=self:GetGraphicsProfiles();local backups=self:InitializeDatabase().backups
   local selectedProfile;for _,profile in ipairs(profiles) do if profile.id==self.selectedProfileId then selectedProfile=profile end end
   local selectedBackup=backups[self.selectedBackupIndex or 0]
@@ -218,7 +239,7 @@ function STBS:ShowProfiles()
   if graphicsBackups==0 then table.insert(lines,self:L("NO_BACKUPS")) end
   local actions={
     {label=self:L("SAVE_GRAPHICS"),fn=function()STBS:OpenSaveDialog()end,style="primary"},
-    {label=self:L("CREATE_GRAPHICS_BACKUP"),fn=function()STBS:CreateBackup({graphics=true},"manual");STBS.selectedBackupIndex=1;STBS.selectedItemType="backup";STBS:ShowProfiles()end},
+    {label=self:L("CREATE_GRAPHICS_BACKUP"),fn=function()local result=STBS:CreateBackup({graphics=true},"manual");if result.ok then STBS.selectedBackupIndex=1;STBS.selectedItemType="backup";STBS.flashMessage=STBS:L("BACKUP_CREATED");STBS.flashKind="success" else STBS.flashMessage=STBS:L("BACKUP_CREATE_FAILED");STBS.flashKind="error" end;STBS:ShowProfiles()end},
     {label=self:L("IMPORT"),fn=function()STBS:OpenImport()end},
   }
   if self.selectedItemType=="profile" and selectedProfile then
@@ -228,9 +249,16 @@ function STBS:ShowProfiles()
     table.insert(actions,{label=self:L("RESTORE_SELECTED"),fn=function()STBS:ConfirmRestoreBackup(STBS.selectedBackupIndex)end,style="primary",wide=true})
     table.insert(actions,{label=self:L("DELETE_BACKUP"),fn=function()STBS:ConfirmDeleteBackup(STBS.selectedBackupIndex)end,style="danger"})
   end
-  for _,profile in ipairs(profiles) do local current=profile;table.insert(actions,{label=self:L("PROFILE_LABEL")..": "..self:SafeText(current.displayName),fn=function()STBS.selectedItemType="profile";STBS.selectedProfileId=current.id;STBS:ShowProfiles()end}) end
-  for i,backup in ipairs(backups) do if self:BackupHasModule(backup,"graphics") then local index=i;table.insert(actions,{label=self:L("BACKUP_LABEL").." #"..index.." · "..date("%m-%d %H:%M",backup.timestamp),fn=function()STBS.selectedItemType="backup";STBS.selectedBackupIndex=index;STBS:ShowProfiles()end}) end end
-  self:SetPage(self:L("BACKUPS_AND_PROFILES"),table.concat(lines,"\n"),actions,self:L("SELECT_ITEM"),{pageKey="profiles"})
+  for _,profile in ipairs(profiles) do local current=profile;table.insert(actions,{label=self:L("PROFILE_LABEL")..": "..self:SafeText(current.displayName),fn=function()STBS.selectedItemType="profile";STBS.selectedProfileId=current.id;STBS.flashMessage=string.format(STBS:L("ITEM_SELECTED"),STBS:SafeText(current.displayName));STBS.flashKind="success";STBS:ShowProfiles()end}) end
+  for i,backup in ipairs(backups) do if self:BackupHasModule(backup,"graphics") then local index=i;table.insert(actions,{label=self:L("BACKUP_LABEL").." #"..index.." · "..date("%m-%d %H:%M",backup.timestamp),fn=function()STBS.selectedItemType="backup";STBS.selectedBackupIndex=index;STBS.flashMessage=string.format(STBS:L("ITEM_SELECTED"),STBS:L("BACKUP_LABEL").." #"..index);STBS.flashKind="success";STBS:ShowProfiles()end}) end end
+  local status=self.flashMessage or self:L("SELECT_ITEM");local statusKind=self.flashKind;self.flashMessage=nil;self.flashKind=nil
+  self:SetPage(self:L("BACKUPS_AND_PROFILES"),table.concat(lines,"\n"),actions,status,{pageKey="profiles",statusKind=statusKind})
+end
+
+function STBS:ShowAbout()
+  self:SetLiveFPSCallback(nil);self:StopFPSBaselineSampling()
+  local text="|cffffd36b"..self:L("ABOUT_SOURCE_HEADER").."|r\n"..self:L("ABOUT_SOURCE_BODY").."\n\n|cffffd36b"..self:L("ABOUT_BALANCE_HEADER").."|r\n"..self:L("ABOUT_BALANCE_BODY").."\n\n|cffffd36b"..self:L("ABOUT_TRUST_HEADER").."|r\n"..self:L("ABOUT_TRUST_BODY").."\n\n|cff9aa7b8"..self:L("ABOUT_LIMIT").."|r"
+  self:SetPage(self:L("ABOUT_TITLE"),text,{},self:L("ABOUT_STATUS"),{pageKey="about",statusKind="success"})
 end
 
 function STBS:ShowBackups() self.selectedItemType="backup";return self:ShowProfiles() end
@@ -257,11 +285,11 @@ function STBS:ShowCopyBox(text)
 end
 
 function STBS:ShowExport(profile)
-  local output=self:ExportProfile(profile,{graphics=true});self:SetPage(self:L("EXPORT"),self:L("EXPORT_HELP").."\n\n"..self:L("SELECTED")..": "..self:SafeText(profile.displayName).."\n"..self:L("SIZE")..": "..#output.." bytes",{{label=self:L("COPY"),fn=function()STBS:ShowCopyBox(output)end},{label=self:L("BACK"),fn=function()STBS:ShowProfiles()end}},nil,{pageKey="profiles"})
+  local output=self:ExportProfile(profile,{graphics=true});self:SetPage(self:L("EXPORT"),self:L("EXPORT_HELP").."\n\n"..self:L("SELECTED")..": "..self:SafeText(profile.displayName).."\n"..self:L("SIZE")..": "..#output.." bytes",{{label=self:L("COPY"),fn=function()STBS:ShowCopyBox(output)end},{label=self:L("BACK"),fn=function()STBS:ShowProfiles()end}},self:L("EXPORT_READY"),{pageKey="profiles",statusKind="success"})
 end
 
 function STBS:OpenImport()
-  StaticPopupDialogs["STBS_IMPORT"]={text=self:L("IMPORT_PROMPT"),button1=ACCEPT,button2=CANCEL,hasEditBox=true,maxLetters=STBS.MAX_IMPORT_BYTES,OnAccept=function(p)local payload,why=STBS:ImportProfile(p.editBox:GetText());if not payload or not payload.selectedModules.graphics then STBS:SetPage(STBS:L("IMPORT"),STBS:L("INVALID_IMPORT").." ("..tostring(why or "graphics")..")",{{label=STBS:L("BACK"),fn=function()STBS:ShowProfiles()end}},nil,{pageKey="profiles"});return end;STBS.pendingImport=payload;STBS:ShowImportPreview(payload)end,OnShow=function(p)p.editBox:SetText("");p.editBox:SetFocus()end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_IMPORT")
+  StaticPopupDialogs["STBS_IMPORT"]={text=self:L("IMPORT_PROMPT"),button1=ACCEPT,button2=CANCEL,hasEditBox=true,maxLetters=STBS.MAX_IMPORT_BYTES,EditBoxOnEnterPressed=popupAcceptOnEnter,EditBoxOnTextChanged=StaticPopup_StandardNonEmptyTextHandler,OnAccept=function(p)local box=popupEditBox(p);local payload,why=STBS:ImportProfile(box and box:GetText());if not payload or not payload.selectedModules.graphics then STBS:SetPage(STBS:L("IMPORT"),STBS:L("INVALID_IMPORT").." ("..tostring(why or "graphics")..")",{{label=STBS:L("BACK"),fn=function()STBS:ShowProfiles()end}},STBS:L("ACTION_FAILED"),{pageKey="profiles",statusKind="error"});return end;STBS.pendingImport=payload;STBS:ShowImportPreview(payload)end,OnShow=function(p)local box=popupEditBox(p);if box then box:SetText("");box:SetFocus() end end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_IMPORT")
 end
 
 function STBS:ApplyPendingImport(graphicsMode)

@@ -44,3 +44,66 @@ for locale, values in pairs(strings) do
   STBS.Locale[locale] = STBS.Locale[locale] or {}
   for key, value in pairs(values) do STBS.Locale[locale][key] = value end
 end
+
+local experience = {
+  ABOUT="About",
+  GRAPHICS_TITLE="Better FPS. Clear graphics.",
+  LIVE_FPS="Current FPS",
+  LIVE_FPS_FORMAT="%d FPS",
+  FPS_READING="-- FPS",
+  VISUAL_PREVIEW="Real in-game example",
+  READY="Ready - choose a mode, then apply",
+  REVIEW_READY="Ready to apply - a backup will be created first",
+  QUICK_START="Quick start",
+  QUICK_START_TEXT="1. Choose one profile below.\n2. Click Apply and confirm.\n3. Stay in the same scene for 8 seconds to compare FPS.",
+  SAVE_OWN_TITLE="Want to keep your current graphics?",
+  SAVE_OWN_TEXT="Open Profiles and click Save Graphics before applying a preset.",
+  PLAN_SUMMARY="Result: %d settings will change, %d are already correct, %d cannot be changed on this system.",
+  PERFORMANCE_TUNED="Expensive effects are reduced where the visual cost is small.",
+  QUALITY_PRESERVED="Textures, projected effects, particles and combat outlines stay readable.",
+  HARDWARE_UNCHANGED="Resolution, render scale, FPS limits and latency settings are not touched.",
+  MODE_SELECTED="Profile selected. Nothing has been applied yet.",
+  PROFILE_SAVE_HELP="This saves your current built-in WoW graphics as a personal profile.",
+  PROFILE_SAVED="Profile saved: %s",
+  PROFILE_SAVE_FAILED="Profile was not saved",
+  PROFILE_RENAMED="Profile renamed.",
+  PROFILE_RENAME_FAILED="Profile was not renamed.",
+  PROFILE_DELETED="Profile deleted.",
+  BACKUP_CREATED="Graphics backup created.",
+  BACKUP_CREATE_FAILED="Backup was not created.",
+  BACKUP_DELETED="Backup deleted.",
+  ITEM_SELECTED="Selected: %s",
+  EXPORT_READY="Export created. Click Copy, then press Ctrl+C.",
+  RELOAD_UI="Reload UI",
+  RELOAD_CONFIRM="Reload the interface now?",
+  RELOAD_CONFIRM_TEXT="Your graphics are saved. Reloading finishes the interface refresh and briefly returns you to the loading screen.",
+  RELOAD_FAILED="WoW could not reload the interface.",
+  SETTINGS_APPLIED_NO_MEASURE="Graphics applied. Click Reload UI to finish refreshing the interface.",
+  ACTION_FAILED="The action was not completed.",
+  ABOUT_TITLE="About S-Tier Blizz Settings",
+  ABOUT_STATUS="Transparent by design - local only, reversible and documented",
+  ABOUT_SOURCE_HEADER="Where the settings come from",
+  ABOUT_SOURCE_BODY="The presets are checked against Blizzard Retail UI source, documented CVar ranges and in-game validators. Recommendations are based on the visual cost of shadows, effects, spell density and view distance - not on a copied 'graphics level' number.",
+  ABOUT_BALANCE_HEADER="Why this balance",
+  ABOUT_BALANCE_BODY="The profiles reduce costly options with limited gameplay value while preserving high texture quality, projected ground effects, particles and outlines needed for combat readability. Raid mode uses Blizzard's separate raid profile for heavier scenes.",
+  ABOUT_TRUST_HEADER="Why you stay in control",
+  ABOUT_TRUST_BODY="Every apply creates a graphics backup first. You see a short preview and confirm before changes. Undo and Profiles can restore previous values. The addon stores data locally, has no telemetry and never changes resolution, render scale, V-Sync or FPS caps.",
+  ABOUT_LIMIT="FPS gains depend on your hardware, location and combat load. The shown comparison is a local estimate, not a guaranteed benchmark.",
+}
+
+local russianExperience = {
+  ABOUT="Об аддоне", GRAPHICS_TITLE="Больше FPS. Чёткая графика.", LIVE_FPS="Текущий FPS", VISUAL_PREVIEW="Реальный пример из игры", READY="Готово — выберите профиль и примените", REVIEW_READY="Всё готово — перед применением будет создан бэкап",
+  QUICK_START="Быстрый старт", QUICK_START_TEXT="1. Выберите профиль ниже.\n2. Нажмите «Применить» и подтвердите.\n3. Оставайтесь в той же сцене 8 секунд для сравнения FPS.", SAVE_OWN_TITLE="Хотите сохранить текущую графику?", SAVE_OWN_TEXT="Откройте «Профили» и нажмите «Сохранить графику» до применения пресета.",
+  PLAN_SUMMARY="Результат: будет изменено %d настроек, %d уже настроены, %d недоступны на этой системе.", PERFORMANCE_TUNED="Тяжёлые эффекты снижены там, где потеря качества почти незаметна.", QUALITY_PRESERVED="Качество текстур, эффекты на земле, частицы и контуры остаются читаемыми.", HARDWARE_UNCHANGED="Разрешение, масштаб рендера, лимиты FPS и задержка не меняются.",
+  MODE_SELECTED="Профиль выбран. Настройки ещё не применены.", PROFILE_SAVE_HELP="Текущая встроенная графика WoW сохранится как личный профиль.", PROFILE_SAVED="Профиль сохранён: %s", PROFILE_SAVE_FAILED="Профиль не сохранён", PROFILE_RENAMED="Профиль переименован.", PROFILE_RENAME_FAILED="Профиль не переименован.", PROFILE_DELETED="Профиль удалён.", BACKUP_CREATED="Бэкап графики создан.", BACKUP_CREATE_FAILED="Бэкап не создан.", BACKUP_DELETED="Бэкап удалён.", ITEM_SELECTED="Выбрано: %s", EXPORT_READY="Экспорт создан. Нажмите «Копировать», затем Ctrl+C.", RELOAD_UI="Перезагрузить UI", RELOAD_CONFIRM="Перезагрузить интерфейс сейчас?", RELOAD_CONFIRM_TEXT="Настройки графики сохранены. Перезагрузка завершит обновление интерфейса и ненадолго вернёт вас на экран загрузки.", RELOAD_FAILED="Не удалось перезагрузить интерфейс WoW.", SETTINGS_APPLIED="Графика применена. Идёт замер FPS 8 секунд; затем станет доступна перезагрузка UI.", SETTINGS_APPLIED_NO_MEASURE="Графика применена. Нажмите «Перезагрузить UI», чтобы полностью обновить интерфейс.", ACTION_FAILED="Действие не выполнено.",
+  ABOUT_TITLE="О S-Tier Blizz Settings", ABOUT_STATUS="Прозрачно: локально, обратимо и с документацией", ABOUT_SOURCE_HEADER="Откуда взяты настройки", ABOUT_SOURCE_BODY="Пресеты проверены по исходникам интерфейса Blizzard Retail, допустимым диапазонам CVar и внутриигровым валидаторам. Рекомендации учитывают цену теней, эффектов, плотности заклинаний и дальности прорисовки, а не копируют один общий уровень графики.", ABOUT_BALANCE_HEADER="Почему выбран этот баланс", ABOUT_BALANCE_BODY="Профили снижают тяжёлые параметры с малой визуальной пользой, но сохраняют качественные текстуры, эффекты на земле, частицы и контуры, важные в бою. Режим рейда использует отдельный профиль Blizzard для тяжёлых сцен.", ABOUT_TRUST_HEADER="Почему контроль остаётся у вас", ABOUT_TRUST_BODY="Перед каждым применением создаётся бэкап графики. Сначала показывается краткое описание и запрашивается подтверждение. «Вернуть назад» и «Профили» восстанавливают прежние значения. Аддон хранит всё локально, не использует телеметрию и не меняет разрешение, масштаб рендера, V-Sync и лимиты FPS.", ABOUT_LIMIT="Прирост FPS зависит от компьютера, места и нагрузки в бою. Сравнение — локальная оценка, а не гарантированный результат.",
+}
+
+for locale, values in pairs(STBS.Locale) do
+  for key, value in pairs(experience) do values[key]=value end
+  if values.FPS_RESULT_FORMAT then values.FPS_RESULT_FORMAT=values.FPS_RESULT_FORMAT:gsub("→","to") end
+end
+for key, value in pairs(russianExperience) do STBS.Locale.ruRU[key]=value end
+STBS.Locale.enUS.SETTINGS_APPLIED="Graphics applied. Measuring FPS for 8 seconds; Reload UI will unlock afterwards."
+STBS.Locale.ruRU.LIVE_FPS_FORMAT="%d FPS"
+STBS.Locale.ruRU.FPS_READING="-- FPS"
