@@ -4,7 +4,7 @@ S-Tier Blizz Settings is a lightweight World of Warcraft Retail addon for applyi
 
 ## Install — WoW Retail
 
-1. Download [STierBlizzSettings-v0.1.2-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.1.2-alpha.zip) and extract it.
+1. Download [STierBlizzSettings-v0.2.0-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.2.0-alpha.zip) and extract it.
 2. Copy **the `STierBlizzSettings` folder itself** to your Retail AddOns directory:
 
    - Windows: `World of Warcraft\_retail_\Interface\AddOns\`
@@ -25,9 +25,11 @@ After the interface loads, the chat displays a local-language reminder: type `/s
 
 - Separate **Graphics** and **Interface & Gameplay** modules.
 - **One Profile Everywhere** and **Optimized Raid Mode** graphics modes.
+- A built-in Interface & Gameplay profile for cooldown numbers, target-of-target, player silhouette, enemy nameplates and stable camera behavior.
 - Transactional application with a backup before every change, plus restore history.
-- Personal profile capture, deterministic `STBS1:` export and defensive data-only import.
-- English and Russian UI, slash commands `/stier` and `/stbs`, profile and backup pages, import preview, and diagnostics.
+- Hardware capability checks using the same Retail validation functions as Blizzard's graphics menu; unsupported values are skipped.
+- Personal profile capture, deterministic `STBS1:` export and defensive data-only import with strict schema, size, depth and metadata validation.
+- A localized dashboard, scalable profile and backup lists, slash commands `/stier` and `/stbs`, import preview, and diagnostics.
 
 Use `/stier` to open the window. Use `/stier graphics`, `interface`, `apply`, `save`, `export`, `import`, `backup`, `restore`, or `debug` for a specific screen/action.
 
@@ -37,4 +39,4 @@ The addon intentionally preserves display hardware, resolution, refresh rate, V-
 
 S-Tier Blizz Settings is an independent community addon and is not affiliated with or endorsed by Blizzard Entertainment.
 
-See [Russian README](README.ru.md), [test plan](docs/TEST_PLAN.md), and [release instructions](docs/RELEASE.md).
+See [Russian README](README.ru.md), [profile research](docs/RECOMMENDED_PROFILE_RESEARCH.md), [UI/UX research](docs/UI_UX_RESEARCH.md), [test plan](docs/TEST_PLAN.md), and [release instructions](docs/RELEASE.md).

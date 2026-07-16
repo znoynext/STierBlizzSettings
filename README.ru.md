@@ -4,7 +4,7 @@
 
 ## Установка — WoW Retail
 
-1. Скачайте [STierBlizzSettings-v0.1.2-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.1.2-alpha.zip) и распакуйте архив.
+1. Скачайте [STierBlizzSettings-v0.2.0-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.2.0-alpha.zip) и распакуйте архив.
 2. Переместите **саму папку `STierBlizzSettings`** в папку AddOns WoW Retail:
 
    - Windows: `World of Warcraft\_retail_\Interface\AddOns\`
@@ -25,9 +25,11 @@
 
 - Раздельные модули «Графика» и «Интерфейс и игра».
 - Режимы «Единые настройки везде» и «Оптимизация рейдов».
+- Встроенный пресет читаемости боя: цифры перезарядок, цель цели, силуэт игрока, неймплейты врагов и стабильная камера.
 - Транзакционное применение с резервной копией, история копий и выборочное восстановление.
-- Личные профили, импорт с preview и экспорт `STBS1:` без исполнения кода.
-- Страницы Home, Graphics, Interface & Gameplay, Profiles, Backup & Restore и Diagnostics.
+- Проверка аппаратной поддержки графических значений теми же функциями Retail-клиента, которые использует меню Blizzard; неподдерживаемые значения пропускаются.
+- Личные профили, строгий импорт только данных с preview и экспорт `STBS1:` без исполнения кода.
+- Локализованное dashboard-окно с прокручиваемыми списками профилей и резервных копий.
 
 Откройте окно `/stier` или `/stbs`. Доступны подкоманды: `graphics`, `interface`, `apply`, `save`, `export`, `import`, `backup`, `restore`, `debug`.
 
@@ -36,3 +38,5 @@
 **Статус: alpha, не production v1.0.** Базовая совместимость: Retail 12.0.7, Interface 120007, Blizzard UI build 68453. До использования в сложном контенте обязательно протестируйте аддон в живом клиенте. Профили Edit Mode и keybindings в alpha намеренно недоступны.
 
 S-Tier Blizz Settings — независимый общественный аддон, не связанный с Blizzard Entertainment и не одобренный ею.
+
+Подробности: [исследование пресетов](docs/RECOMMENDED_PROFILE_RESEARCH.md), [исследование UI/UX](docs/UI_UX_RESEARCH.md) и [план тестирования](docs/TEST_PLAN.md).

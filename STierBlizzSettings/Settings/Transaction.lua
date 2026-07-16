@@ -1,11 +1,13 @@
 local _, STBS = ...
 function STBS:ApplySettings(settings, modules, trigger, options)
   options = options == true and { skipBackup = true } or options or {}
+  local validModules, modulesWhy=self:ValidateModules(modules);if not validModules then return self:Result(false,modulesWhy) end
+  local valid, why=self:ValidateSettings(settings,false);if not valid then return self:Result(false,why) end
+  local selectedSettings=0;for key in pairs(settings)do local setting=self.RegistryByKey[key];if setting and modules[setting.module]then selectedSettings=selectedSettings+1 end end;if selectedSettings==0 then return self:Result(false,"no-settings") end
   if InCombatLockdown and InCombatLockdown() then
     if self.pending then return self:Result(false,"pending-exists") end
     self.pending={settings=self:Copy(settings),modules=self:Copy(modules),trigger=trigger,options=self:Copy(options)}; return self:Result(false,"queued")
   end
-  local valid, why=self:ValidateSettings(settings,false);if not valid then return self:Result(false,why) end
   local plan=self:BuildDiff(settings);local backup = options.skipBackup and self:Result(true,"skipped") or self:CreateBackup(modules,trigger);if not backup.ok then return backup end
   local result={graphics={changed=0,identical=0,skipped=0,failed=0,unavailable=0,categories={}},interfaceGameplay={changed=0,identical=0,skipped=0,failed=0,unavailable=0,categories={}},backup=backup.data}
   local attempted={}
@@ -39,5 +41,6 @@ function STBS:ApplyOfficial(kind)
   local modules=kind=="graphics" and {graphics=true} or kind=="interface" and {interfaceGameplay=true} or {graphics=true,interfaceGameplay=true};local settings={}
   if modules.graphics then local mode=self:GetSelectedMode();if not mode then return self:Result(false,"mode") end;settings=self:FlattenProfile(self:GetOfficialGraphics(mode),{graphics=true}) end
   if modules.interfaceGameplay then local interface=self:FlattenProfile(self:GetOfficialInterface(),{interfaceGameplay=true});for k,v in pairs(interface) do settings[k]=v end end
+  local officialValid, officialWhy=self:ValidateSettings(settings,true);if not officialValid then return self:Result(false,officialWhy) end
   return self:ApplySettings(settings,modules,"official-"..kind)
 end

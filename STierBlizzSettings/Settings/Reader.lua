@@ -1,7 +1,7 @@
 local _, STBS = ...
 function STBS:ReadSetting(setting)
   if not C_CVar or not C_CVar.GetCVar then return nil, "api" end
-  local value = C_CVar.GetCVar(setting.key); if value == nil then return nil, "unavailable" end
+  local ok, value = pcall(C_CVar.GetCVar, setting.key); if not ok or value == nil then return nil, "unavailable" end
   return tostring(value)
 end
 function STBS:CaptureModules(modules)
