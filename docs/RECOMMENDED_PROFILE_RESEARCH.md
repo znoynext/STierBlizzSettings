@@ -15,7 +15,7 @@ The Blizzard source proves which controls exist, their CVar names, ranges, suppo
 | `*ParticleDensity` | Particle Density | 3 / 4 / 5 | never disabled; preserves readable combat effects |
 | `*SSAO`, `*DepthEffects`, `*ComputeEffects` | Advanced Graphics | 0 / 1 / 2 | costly effects scaled together; client validation still applied |
 | `*OutlineMode`, `*ProjectedTextures` | Outline Mode / Projected Textures | 2 / 1 in every preset | combat visibility; enforced safety rule |
-| `*SpellDensity` | Spell Density | 1 / 2 / 2 | combat visibility; only when feature API says supported |
+| `*SpellDensity` | Spell Density | 0 / 2 / 2 | PRO uses Blizzard's Essential option; only when the feature API says supported |
 | `*ViewDistance` | View Distance | 4 / 6 / 8 | CPU/GPU and world readability balance |
 | `*EnvironmentDetail`, `*GroundClutter` | detail sliders | 3/2, 4/3, 7/6 | visual/CPU-GPU; slider labels may differ from stored values |
 | `ffxAntiAliasingMode`, `MSAAQuality`, `msaaAlphaTest` | Antialiasing | best supported CMAA, MSAA off, alpha-test off | capability-gated image AA; avoids MSAA cost and disables its dependent option |
@@ -36,6 +36,8 @@ The Blizzard source proves which controls exist, their CVar names, ranges, suppo
 | Graphics | Antialiasing, Image Based, Multisample, Multisample Alpha-Test | optimize | choose the best supported CMAA path; disable MSAA and its dependent alpha-test |
 | Graphics | Camera FOV | preserve | gameplay/comfort preference |
 | Graphics Quality | Shadow, Liquid, Particle Density, SSAO, Depth Effects, Compute Effects, Outline Mode, Texture Resolution, Spell Density, Projected Textures, View Distance, Environment Detail, Ground Clutter | optimize all individually | these are the independent quality controls exposed by `GraphicsOverrides.CreateAdvancedSettingsTable` |
+
+Ground Clutter is intentionally `1` in all base and raid presets: it primarily controls decorative ground objects, so the common minimum removes avoidable scene cost without disabling projected combat textures. PRO also sets Environment Detail to `1`. Blizzard's current `GetSpellDensityOptions` maps `0` to Essential, `1` to Reduced and `2` to Everything; PRO therefore uses `0` for both base and raid profiles.
 | Graphics Quality | master Graphics Quality number | do not write | Blizzard applies this proxy last and it overwrites the individual controls; after individual tuning the UI correctly reports Custom |
 | Graphics Quality | Raid and Battleground toggle and all raid quality controls | optimize in split mode | uses Blizzard's own separate raid profile and the same validated child controls |
 | Advanced | Triple Buffering | preserve | coupled to V-Sync and frame-latency preference; requires graphics restart |

@@ -19,3 +19,54 @@ function STBS:ImportProfile(text)
   if count == 0 or selected.graphics == nil or selected.interfaceGameplay == nil then return nil,"modules" end
   payload.selectedModules = selected; local migrated,profile,why=pcall(self.MigrateProfile,self,payload.profile);if not migrated or not profile then return nil,why or "profile" end;local checked,valid,reason=pcall(self.ValidateProfile,self,profile);if not checked or not valid then return nil,reason or "profile" end;payload.profile=profile;return payload
 end
+
+local function onlyKeys(value,allowed)
+  if type(value)~="table" then return false end
+  for key in pairs(value) do if not allowed[key] then return false end end
+  return true
+end
+
+function STBS:ImportAddonBundle(text)
+  if type(text)~="string" or #text>self.MAX_IMPORT_BYTES or text:sub(1,#self.ADDON_EXPORT_PREFIX)~=self.ADDON_EXPORT_PREFIX then return nil,"prefix" end
+  local checksum,encoded=text:match("^STBSA1:([0-9a-f]+):(.+)$");if not checksum or #checksum~=8 then return nil,"format" end
+  local raw=self:Base64Decode(encoded);if not raw or self:Checksum(raw)~=checksum then return nil,"integrity" end
+  local parsed,payload,parse=pcall(self.ParseSerialized,self,raw);if not parsed or type(payload)~="table" then return nil,parse or "parse" end
+  if not onlyKeys(payload,{bundleVersion=true,addonVersion=true,gameFlavor=true,clientBuild=true,preferences=true,graphicsSettings=true,profiles=true}) or payload.bundleVersion~=self.ADDON_EXPORT_VERSION or payload.gameFlavor~="retail" then return nil,"payload" end
+  local preferences=payload.preferences
+  if not onlyKeys(preferences,{graphicsPreset=true,graphicsMode=true,benchmarkMode=true,performanceWidgetEnabled=true,zoneGraphics=true}) then return nil,"preferences" end
+  local validPreset={ [self.GRAPHICS_PRESET_PRO]=true,[self.GRAPHICS_PRESET_OPTIMIZED]=true,[self.GRAPHICS_PRESET_QUALITY]=true }
+  if not validPreset[preferences.graphicsPreset] or (preferences.graphicsMode~=self.GRAPHICS_MODE_UNIFIED and preferences.graphicsMode~=self.GRAPHICS_MODE_SPLIT) or (preferences.benchmarkMode~=self.BENCHMARK_QUICK and preferences.benchmarkMode~=self.BENCHMARK_ACCURATE) or type(preferences.performanceWidgetEnabled)~="boolean" then return nil,"preferences" end
+  local zone=preferences.zoneGraphics
+  if not onlyKeys(zone,{enabled=true,assignments=true}) or type(zone.enabled)~="boolean" or not onlyKeys(zone.assignments,{world=true,party=true,raid=true,pvp=true,scenario=true}) then return nil,"zone" end
+  for _,category in ipairs({"world","party","raid","pvp","scenario"}) do if not validPreset[zone.assignments[category]] then return nil,"zone" end end
+  if type(payload.graphicsSettings)~="table" or not next(payload.graphicsSettings) then return nil,"graphics" end
+  for key in pairs(payload.graphicsSettings) do local setting=self.RegistryByKey[key];if not setting or setting.module~="graphics" then return nil,"graphics" end end
+  local validGraphics,graphicsWhy=self:ValidateSettings(payload.graphicsSettings,false);if not validGraphics then return nil,graphicsWhy end
+  if type(payload.profiles)~="table" then return nil,"profiles" end
+  local profileCount=0
+  for id,profile in pairs(payload.profiles) do
+    profileCount=profileCount+1;if profileCount>self.MAX_BUNDLE_PROFILES or type(id)~="string" or type(profile)~="table" or profile.id~=id or profile.profileType~="personal" then return nil,"profiles" end
+    local migrated,migratedProfile,why=pcall(self.MigrateProfile,self,profile);if not migrated or not migratedProfile then return nil,why or "profile" end
+    local checked,valid,reason=pcall(self.ValidateProfile,self,migratedProfile);if not checked or not valid then return nil,reason or "profile" end
+    payload.profiles[id]=migratedProfile
+  end
+  return payload
+end
+
+function STBS:ApplyAddonBundle(payload)
+  if type(payload)~="table" then return self:Result(false,"payload") end
+  if type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown() then return self:Result(false,"combat") end
+  local result=self:ApplySettings(payload.graphicsSettings,{graphics=true},"addon-bundle-import")
+  if not result.ok then return result end
+  local db=self:InitializeDatabase();local old=db.preferences
+  db.preferences={
+    backupLimit=old.backupLimit,windowWidth=old.windowWidth,windowHeight=old.windowHeight,performanceWidgetPosition=old.performanceWidgetPosition,
+    graphicsPreset=payload.preferences.graphicsPreset,graphicsMode=payload.preferences.graphicsMode,benchmarkMode=payload.preferences.benchmarkMode,
+    performanceWidgetEnabled=payload.preferences.performanceWidgetEnabled,zoneGraphics=self:Copy(payload.preferences.zoneGraphics),
+  }
+  db.profiles=self:Copy(payload.profiles);local sequence=db.profileSequence
+  for id in pairs(db.profiles) do local value=tonumber(id:match("_(%d+)$"));if value then sequence=math.max(sequence,value) end end
+  db.profileSequence=sequence;self.selectedProfileId=nil;self.selectedItemType=nil;self.selectedBackupIndex=nil;self.activeZoneCategory=nil;self.activeZonePreset=nil
+  self:SetPerformanceWidgetEnabled(db.preferences.performanceWidgetEnabled)
+  return self:Result(true,"bundle-imported",result.data)
+end

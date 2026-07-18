@@ -1,8 +1,8 @@
 ## Interface: 120007
 ## Title: S-Tier Blizz Settings
-## Notes: Three built-in WoW graphics presets, safe zone switching, profiles, backups, FPS/1% Low comparison, and a live FPS/ping meter.
+## Notes: Three WoW graphics presets, safe zone switching, profiles/backups, full settings exchange, responsive UI, FPS/1% Low comparison, and a live FPS/ping meter.
 ## Author: S-Tier Blizz Settings Team
-## Version: 0.4.0-alpha
+## Version: 0.4.1-alpha
 ## SavedVariables: STierBlizzSettingsDB
 ## SavedVariablesPerCharacter: STierBlizzSettingsCharDB
 ## X-Category: Interface Enhancements

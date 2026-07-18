@@ -10,6 +10,11 @@ function STBS:InitializeDatabase()
   if db.preferences.graphicsMode~=self.GRAPHICS_MODE_UNIFIED and db.preferences.graphicsMode~=self.GRAPHICS_MODE_SPLIT then db.preferences.graphicsMode=self.GRAPHICS_MODE_SPLIT end
   if db.preferences.benchmarkMode~=self.BENCHMARK_QUICK and db.preferences.benchmarkMode~=self.BENCHMARK_ACCURATE then db.preferences.benchmarkMode=self.BENCHMARK_QUICK end
   db.preferences.performanceWidgetEnabled=db.preferences.performanceWidgetEnabled==true
+  local widgetPosition=db.preferences.performanceWidgetPosition
+  if type(widgetPosition)~="table" or type(widgetPosition.x)~="number" or type(widgetPosition.y)~="number" or widgetPosition.x~=widgetPosition.x or widgetPosition.y~=widgetPosition.y or widgetPosition.x<0 or widgetPosition.x>1 or widgetPosition.y<0 or widgetPosition.y>1 then db.preferences.performanceWidgetPosition=nil end
+  local width,height=tonumber(db.preferences.windowWidth),tonumber(db.preferences.windowHeight)
+  db.preferences.windowWidth=width and width==width and math.max(900,math.min(1280,math.floor(width+0.5))) or nil
+  db.preferences.windowHeight=height and height==height and math.max(640,math.min(900,math.floor(height+0.5))) or nil
   if type(db.preferences.zoneGraphics)~="table" then db.preferences.zoneGraphics={} end
   local zone=db.preferences.zoneGraphics;zone.enabled=zone.enabled==true
   if type(zone.assignments)~="table" then zone.assignments={} end

@@ -17,11 +17,18 @@ end
 function STBS:CreatePerformanceWidget()
   if self.performanceWidget then return self.performanceWidget end
   local f=CreateFrame("Frame","STierBlizzSettingsPerformanceWidget",UIParent,"BackdropTemplate")
-  f:SetSize(236,34);f:SetPoint("BOTTOM",UIParent,"BOTTOM",0,156);f:SetFrameStrata("MEDIUM");f:EnableMouse(true)
-  f:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=10,insets={left=3,right=3,top=3,bottom=3}});f:SetBackdropColor(0.025,0.02,0.012,0.9);f:SetBackdropBorderColor(0.66,0.48,0.18,0.9)
-  f.fps=f:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.fps:SetPoint("LEFT",14,0);f.fps:SetWidth(92);f.fps:SetJustifyH("LEFT")
-  f.divider=f:CreateTexture(nil,"ARTWORK");f.divider:SetColorTexture(0.55,0.42,0.22,0.7);f.divider:SetSize(1,18);f.divider:SetPoint("CENTER",0,0)
-  f.ping=f:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.ping:SetPoint("LEFT",128,0);f.ping:SetWidth(94);f.ping:SetJustifyH("LEFT")
+  f:SetSize(200,29);f:SetFrameStrata("MEDIUM");f:EnableMouse(true);f:SetMovable(true);f:SetClampedToScreen(true);f:RegisterForDrag("LeftButton")
+  local position=self:InitializeDatabase().preferences.performanceWidgetPosition
+  if position then f:SetPoint("CENTER",UIParent,"BOTTOMLEFT",UIParent:GetWidth()*position.x,UIParent:GetHeight()*position.y) else f:SetPoint("BOTTOM",UIParent,"BOTTOM",0,156) end
+  f:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=9,insets={left=3,right=3,top=3,bottom=3}});f:SetBackdropColor(0.025,0.02,0.012,0.9);f:SetBackdropBorderColor(0.66,0.48,0.18,0.9)
+  f.fps=f:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.fps:SetPoint("LEFT",10,0);f.fps:SetWidth(80);f.fps:SetJustifyH("LEFT")
+  f.divider=f:CreateTexture(nil,"ARTWORK");f.divider:SetColorTexture(0.55,0.42,0.22,0.7);f.divider:SetSize(1,16);f.divider:SetPoint("CENTER",0,0)
+  f.ping=f:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.ping:SetPoint("LEFT",109,0);f.ping:SetWidth(82);f.ping:SetJustifyH("LEFT")
+  f:SetScript("OnDragStart",function(self)if type(_G.IsControlKeyDown)=="function" and _G.IsControlKeyDown() then self:StartMoving() end end)
+  f:SetScript("OnDragStop",function(self)
+    self:StopMovingOrSizing();local x,y=self:GetCenter();local width,height=UIParent:GetWidth(),UIParent:GetHeight()
+    if x and y and width>0 and height>0 then STBS:InitializeDatabase().preferences.performanceWidgetPosition={x=math.max(0,math.min(1,x/width)),y=math.max(0,math.min(1,y/height))} end
+  end)
   f:SetScript("OnEnter",function(self)GameTooltip:SetOwner(self,"ANCHOR_TOP");GameTooltip:SetText(STBS:L("PERFORMANCE_WIDGET"));GameTooltip:AddLine(STBS:L("PERFORMANCE_WIDGET_HELP"),0.85,0.82,0.72,true);GameTooltip:Show()end)
   f:SetScript("OnLeave",function()GameTooltip:Hide()end);f:Hide();self.performanceWidget=f;return f
 end

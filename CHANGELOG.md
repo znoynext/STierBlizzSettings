@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.1-alpha
+
+- Replaced the static in-addon screenshot with a compact live FPS card and an honest **View result in game** flow; WoW addons cannot embed a second world render with unapplied graphics settings.
+- Enlarged the default window, added safe bottom-right resizing with persisted dimensions, made the layout adapt to width/height, restricted movement to the header and removed the unused lower action area from About.
+- Reduced the FPS/ping widget by 15%, added Ctrl-drag positioning with a saved normalized position, and simplified its tooltip.
+- Split Profiles into Profiles, Backups and Import / Export views. Selected backup Restore/Delete actions are always placed first.
+- Added a validated `STBSA1` full-settings exchange string for current graphics, addon preferences, zone mappings and personal profiles; imports are data-only, backup-first and rejected in combat.
+- Set PRO Environment Detail to 1 and Spell Density to Essential (`0`); Ground Clutter is now 1 in every base and raid preset.
+- Standardized visible controls on the same native WoW `GameFont` family and replaced boolean action buttons with native checkboxes. Responsive columns collapse at narrow widths and use integer sizing to keep Blizzard textures crisp.
+
 ## 0.4.0-alpha
 
 - Added PRO, Optimized and Quality presets across the reviewed Graphics, Graphics Quality and Advanced controls while preserving resolution, render scale, display, FPS caps and other hardware-dependent choices.

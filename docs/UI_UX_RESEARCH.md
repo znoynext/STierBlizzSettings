@@ -25,7 +25,21 @@ Reviewed 2026-07-16. The addon keeps a custom lightweight dashboard but follows 
 - Every user action produces an in-window success, warning or error state. Choosing a mode explicitly says that nothing has been applied yet; apply, reload, save, backup, restore, delete, rename and export have distinct completion copy.
 - The About page explains evidence, scope, backup/undo behavior, preserved hardware controls and the limits of the FPS claim.
 - Motion is limited to short window/page fades, status feedback and button hover feedback so the UI feels responsive without distracting from the decision flow.
-- Visual styling stays inside Blizzard's native vocabulary: `UIPanelButtonTemplate`, `GameFontNormalHuge2`, other game font objects, rock/dialog backgrounds, tooltip borders, gold headings and the standard minimap tracking border. Custom art is limited to the addon emblem and a framed real in-game screenshot.
+- Visual styling stays inside Blizzard's native vocabulary: `UIPanelButtonTemplate`, `GameFontNormalHuge2`, other game font objects, rock/dialog backgrounds, tooltip borders, gold headings and the standard minimap tracking border. Custom art is limited to the addon emblem.
+
+## Graphics preview decision
+
+- Hyperframe publishes separate benchmark screenshots in its CurseForge gallery; they are documentation artifacts, not a second live world rendered inside its settings frame.
+- Screenshoter temporarily changes real graphics for a capture and then restores them. ScreenPlus likewise enters a camera mode, hides UI, takes the real screenshot and restores state.
+- The reviewed Retail API exposes `Screenshot()` as an action but no addon-readable framebuffer or render-to-texture API for the current world, and there is no supported way to render the world twice with different unapplied CVars. A static texture labelled as a live preset preview would therefore be misleading.
+
+S-Tier now uses the same honest product principle: show concise setting outcomes before confirmation, apply through a backup-first transaction, then let the player hide the window and inspect the actual game scene. Undo remains one click away.
+
+## Texture and control audit
+
+The only custom bitmap is the 128×128 gold S emblem, rendered at 48 px in the header and 36 px on the minimap, so it is already sampled down rather than stretched up. The former 640×360 preview texture was removed from the addon. Window rock, dialog borders, buttons, resize handle, checkbox marks, highlights and minimap border all use Blizzard-owned textures/templates. Responsive button widths are rounded to whole UI pixels to avoid soft edges after resizing.
+
+Boolean states use `UICheckButtonTemplate`; mutually exclusive presets and zone mappings remain buttons because a checkbox would communicate the wrong interaction. All visible labels use the native `GameFontNormalLarge` / `GameFontHighlightLarge` family, preserving the selected WoW typeface and existing colors.
 
 ## Intentionally not adopted
 
