@@ -160,6 +160,21 @@ local experience = {
   EXPORT_ALL="Export all settings", IMPORT_ALL="Import all settings", IMPORT_REVIEW="Review import", BUNDLE_EXPORT_READY="The full settings string is ready. Click Copy, then press Ctrl+C.", BUNDLE_EXPORT_FAILED="Could not export addon settings.", BUNDLE_IMPORT_PASTE="Paste a complete STBSA1 string below, then click Review import.", BUNDLE_IMPORT_FAILED="The settings string was not imported.", BUNDLE_IMPORT_SUMMARY="This will apply the shared graphics and replace personal profiles (%d). Preset: %s. A graphics backup will be created first.", IMPORT_ALL_CONFIRM="Import and apply", BUNDLE_IMPORTED="All shared addon settings were imported.",
   ACCURATE_CHECK="Accurate 20-second test", WIDGET_CHECK="Show FPS & Ping overlay", ZONE_CHECK="Enable Zone Graphics",
   TRANSFER_READY="Ready to copy or paste a settings string.",
+  LEGACY_SPLIT_BADGE="Legacy split profile",
+  LEGACY_SPLIT_SELECTED_HELP="Uses separate Raid/Battleground graphics from an older workflow.",
+  LEGACY_SPLIT_PREVIEW="This older profile stores separate base and Raid/Battleground graphics.",
+  LEGACY_SPLIT_CONVERSION_TITLE="Recommended conversion",
+  LEGACY_SPLIT_CONVERSION_HELP="A new unified copy uses the base graphics everywhere. Raid/Battleground values stay stored as inactive compatibility data; the original profile and current graphics are unchanged.",
+  LEGACY_SPLIT_ADVANCED_HELP="Advanced: apply the original split values and enable Blizzard's separate Raid/Battleground settings.",
+  LEGACY_SPLIT_STATUS="Legacy compatibility profile — choose conversion or advanced apply.",
+  CONVERT_TO_UNIFIED="Convert to unified profile",
+  CONVERT_LEGACY_TITLE="Convert legacy profile?",
+  CONVERT_LEGACY_TEXT="Save a new unified copy. Choose its name; the original profile and current graphics stay unchanged.",
+  APPLY_LEGACY_SPLIT="Apply legacy split mode",
+  APPLY_LEGACY_SPLIT_CONFIRM="Apply legacy split profile?",
+  APPLY_LEGACY_SPLIT_CONFIRM_TEXT="Advanced action: enable Blizzard's separate Raid/Battleground settings and apply this profile's saved base and raid values? A graphics backup will be created first.",
+  PROFILE_CONVERTED="Unified profile created: %s",
+  PROFILE_CONVERT_FAILED="Profile was not converted",
 }
 
 local russianExperience = {
@@ -189,6 +204,21 @@ local russianExperience = {
   FPS_APPLY_MEASURE_HELP="Не меняйте ракурс, пока аддон измеряет результат.",
   FPS_APPLY_MEASURE_PHASE="Замер FPS после применения",
   TRANSFER_READY="Можно копировать или вставлять строку настроек.",
+  LEGACY_SPLIT_BADGE="Старый раздельный профиль",
+  LEGACY_SPLIT_SELECTED_HELP="Хранит отдельную графику для рейдов и полей боя из старой схемы работы.",
+  LEGACY_SPLIT_PREVIEW="Этот старый профиль хранит отдельные базовые настройки и графику для рейдов и полей боя.",
+  LEGACY_SPLIT_CONVERSION_TITLE="Рекомендуемое преобразование",
+  LEGACY_SPLIT_CONVERSION_HELP="Новая единая копия использует базовую графику везде. Значения для рейдов и полей боя сохраняются как неактивные данные совместимости; исходный профиль и текущая графика не меняются.",
+  LEGACY_SPLIT_ADVANCED_HELP="Расширенное действие: применить исходные раздельные значения и включить отдельные настройки Blizzard для рейдов и полей боя.",
+  LEGACY_SPLIT_STATUS="Старый профиль совместимости — выберите преобразование или расширенное применение.",
+  CONVERT_TO_UNIFIED="Преобразовать в единый профиль",
+  CONVERT_LEGACY_TITLE="Преобразовать старый профиль?",
+  CONVERT_LEGACY_TEXT="Будет сохранена новая единая копия. Выберите её имя; исходный профиль и текущая графика останутся без изменений.",
+  APPLY_LEGACY_SPLIT="Применить старый раздельный режим",
+  APPLY_LEGACY_SPLIT_CONFIRM="Применить старый раздельный профиль?",
+  APPLY_LEGACY_SPLIT_CONFIRM_TEXT="Расширенное действие: включить отдельные настройки Blizzard для рейдов и полей боя и применить сохранённые базовые и рейдовые значения? Сначала будет создан бэкап графики.",
+  PROFILE_CONVERTED="Создан единый профиль: %s",
+  PROFILE_CONVERT_FAILED="Профиль не преобразован",
 }
 
 for locale, values in pairs(STBS.Locale) do

@@ -607,13 +607,16 @@ function STBS:ShowProfiles(section)
   local text
   if section=="profiles" then
     text="|cffffd36b"..self:L("PERSONAL_PROFILES").."|r\n"..(#profiles==0 and self:L("NO_GRAPHICS_PROFILES") or string.format(self:L("PROFILE_COUNT"),#profiles))
-    if selectedProfile then text=text.."\n\n|cff65cfff"..self:L("SELECTED")..":|r "..self:SafeText(selectedProfile.displayName) end
+    if selectedProfile then
+      text=text.."\n\n|cff65cfff"..self:L("SELECTED")..":|r "..self:SafeText(selectedProfile.displayName)
+      if self:IsLegacySplitProfile(selectedProfile) then text=text.."\n|cffffd36b"..self:L("LEGACY_SPLIT_BADGE").."|r · "..self:L("LEGACY_SPLIT_SELECTED_HELP") end
+    end
     table.insert(actions,{label=self:L("SAVE_GRAPHICS"),fn=function()STBS:OpenSaveDialog()end,style="primary",wide=true})
     if selectedProfile then
       table.insert(actions,{label=self:L("APPLY_PROFILE"),fn=function()STBS:ShowProfilePreview(selectedProfile)end,style="primary",wide=true})
       table.insert(actions,{label=self:L("EXPORT"),third=true,fn=function()STBS:ShowExport(selectedProfile)end});table.insert(actions,{label=self:L("RENAME"),third=true,fn=function()STBS:OpenRenameDialog(selectedProfile)end});table.insert(actions,{label=self:L("DELETE"),third=true,fn=function()STBS:ConfirmDeleteProfile(selectedProfile)end,style="danger"})
     end
-    for _,profile in ipairs(profiles) do local current=profile;table.insert(actions,{label=self:L("PROFILE_LABEL")..": "..self:SafeText(current.displayName),active=current.id==self.selectedProfileId,fn=function()STBS.selectedProfileId=current.id;STBS.flashMessage=string.format(STBS:L("ITEM_SELECTED"),STBS:SafeText(current.displayName));STBS.flashKind="success";STBS:ShowProfiles("profiles")end}) end
+    for _,profile in ipairs(profiles) do local current=profile;local legacy=self:IsLegacySplitProfile(current);table.insert(actions,{label=self:L("PROFILE_LABEL")..": "..self:SafeText(current.displayName)..(legacy and " · "..self:L("LEGACY_SPLIT_BADGE") or ""),active=current.id==self.selectedProfileId,fn=function()STBS.selectedProfileId=current.id;STBS.flashMessage=string.format(STBS:L("ITEM_SELECTED"),STBS:SafeText(current.displayName));STBS.flashKind="success";STBS:ShowProfiles("profiles")end}) end
   elseif section=="backups" then
     local count=0;for _,backup in ipairs(backups) do if self:BackupHasModule(backup,"graphics") then count=count+1 end end
     text="|cffffd36b"..self:L("BACKUP_HISTORY").."|r\n"..(count==0 and self:L("NO_BACKUPS") or string.format(self:L("BACKUP_COUNT"),count))
@@ -665,7 +668,18 @@ end
 function STBS:ShowBackups() self.selectedItemType="backup";return self:ShowProfiles() end
 
 function STBS:ShowProfilePreview(profile)
-  local valid=self:ValidateProfile(profile);if not valid then self:ShowProfiles();return end
+  local valid=self:ValidateProfile(profile);if not valid then self.flashMessage=self:L("ACTION_FAILED");self.flashKind="error";self:ShowProfiles();return end
+  if self:IsLegacySplitProfile(profile) then
+    local settings,why=self:GetLegacySplitProfileSettings(profile);if not settings then self.flashMessage=self:L("ACTION_FAILED").." ("..tostring(why)..")";self.flashKind="error";self:ShowProfiles();return end
+    local plan=self:BuildDiff(settings);local profileId=profile.id
+    local text="|cffffd36b"..self:SafeText(profile.displayName).."|r\n|cffffd36b"..self:L("LEGACY_SPLIT_BADGE").."|r\n\n"..self:L("LEGACY_SPLIT_PREVIEW").."\n\n|cff65cfff"..self:L("LEGACY_SPLIT_CONVERSION_TITLE").."|r\n"..self:L("LEGACY_SPLIT_CONVERSION_HELP").."\n\n|cff9aa7b8"..self:L("LEGACY_SPLIT_ADVANCED_HELP").."|r\n\n"..self:FormatDiff(plan)
+    self:SetPage(self:L("PREVIEW"),text,{
+      {label=self:L("CONVERT_TO_UNIFIED"),fn=function()STBS:OpenLegacySplitConversion(profileId)end,style="primary",wide=true},
+      {label=self:L("APPLY_LEGACY_SPLIT"),fn=function()STBS:ConfirmApplyLegacySplitProfile(profileId)end,wide=true},
+      {label=self:L("BACK"),fn=function()STBS:ShowProfiles()end},
+    },self:L("LEGACY_SPLIT_STATUS"),{pageKey="profiles",statusKind="warning"})
+    return
+  end
   local settings=self:FlattenProfile(profile,{graphics=true});local plan=self:BuildDiff(settings)
   self:SetPage(self:L("PREVIEW"),"|cffffd36b"..self:SafeText(profile.displayName).."|r\n\n"..self:FormatDiff(plan),{
     {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ConfirmApplyProfile(profile)end,style="primary",wide=true},
@@ -673,7 +687,31 @@ function STBS:ShowProfilePreview(profile)
   },self:L("STATUS")..": "..#plan.." "..self:L("SETTINGS_COUNT"),{pageKey="profiles"})
 end
 
+function STBS:OpenLegacySplitConversion(profileId)
+  local profile=self:InitializeDatabase().profiles[profileId];local legacy,why=self:IsLegacySplitProfile(profile)
+  if not legacy then self.flashMessage=self:L("PROFILE_CONVERT_FAILED").." ("..tostring(why)..")";self.flashKind="error";self:ShowProfiles();return end
+  self:ShowAddonDialog({title=self:L("CONVERT_LEGACY_TITLE"),message=self:L("CONVERT_LEGACY_TEXT"),hasEditBox=true,requireText=true,maxLetters=self.MAX_PROFILE_NAME_BYTES,initialText=profile.displayName,selectAll=true,acceptText=self:L("CONVERT_TO_UNIFIED"),onAccept=function(value)
+    local result=STBS:SaveConvertedLegacyProfile(profileId,value)
+    if result.ok then STBS.selectedProfileId=result.data.id;STBS.selectedItemType="profile";STBS.flashMessage=string.format(STBS:L("PROFILE_CONVERTED"),STBS:SafeText(result.data.displayName));STBS.flashKind="success"
+    else STBS.flashMessage=STBS:L("PROFILE_CONVERT_FAILED").." ("..tostring(result.code)..")";STBS.flashKind="error" end
+    STBS:ShowProfiles("profiles")
+  end})
+end
+
+function STBS:ConfirmApplyLegacySplitProfile(profileId)
+  local profile=self:InitializeDatabase().profiles[profileId];local settings,why=self:GetLegacySplitProfileSettings(profile)
+  if not settings then self.flashMessage=self:L("ACTION_FAILED").." ("..tostring(why)..")";self.flashKind="error";self:ShowProfiles();return end
+  local function apply()
+    local current=STBS:InitializeDatabase().profiles[profileId];local currentSettings,currentWhy=STBS:GetLegacySplitProfileSettings(current)
+    if not currentSettings then STBS.flashMessage=STBS:L("ACTION_FAILED").." ("..tostring(currentWhy)..")";STBS.flashKind="error";STBS:ShowProfiles();return end
+    STBS:ApplyGraphicsWithFPS(currentSettings,"personal-profile",STBS.GRAPHICS_MODE_SPLIT,nil,"personal-profile")
+  end
+  if changedCount(self:BuildDiff(settings))==0 then apply();return end
+  self:ShowAddonDialog({title=self:L("APPLY_LEGACY_SPLIT_CONFIRM"),message=self:L("APPLY_LEGACY_SPLIT_CONFIRM_TEXT"),acceptText=self:L("APPLY_LEGACY_SPLIT"),onAccept=apply})
+end
+
 function STBS:ConfirmApplyProfile(profile)
+  if self:IsLegacySplitProfile(profile) then return self:ConfirmApplyLegacySplitProfile(profile.id) end
   local settings=self:FlattenProfile(profile,{graphics=true});local function apply()STBS:ApplyGraphicsWithFPS(settings,"personal-profile",profile.sections.graphics.mode,nil,"personal-profile")end
   if changedCount(self:BuildDiff(settings))==0 then apply();return end
   self:ShowAddonDialog({title=self:L("PROFILE_APPLY_CONFIRM"),message=self:L("PROFILE_APPLY_CONFIRM_TEXT"),onAccept=apply})

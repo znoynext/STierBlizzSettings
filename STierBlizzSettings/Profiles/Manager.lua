@@ -26,6 +26,40 @@ function STBS:FlattenProfile(profile, modules, keepMode)
   local out={}; local sections=profile.sections or {}; if modules.graphics then local g=sections.graphics or {}; for k,v in pairs(g.base or {}) do out[k]=v end; if (not keepMode and g.mode==self.GRAPHICS_MODE_SPLIT) or (keepMode==self.GRAPHICS_MODE_SPLIT) then for k,v in pairs(g.raid or {}) do out[k]=v end end; if not keepMode then out.RAIDsettingsEnabled=g.mode==self.GRAPHICS_MODE_SPLIT and "1" or "0" end end
   if modules.interfaceGameplay then for _,n in ipairs({"interface","camera","gameplay","controls","combat","nameplates","chat"}) do for k,v in pairs(sections[n] or {}) do out[k]=v end end end; return out
 end
+function STBS:IsLegacySplitProfile(profile)
+  local valid,why=self:ValidateProfile(profile);if not valid then return false,why end
+  if profile.profileType~="personal" then return false,"profileType" end
+  local graphics=profile.sections and profile.sections.graphics
+  if type(graphics)~="table" or graphics.mode~=self.GRAPHICS_MODE_SPLIT then return false,"not-legacy-split" end
+  return true
+end
+function STBS:ConvertLegacySplitProfile(profile)
+  local legacy,why=self:IsLegacySplitProfile(profile);if not legacy then return nil,why end
+  local converted=self:Copy(profile);converted.sections.graphics.mode=self.GRAPHICS_MODE_UNIFIED
+  local valid,convertedWhy=self:ValidateProfile(converted);if not valid then return nil,convertedWhy end
+  return converted
+end
+function STBS:GetLegacySplitProfileSettings(profile)
+  local legacy,why=self:IsLegacySplitProfile(profile);if not legacy then return nil,why end
+  local settings=self:FlattenProfile(profile,{graphics=true});local valid,settingsWhy=self:ValidateSettings(settings,false)
+  if not valid then return nil,settingsWhy end
+  return settings
+end
+function STBS:SaveConvertedLegacyProfile(profileId,name)
+  local db,databaseFailure=self:RequireWritableDatabase();if not db then return databaseFailure end
+  if type(name)=="string" then name=name:match("^%s*(.-)%s*$") end
+  if type(name)~="string" or name=="" or #name>self.MAX_PROFILE_NAME_BYTES or name:find("[%c]") then return self:Result(false,"name") end
+  local original=db.profiles[profileId]
+  if type(original)~="table" or original.id~=profileId then return self:Result(false,"missing") end
+  local converted,why=self:ConvertLegacySplitProfile(original);if not converted then return self:Result(false,why) end
+  db.profileSequence=db.profileSequence+1
+  local id="personal_"..tostring(time()).."_"..tostring(db.profileSequence)
+  while db.profiles[id] do db.profileSequence=db.profileSequence+1;id="personal_"..tostring(time()).."_"..tostring(db.profileSequence) end
+  converted.id=id;converted.displayName=name;converted.schemaVersion=self.PROFILE_SCHEMA;converted.addonVersion=self.VERSION;converted.testedClientBuild=self:GetBuild();converted.createdAt=time();converted.updatedAt=converted.createdAt
+  local valid,convertedWhy=self:ValidateProfile(converted);if not valid then return self:Result(false,convertedWhy) end
+  db.profiles[id]=converted
+  return self:Result(true,"converted",converted)
+end
 function STBS:GetPreferredAntiAliasing()
   if type(_G.AntiAliasingSupported) ~= "function" then return nil end
   local ok, _, cmaa, cmaa2 = pcall(_G.AntiAliasingSupported); if not ok then return nil end
