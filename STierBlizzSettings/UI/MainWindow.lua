@@ -45,7 +45,7 @@ end
 
 local function panelTab(parent,text,callback)
   local tab=STBS:CreateModernButton(parent,text,180,32,function()if type(_G.PlaySound)=="function" and _G.SOUNDKIT and _G.SOUNDKIT.IG_CHARACTER_INFO_TAB then _G.PlaySound(_G.SOUNDKIT.IG_CHARACTER_INFO_TAB)end;callback()end)
-  tab.label:SetFontObject(GameFontNormal);tab:SetWidth(math.max(150,math.min(235,tab.label:GetStringWidth()+38)));tab.accent:ClearAllPoints();tab.accent:SetPoint("BOTTOMLEFT",1,1);tab.accent:SetPoint("BOTTOMRIGHT",-1,1);tab.accent:SetHeight(3);tab:Hide()
+  tab.label:SetFontObject(GameFontNormal);tab:SetWidth(math.max(150,math.min(235,tab.label:GetStringWidth()+38)));tab.accent:ClearAllPoints();tab.accent:SetPoint("BOTTOMLEFT",1,1);tab.accent:SetPoint("BOTTOMRIGHT",-1,1);tab.accent:SetHeight(3)
   return tab
 end
 
@@ -96,11 +96,12 @@ function STBS:LayoutUI()
   local f=self.ui;if not f then return end
   local panelWidth=math.max(440,math.floor(f.panel:GetWidth()+0.5));local panelHeight=math.max(448,math.floor(f.panel:GetHeight()+0.5));local contentWidth=math.max(360,panelWidth-76)
   f.status:SetWidth(panelWidth-60);f.content:SetWidth(contentWidth);f.actionContent:SetWidth(contentWidth)
+  local tabWidth=math.floor(math.min(478,panelWidth-44)/2)-4;f.graphicsSettingsTab:SetWidth(tabWidth);f.zoneGraphicsTab:SetWidth(tabWidth)
   f.body:SetWidth(contentWidth-19);f.metricCard:SetWidth(contentWidth-19);f.metricSub:SetWidth(contentWidth-50)
   if f.fpsDashboard:IsShown() then layoutFPSDashboard(f,contentWidth);f.bodyY=-(f.fpsDashboard:GetHeight()+(f.fpsDashboardLegend:IsShown() and 38 or 16));f.body:ClearAllPoints();f.body:SetPoint("TOPLEFT",7,f.bodyY) end
   if f.copyBox then f.copyBox:SetWidth(contentWidth-19);f.copyBox:SetHeight(math.max(120,(f.scroll:GetHeight() or 200)-18)) end
   layoutActionButtons(f)
-  local contentTop=f.graphicsTabsVisible and 108 or 76;local availableHeight=panelHeight-contentTop-18
+  local contentTop=f.graphicsTabsVisible and 112 or 76;local availableHeight=panelHeight-contentTop-18
   f.scroll:ClearAllPoints();f.scroll:SetPoint("TOPLEFT",18,-contentTop);f.scroll:SetPoint("TOPRIGHT",-27,-contentTop)
   if f.hasActions then
     local desired=math.max(82,(f.actionRows or 0)*40);local actionHeight=math.min(desired,math.max(122,math.min(240,availableHeight-220)))
@@ -144,10 +145,9 @@ function STBS:CreateUI()
 
   f.header=panel:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.header:SetPoint("TOPLEFT",22,-20);f.header:SetTextColor(1,0.82,0)
   f.status=panel:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge");f.status:SetPoint("TOPLEFT",24,-50);f.status:SetWidth(660);f.status:SetJustifyH("LEFT");f.status:SetTextColor(0.78,0.72,0.58)
-  panel.tabPadding=18;panel.minTabWidth=150;panel.maxTabWidth=235
-  f.graphicsSettingsTab=panelTab(panel,self:L("GRAPHICS_SETTINGS_TAB"),function()STBS:ShowGraphics()end);f.graphicsSettingsTab:SetPoint("TOPLEFT",panel,"TOPLEFT",22,-43)
-  f.zoneGraphicsTab=panelTab(panel,self:L("ZONE_SWITCHER_TAB"),function()STBS:ShowZoneGraphics()end);f.zoneGraphicsTab:SetPoint("LEFT",f.graphicsSettingsTab,"RIGHT",-7,0)
-  f.graphicsTabs={f.graphicsSettingsTab,f.zoneGraphicsTab}
+  f.graphicsTabBar=CreateFrame("Frame",nil,panel);f.graphicsTabBar:SetPoint("TOPLEFT",panel,"TOPLEFT",22,-10);f.graphicsTabBar:SetPoint("TOPRIGHT",panel,"TOPRIGHT",-22,-10);f.graphicsTabBar:SetHeight(32);f.graphicsTabBar:Hide()
+  f.graphicsSettingsTab=panelTab(f.graphicsTabBar,self:L("GRAPHICS_SETTINGS_TAB"),function()STBS:ShowGraphics()end);f.graphicsSettingsTab:SetPoint("TOPLEFT",f.graphicsTabBar,"TOPLEFT",0,0)
+  f.zoneGraphicsTab=panelTab(f.graphicsTabBar,self:L("ZONE_SWITCHER_TAB"),function()STBS:ShowZoneGraphics()end);f.zoneGraphicsTab:SetPoint("TOPLEFT",f.graphicsSettingsTab,"TOPRIGHT",8,0)
   local scroll=CreateFrame("ScrollFrame",nil,panel,"UIPanelScrollFrameTemplate");scroll:SetPoint("TOPLEFT",18,-76)
   local content=CreateFrame("Frame",nil,scroll);content:SetHeight(350);scroll:SetScrollChild(content);f.scroll,f.content=scroll,content
   local pageFade=content:CreateAnimationGroup();pageFade:SetToFinalAlpha(true);local pageAlpha=pageFade:CreateAnimation("Alpha");pageAlpha:SetFromAlpha(0.35);pageAlpha:SetToAlpha(1);pageAlpha:SetDuration(0.16);pageAlpha:SetSmoothing("OUT");f.pageFade=pageFade
@@ -217,9 +217,9 @@ function STBS:SetPage(title,text,actions,status,options)
   if options.statusKind and type(_G.UIFrameFadeIn)=="function" then UIFrameFadeIn(f.status,0.18,0.35,1) end
   if f.copyBox then f.copyBox:Hide() end;f.scroll:Show();f.metricCard:Hide();f.fpsDashboard:Hide();f.fpsDashboardLegend:Hide()
   local graphicsSection=options.pageKey=="graphics" and (options.graphicsSection or "settings") or nil;f.currentGraphicsSection=graphicsSection;f.graphicsTabsVisible=graphicsSection~=nil
-  for _,tab in ipairs(f.graphicsTabs) do tab:SetShown(f.graphicsTabsVisible) end
-  if f.graphicsTabsVisible then setPanelTabActive(f.graphicsSettingsTab,graphicsSection=="settings");setPanelTabActive(f.zoneGraphicsTab,graphicsSection=="zones");f.status:ClearAllPoints();f.status:SetPoint("TOPLEFT",24,-82)
-  else f.status:ClearAllPoints();f.status:SetPoint("TOPLEFT",24,-50) end
+  f.graphicsTabBar:SetShown(f.graphicsTabsVisible)
+  if f.graphicsTabsVisible then setPanelTabActive(f.graphicsSettingsTab,graphicsSection=="settings");setPanelTabActive(f.zoneGraphicsTab,graphicsSection=="zones");f.header:ClearAllPoints();f.header:SetPoint("TOPLEFT",22,-55);f.status:ClearAllPoints();f.status:SetPoint("TOPLEFT",24,-82)
+  else f.header:ClearAllPoints();f.header:SetPoint("TOPLEFT",22,-20);f.status:ClearAllPoints();f.status:SetPoint("TOPLEFT",24,-50) end
   local bodyY=-6
   if options.metric then
     f.metricCard:ClearAllPoints();f.metricCard:SetPoint("TOPLEFT",5,-2);f.metricCard:Show();bodyY=-110

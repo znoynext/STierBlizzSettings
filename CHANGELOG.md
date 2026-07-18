@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.14-alpha
+
+- Moved Graphics Settings and Zone Graphics Switcher into a dedicated responsive tab bar at the top of the Graphics section.
+- Placed the page title and status below the tabs with corrected spacing so text no longer collides with the selected tab border.
+- Replaced the old per-tab visibility path with one tab-bar state to keep both tabs reliably visible and aligned.
+
 ## 0.4.13-alpha
 
 - Replaced stretched red panel buttons with a shared scalable Blizzard Retail-style system across navigation, actions, graphics tabs, the FPS modal and Blizzard Settings integration.
