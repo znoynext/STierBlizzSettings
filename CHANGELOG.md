@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.5-alpha
+
+- Removed screen-edge clamping from the main addon window so it can be dragged partially or fully beyond the display bounds. Reloading the UI still restores its default centered position.
+
 ## 0.4.4-alpha
 
 - Added a centered, mouse-blocking FPS measurement dialog with live progress, fixed-scene guidance and a safe Cancel action.

@@ -8,7 +8,7 @@
 
 ## Установка
 
-1. Скачайте [STierBlizzSettings-v0.4.4-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.4.4-alpha.zip).
+1. Скачайте [STierBlizzSettings-v0.4.5-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.4.5-alpha.zip).
 2. Распакуйте архив в `World of Warcraft/_retail_/Interface/AddOns/`.
 3. Проверьте путь: `.../AddOns/STierBlizzSettings/STierBlizzSettings.toc`.
 4. Включите аддон и откройте его командой `/stier` или кнопкой у миникарты.
@@ -42,6 +42,6 @@
 
 Нет телеметрии, сети, рекламы, платных функций, донатов и автоматизации геймплея. Настройки проверяются по актуальным исходникам интерфейса Blizzard Retail; недоступные значения не применяются.
 
-Текущая версия: **0.4.4-alpha**. Базовая совместимость: Retail 12.0.7, Interface 120007, Blizzard UI build 68453. До production v1.0 требуется визуальная проверка в живом клиенте и контролируемые аппаратные бенчмарки.
+Текущая версия: **0.4.5-alpha**. Базовая совместимость: Retail 12.0.7, Interface 120007, Blizzard UI build 68453. До production v1.0 требуется визуальная проверка в живом клиенте и контролируемые аппаратные бенчмарки.
 
 Подробнее: [исследование пресетов](docs/RECOMMENDED_PROFILE_RESEARCH.md), [архитектура](docs/ARCHITECTURE.md), [заметки UI/UX](docs/UI_UX_RESEARCH.md) и [план тестирования](docs/TEST_PLAN.md).
