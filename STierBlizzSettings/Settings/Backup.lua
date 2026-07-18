@@ -1,4 +1,12 @@
 local _, STBS = ...
+local undoableBackupSources={
+  ["manual-preset"]=true,
+  ["personal-profile"]=true,
+  ["profile-import"]=true,
+  ["zone-manual"]=true,
+  ["addon-import"]=true,
+}
+
 function STBS:CreateBackup(modules, trigger, source, deferTrim)
   local db,databaseFailure=self:RequireWritableDatabase();if not db then return databaseFailure end
   if type(source)=="boolean" and deferTrim==nil then deferTrim=source;source=nil end
@@ -50,6 +58,15 @@ function STBS:GetLatestBackupId(module)
   for _, backup in ipairs(self:InitializeDatabase().backups) do
     if not module or self:BackupHasModule(backup, module) then return backup.id end
   end
+  return nil
+end
+
+function STBS:IsUndoableBackup(backup, module)
+  return type(backup)=="table" and undoableBackupSources[backup.source]==true and (not module or self:BackupHasModule(backup,module))
+end
+
+function STBS:GetLatestUndoableBackup(module)
+  for _,backup in ipairs(self:InitializeDatabase().backups) do if self:IsUndoableBackup(backup,module) then return backup end end
   return nil
 end
 

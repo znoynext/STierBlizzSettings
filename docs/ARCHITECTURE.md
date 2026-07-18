@@ -69,7 +69,7 @@ Before a normal transaction writes, `Settings/Backup.lua` captures all readable 
 
 `GetBackupById`, `RestoreBackupById`, and `DeleteBackupById` resolve records by stable ID and return `missing` for unknown IDs. Restore filters out removed or no-longer-owned settings, validates the remaining payload, creates a `restore-safety` backup, then applies with `skipBackup`. Recovery context carries source and safety backup IDs if combat delays execution. Failed restore preserves the safety record. Successful preset-comparison restoration removes its exact temporary backup by ID, even if a newer unrelated backup was inserted first.
 
-`trigger` remains unchanged for diagnostics and compatibility, but logic that needs workflow semantics must use `source`. Unknown/invalid migrated provenance normalizes to `legacy`, which is never assumed to be user-initiated. Backup History intentionally keeps its existing presentation in this task; source-aware Undo policy is not implemented here.
+`trigger` remains unchanged for diagnostics and compatibility, but logic that needs workflow semantics uses `source`. `GetLatestUndoableBackup("graphics")` walks presentation order but returns the first retained graphics backup whose source is an explicit user change: `manual-preset`, `personal-profile`, `profile-import`, `zone-manual`, or `addon-import`. It excludes `zone-auto`, `fps-comparison-temp`, `restore-safety`, `manual-backup`, `legacy`, and unknown sources. The confirmation captures that record's stable ID; if retention or deletion removes it before acceptance, `RestoreBackupById` returns `missing` and never selects another record. Backup History explicit restore remains source-agnostic and separate from Undo.
 
 ## Database and schema architecture
 

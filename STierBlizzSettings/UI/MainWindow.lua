@@ -347,7 +347,7 @@ function STBS:ShowGraphics()
   local preset=self:GetSelectedPreset()
   local metric=self:GetLastFPSMetric();local measuring=self.fpsAfterMeasurement or self.fpsAccurateMeasurement or self.fpsTestMeasurement;local dashboard=self:BuildGraphicsFPSDashboard(metric,self:ReadFramerate(),measuring)
   local text="|cffffd36b"..self:L("QUICK_START").."|r\n"..self:L("QUICK_START_TEXT").."\n\n|cffffd36b"..self:L("SAVE_OWN_TITLE").."|r\n"..self:L("SAVE_OWN_TEXT").."\n\n|cff9aa7b8"..self:L("GRAPHICS_SELECTION_SUMMARY").."|r"
-  local latest=self:GetLatestBackupId("graphics")
+  local latest=self:GetLatestUndoableBackup("graphics")
   local actions={
     {label=self:L("PRESET_PRO"),third=true,fn=function()STBS:SetSelectedPreset(STBS.GRAPHICS_PRESET_PRO);STBS.flashMessage=STBS:L("PRESET_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=preset==self.GRAPHICS_PRESET_PRO},
     {label=self:L("PRESET_OPTIMIZED"),third=true,fn=function()STBS:SetSelectedPreset(STBS.GRAPHICS_PRESET_OPTIMIZED);STBS.flashMessage=STBS:L("PRESET_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=preset==self.GRAPHICS_PRESET_OPTIMIZED},
@@ -548,7 +548,7 @@ function STBS:ConfirmReloadUI()
 end
 
 function STBS:ConfirmUndoGraphics()
-  local backupId=self:GetLatestBackupId("graphics");if not backupId then self.flashMessage=self:L("UNDO_UNAVAILABLE");self.flashKind="warning";self:ShowGraphics();return end
+  local backup=self:GetLatestUndoableBackup("graphics");local backupId=backup and backup.id;if not backupId then self.flashMessage=self:L("UNDO_UNAVAILABLE");self.flashKind="warning";self:ShowGraphics();return end
   self:ShowAddonDialog({title=self:L("UNDO_CONFIRM"),message=self:L("UNDO_CONFIRM_TEXT"),onAccept=function()local result=STBS:RestoreBackupById(backupId,{graphics=true});STBS.flashMessage=result.ok and STBS:L("RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end})
 end
 
