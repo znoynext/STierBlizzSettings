@@ -21,6 +21,7 @@ Entries below are version-scoped historical records, not a description of the cu
 - Full-addon import now patches only its validated shared preferences instead of replacing the entire preferences table, preserving window/widget/minimap layout, backup limits, and unknown future device-local fields while retaining existing bundle compatibility and profile replacement behavior.
 - Removed the unused quick/accurate benchmark selector, its dead 10+10-second workflow, persisted preference and new-export field. Schema `5 -> 6` deletes the obsolete value, while valid version-1 bundles carrying it remain import-compatible and ignore it; the current post-apply, standalone and preset-comparison workflows are unchanged.
 - Formalized legacy split personal profiles without restoring split as a built-in workflow. Profiles now label the old architecture, recommend a non-destructive unified copy that retains inactive Raid/Battleground data, and keep exact split application behind an explicit advanced backup-first action; malformed legacy data fails closed.
+- Made Save Graphics derive unified/split mode from the actual captured Blizzard `RAIDsettingsEnabled` value instead of persisted applied state. External Blizzard/addon CVar changes are reflected correctly, unavailable or unexpected values fail before persistence, and profile capture performs no CVar writes.
 
 ## 0.4.19-alpha
 

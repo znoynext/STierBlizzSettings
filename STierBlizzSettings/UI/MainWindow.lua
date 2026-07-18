@@ -563,7 +563,7 @@ function STBS:ConfirmUndoGraphics()
 end
 
 function STBS:OpenSaveDialog()
-  self:ShowAddonDialog({title=self:L("PROFILE_NAME"),message=self:L("PROFILE_SAVE_HELP"),hasEditBox=true,requireText=true,maxLetters=self.MAX_PROFILE_NAME_BYTES,onAccept=function(value)local profile,why=STBS:SaveCurrent(value,{graphics=true});if profile then STBS.selectedItemType="profile";STBS.selectedProfileId=profile.id;STBS.flashMessage=string.format(STBS:L("PROFILE_SAVED"),STBS:SafeText(profile.displayName));STBS.flashKind="success" else STBS.flashMessage=STBS:L("PROFILE_SAVE_FAILED").." ("..tostring(why)..")";STBS.flashKind="error" end;STBS:ShowProfiles()end})
+  self:ShowAddonDialog({title=self:L("PROFILE_NAME"),message=self:L("PROFILE_SAVE_HELP"),hasEditBox=true,requireText=true,maxLetters=self.MAX_PROFILE_NAME_BYTES,onAccept=function(value)local profile,why=STBS:SaveCurrent(value,{graphics=true});if profile then STBS.selectedItemType="profile";STBS.selectedProfileId=profile.id;STBS.flashMessage=string.format(STBS:L("PROFILE_SAVED"),STBS:SafeText(profile.displayName));STBS.flashKind="success" else STBS.flashMessage=why=="graphics-mode-unavailable" and STBS:L("PROFILE_SAVE_MODE_UNAVAILABLE") or why=="graphics-mode-invalid" and STBS:L("PROFILE_SAVE_MODE_INVALID") or STBS:L("PROFILE_SAVE_FAILED").." ("..tostring(why)..")";STBS.flashKind="error" end;STBS:ShowProfiles()end})
 end
 
 function STBS:OpenRenameDialog(profile)

@@ -5,9 +5,14 @@ function STBS:GetSelectedPreset() local applied=self:GetAppliedGraphicsPreset();
 function STBS:SetSelectedPreset(preset) if not self:IsGraphicsPreset(preset) then return false end;self.graphicsPresetSelection=preset;return true end
 function STBS:GetSelectedMode() return self.graphicsModeSelection or self:GetAppliedGraphicsMode() end
 function STBS:SetSelectedMode(mode) if mode~=self.GRAPHICS_MODE_UNIFIED and mode~=self.GRAPHICS_MODE_SPLIT then return false end;self.graphicsModeSelection=mode;return true end
+function STBS:ResolveGraphicsModeFromRaidSetting(value)
+  if value=="1" then return self.GRAPHICS_MODE_SPLIT end
+  if value=="0" then return self.GRAPHICS_MODE_UNIFIED end
+  return nil,value==nil and "graphics-mode-unavailable" or "graphics-mode-invalid"
+end
 function STBS:GetCurrentGraphicsMode()
   local current=self:ReadSetting(self.RegistryByKey.RAIDsettingsEnabled)
-  return current=="1" and self.GRAPHICS_MODE_SPLIT or current=="0" and self.GRAPHICS_MODE_UNIFIED or nil
+  return self:ResolveGraphicsModeFromRaidSetting(current)
 end
 function STBS:CommitAppliedGraphicsState(mode,preset)
   mode=mode or self:GetCurrentGraphicsMode();if mode~=self.GRAPHICS_MODE_UNIFIED and mode~=self.GRAPHICS_MODE_SPLIT then return false end
@@ -80,13 +85,14 @@ end
 function STBS:SaveCurrent(name, modules)
   local db,databaseFailure=self:RequireWritableDatabase();if not db then return nil,databaseFailure.code end
   local validModules = self:ValidateModules(modules); if not validModules then return nil,"modules" end
-  local capturedMode=modules.graphics and self:GetCurrentGraphicsMode() or nil;if modules.graphics and not capturedMode then return nil,"mode" end
   name = name or (self:L("PERSONAL").." "..date("%Y-%m-%d %H:%M"))
   if type(name) == "string" then name = name:match("^%s*(.-)%s*$") end
   if type(name) ~= "string" or name == "" or #name > self.MAX_PROFILE_NAME_BYTES or name:find("[%c]") then return nil,"name" end
+  local values,failures=self:CaptureModules(modules);local capturedMode,modeWhy
+  if modules.graphics then capturedMode,modeWhy=self:ResolveGraphicsModeFromRaidSetting(values.RAIDsettingsEnabled);if not capturedMode then return nil,modeWhy end end
   db.profileSequence=db.profileSequence+1
   local p=self:NewProfile("personal_"..tostring(time()).."_"..tostring(db.profileSequence),"personal",name)
-  local values,failures=self:CaptureModules(modules);p.capturedModules=self:Copy(modules);p.captureFailures=failures
+  p.capturedModules=self:Copy(modules);p.captureFailures=failures
   p.sections.graphics={mode=capturedMode,base={},raid={},storedInactiveRaidSettings={}}
   for k,v in pairs(values) do local s=self.RegistryByKey[k]; if s.module=="graphics" then if s.category=="raidGraphics" then p.sections.graphics.raid[k]=v else p.sections.graphics.base[k]=v end elseif s.category=="camera" then p.sections.camera[k]=v else p.sections[s.category][k]=v end end
   db.profiles[p.id]=p;return p
