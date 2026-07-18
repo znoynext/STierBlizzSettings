@@ -321,6 +321,16 @@ function STBS:FormatDiff(plan,summary)
   return string.format(self:L("PLAN_SUMMARY"),summary.changed,summary.identical,summary.skipped,summary.unavailable,summary.failed).."\n\n|cff35e6ad- |r"..self:L("PERFORMANCE_TUNED").."\n|cff35e6ad- |r"..self:L("QUALITY_PRESERVED").."\n|cff35e6ad- |r"..self:L("HARDWARE_UNCHANGED")
 end
 
+function STBS:ShowDetailedDiffPage(contextTitle,plan,summary,actions,options)
+  summary=self:CopyDiffSummary(summary or self:SummarizeDiff(plan));local model=self:BuildDetailedDiffModel(plan,summary)
+  local status,kind
+  if summary.changed>0 then status=string.format(self:L("REVIEWED_CHANGE_COUNT"),summary.changed)
+  elseif summary.unavailable>0 or summary.skipped>0 or summary.failed>0 then status=self:L("DETAILED_DIFF_NO_WRITES");kind="warning"
+  else status=self:L("SETTINGS_UNCHANGED");kind="success" end
+  options=options or {};options.statusKind=kind or options.statusKind
+  self:SetLiveFPSCallback(nil);self:SetPage(self:L("DETAILED_DIFF_TITLE"),"|cffffd36b"..self:SafeText(contextTitle or self:L("TITLE")).."|r\n\n"..self:FormatDetailedDiff(model),actions,status,options)
+end
+
 function STBS:ShowHome() return self:ShowGraphics() end
 function STBS:ShowInterface() return self:ShowGraphics() end
 
@@ -388,10 +398,19 @@ function STBS:ShowUITweaks()
     {kind="check",label=self:L("UI_TWEAK_CAMERA_DISTANCE"),checked=draft.cameraDistanceMaxZoomFactor=="2.6",disabled=not enabled("cameraDistanceMaxZoomFactor"),tooltip=self:L("UI_TWEAK_CAMERA_DISTANCE_TIP"),fn=function(value)choose("cameraDistanceMaxZoomFactor",value and "2.6" or "1.9")end},
     {label=self:L("UI_TWEAK_APPLY"),style="primary",wide=true,fn=function()STBS:ConfirmApplyUITweaks()end},
     {label=self:L("UI_TWEAK_UNDO"),wide=true,disabled=not self:GetLatestBackupId("uiTweaks"),fn=function()STBS:ConfirmUndoUITweaks()end},
+    {label=self:L("SHOW_CHANGES"),wide=true,tooltip=self:L("SHOW_CHANGES_TIP"),fn=function()STBS:ShowUITweaksDetailedDiff()end},
   }
   local text="|cff35e6ad"..self:L("UI_TWEAKS_TRUST").."|r\n\n|cffffd36b"..self:L("UI_TWEAKS_RECOMMENDED").."|r\n"..self:L("UI_TWEAKS_RECOMMENDED_NOTE").."\n\n|cffffd36b"..self:L("UI_TWEAKS_OPTIONAL").."|r\n"..self:L("UI_TWEAKS_OPTIONAL_NOTE").."\n\n|cff9aa7b8"..self:L("UI_TWEAK_TOOLTIP_HINT").."|r"
   local status=self.flashMessage or (unavailable>0 and self:L("UI_TWEAK_UNAVAILABLE") or self:L("UI_TWEAKS_STATUS"));local kind=self.flashKind or (unavailable>0 and "warning" or nil);self.flashMessage=nil;self.flashKind=nil
   self:SetPage(self:L("UI_TWEAKS_TITLE"),text,actions,status,{pageKey="uiTweaks",statusKind=kind})
+end
+
+function STBS:ShowUITweaksDetailedDiff()
+  local settings=self:GetAvailableUITweakSettings();local plan,summary=self:BuildDiff(settings,{uiTweaks=true})
+  self:ShowDetailedDiffPage(self:L("UI_TWEAKS_TITLE"),plan,summary,{
+    {label=self:L("UI_TWEAK_APPLY"),style="primary",wide=true,disabled=summary.changed==0,fn=function()STBS:ConfirmApplyUITweaks()end},
+    {label=self:L("BACK"),fn=function()STBS:ShowUITweaks()end},
+  },{pageKey="uiTweaks"})
 end
 
 function STBS:ConfirmApplyUITweaks()
@@ -489,6 +508,7 @@ function STBS:ShowFPSTest()
     {kind="check",label=self:L("WIDGET_CHECK"),checked=preferences.performanceWidgetEnabled,wide=true,fn=function(checked)local ok,why=STBS:SetPerformanceWidgetEnabled(checked);STBS.flashMessage=ok and (checked and STBS:L("WIDGET_ENABLED") or STBS:L("WIDGET_DISABLED")) or STBS:L("APPLY_FAILED").." ("..tostring(why)..")";STBS.flashKind=ok and "success" or "error";STBS:ShowFPSTest()end},
   }
   for _,action in ipairs(comparisonActions) do table.insert(actions,action) end
+  if recommendation then table.insert(actions,{label=self:L("SHOW_CHANGES"),wide=true,disabled=measuring,tooltip=self:L("SHOW_CHANGES_TIP"),fn=function()STBS:ShowFPSComparisonDetailedDiff(comparison)end}) end
   local live=self:ReadFramerate();local average=result and math.floor(result.average+0.5);local low=result and math.floor(result.onePercentLow+0.5);local stability=result and math.floor(result.stability+0.5);local stabilityColor=stability and (stability>=85 and {0.35,1,0.62} or stability>=70 and {1,0.82,0.2} or {1,0.38,0.3}) or {0.65,0.65,0.6}
   local dashboard=comparisonDashboard or {
     {label=self:L("FPS_DASH_LIVE"),value=live and string.format(self:L("LIVE_FPS_FORMAT"),math.floor(live+0.5)) or "—",color={0.45,1,0.72}},
@@ -499,6 +519,15 @@ function STBS:ShowFPSTest()
   local status=self.flashMessage or (measuring and self:L("FPS_TEST_RUNNING") or self:L("FPS_TEST_READY"));local statusKind=self.flashKind or (measuring and "warning" or nil);self.flashMessage=nil;self.flashKind=nil
   self:SetPage(self:L("FPS_TEST_TITLE"),text,actions,status,{pageKey="fpsTest",fpsDashboard=dashboard,fpsComparison=comparisonDashboard~=nil,fpsLegend=comparisonDashboard and string.format(self:L("FPS_COMPARE_DASH_LEGEND"),self:GetPresetLabel(comparison.preset)) or nil,statusKind=statusKind})
   self:SetLiveFPSCallback(function(value)if not comparisonDashboard and STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS.ui.fpsDashboardCards[1].value:SetText(value and string.format(STBS:L("LIVE_FPS_FORMAT"),math.floor(value+0.5)) or "—") end end)
+end
+
+function STBS:ShowFPSComparisonDetailedDiff(comparison)
+  local recommendation=self:GetPresetFPSComparisonRecommendation(comparison);if not recommendation then self.flashMessage=self:L("FPS_COMPARE_RECOMMEND_EXPIRED");self.flashKind="warning";self:ShowFPSTest();return end
+  local preset=recommendation.preset;local settings=self:FlattenProfile(self:GetOfficialGraphics(comparison.mode,preset),{graphics=true});local plan,summary=self:BuildDiff(settings,{graphics=true});local label=self:GetPresetLabel(preset)
+  self:ShowDetailedDiffPage(label,plan,summary,{
+    {label=string.format(self:L("FPS_COMPARE_APPLY"),label),style="primary",wide=true,disabled=summary.changed==0,fn=function()STBS:ConfirmApplyFPSComparisonPreset(comparison)end},
+    {label=self:L("BACK"),fn=function()STBS:ShowFPSTest()end},
+  },{pageKey="fpsTest"})
 end
 
 function STBS:ConfirmApplyFPSComparisonPreset(comparison)
@@ -515,8 +544,17 @@ function STBS:ShowOfficialPreview()
   self:SetLiveFPSCallback(nil)
   self:SetPage(self:L("PREVIEW"),self:FormatDiff(plan,summary),{
     {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ConfirmApplyGraphics()end,style="primary",wide=true},
+    {label=self:L("SHOW_CHANGES"),fn=function()STBS:ShowOfficialDetailedDiff()end,wide=true,tooltip=self:L("SHOW_CHANGES_TIP")},
     {label=self:L("BACK"),fn=function()STBS:ShowGraphics()end},
   },summary.changed==0 and self:L("SETTINGS_UNCHANGED") or string.format(self:L("REVIEWED_CHANGE_COUNT"),summary.changed),{pageKey="graphics",statusKind=summary.changed==0 and "success" or nil})
+end
+
+function STBS:ShowOfficialDetailedDiff()
+  local mode=self.GRAPHICS_MODE_UNIFIED;local preset=self:GetSelectedPreset();local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,preset),{graphics=true});local plan,summary=self:BuildDiff(settings,{graphics=true})
+  self:ShowDetailedDiffPage(self:GetPresetLabel(preset),plan,summary,{
+    {label=self:L("APPLY_AND_MEASURE"),style="primary",wide=true,disabled=summary.changed==0,fn=function()STBS:ConfirmApplyGraphics()end},
+    {label=self:L("BACK"),fn=function()STBS:ShowOfficialPreview()end},
+  },{pageKey="graphics",graphicsSection="settings"})
 end
 
 function STBS:ConfirmApplyGraphics()
@@ -669,6 +707,7 @@ function STBS:ShowProfilePreview(profile)
     self:SetPage(self:L("PREVIEW"),text,{
       {label=self:L("CONVERT_TO_UNIFIED"),fn=function()STBS:OpenLegacySplitConversion(profileId)end,style="primary",wide=true},
       {label=self:L("APPLY_LEGACY_SPLIT"),fn=function()STBS:ConfirmApplyLegacySplitProfile(profileId)end,wide=true},
+      {label=self:L("SHOW_CHANGES"),fn=function()STBS:ShowProfileDetailedDiff(profileId)end,wide=true,tooltip=self:L("SHOW_CHANGES_TIP")},
       {label=self:L("BACK"),fn=function()STBS:ShowProfiles()end},
     },self:L("LEGACY_SPLIT_STATUS"),{pageKey="profiles",statusKind="warning"})
     return
@@ -676,8 +715,22 @@ function STBS:ShowProfilePreview(profile)
   local settings=self:FlattenProfile(profile,{graphics=true});local plan,summary=self:BuildDiff(settings,{graphics=true})
   self:SetPage(self:L("PREVIEW"),"|cffffd36b"..self:SafeText(profile.displayName).."|r\n\n"..self:FormatDiff(plan,summary),{
     {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ConfirmApplyProfile(profile)end,style="primary",wide=true},
+    {label=self:L("SHOW_CHANGES"),fn=function()STBS:ShowProfileDetailedDiff(profile.id)end,wide=true,tooltip=self:L("SHOW_CHANGES_TIP")},
     {label=self:L("BACK"),fn=function()STBS:ShowProfiles()end},
   },summary.changed==0 and self:L("SETTINGS_UNCHANGED") or string.format(self:L("REVIEWED_CHANGE_COUNT"),summary.changed),{pageKey="profiles",statusKind=summary.changed==0 and "success" or nil})
+end
+
+function STBS:ShowProfileDetailedDiff(profileId)
+  local profile=self:InitializeDatabase().profiles[profileId];local valid=self:ValidateProfile(profile)
+  if not valid then self.flashMessage=self:L("ACTION_FAILED");self.flashKind="error";self:ShowProfiles();return end
+  local legacy=self:IsLegacySplitProfile(profile);local settings,why
+  if legacy then settings,why=self:GetLegacySplitProfileSettings(profile) else settings=self:FlattenProfile(profile,{graphics=true}) end
+  if not settings then self.flashMessage=self:L("ACTION_FAILED").." ("..tostring(why)..")";self.flashKind="error";self:ShowProfiles();return end
+  local plan,summary=self:BuildDiff(settings,{graphics=true});local applyLabel=legacy and self:L("APPLY_LEGACY_SPLIT") or self:L("APPLY_AND_MEASURE")
+  self:ShowDetailedDiffPage(profile.displayName,plan,summary,{
+    {label=applyLabel,style="primary",wide=true,disabled=summary.changed==0,fn=function()local current=STBS:InitializeDatabase().profiles[profileId];if legacy then STBS:ConfirmApplyLegacySplitProfile(profileId) else STBS:ConfirmApplyProfile(current) end end},
+    {label=self:L("BACK"),fn=function()local current=STBS:InitializeDatabase().profiles[profileId];if current then STBS:ShowProfilePreview(current) else STBS:ShowProfiles() end end},
+  },{pageKey="profiles"})
 end
 
 function STBS:OpenLegacySplitConversion(profileId)
@@ -741,11 +794,22 @@ function STBS:ShowAddonImportPreview(payload)
   local count=0;for _ in pairs(payload.profiles or {}) do count=count+1 end
   local plan,_,_,summary=self:PlanAddonBundle(payload);local text=string.format(self:L("BUNDLE_IMPORT_SUMMARY"),count,self:GetPresetLabel(payload.preferences.graphicsPreset))
   if plan then text=text.."\n\n"..self:FormatDiff(plan,summary) end
-  self:SetPage(self:L("IMPORT_ALL"),text,{{label=self:L("IMPORT_ALL_CONFIRM"),style="primary",wide=true,fn=function()
-    local result=STBS:ApplyAddonBundle(STBS.pendingAddonBundle);STBS.pendingAddonBundle=nil
-    if result.ok then STBS.flashMessage=STBS:L("BUNDLE_IMPORTED");STBS.flashKind="success" else STBS.flashMessage=STBS:L("BUNDLE_IMPORT_FAILED").." ("..tostring(result.code)..")";STBS.flashKind="error" end
-    STBS:ShowProfiles("transfer")
-  end},{label=self:L("BACK"),fn=function()STBS.pendingAddonBundle=nil;STBS:ShowProfiles("transfer")end}},plan and (summary.changed==0 and self:L("BUNDLE_GRAPHICS_UNCHANGED") or string.format(self:L("REVIEWED_CHANGE_COUNT"),summary.changed)) or self:L("REVIEW_READY"),{pageKey="profiles",statusKind=plan and summary.changed==0 and "success" or "warning"})
+  self:SetPage(self:L("IMPORT_ALL"),text,{{label=self:L("IMPORT_ALL_CONFIRM"),style="primary",wide=true,fn=function()STBS:ApplyPendingAddonBundle()end},{label=self:L("SHOW_CHANGES"),wide=true,disabled=not plan,tooltip=self:L("SHOW_CHANGES_TIP"),fn=function()STBS:ShowAddonImportDetailedDiff(payload)end},{label=self:L("BACK"),fn=function()STBS.pendingAddonBundle=nil;STBS:ShowProfiles("transfer")end}},plan and (summary.changed==0 and self:L("BUNDLE_GRAPHICS_UNCHANGED") or string.format(self:L("REVIEWED_CHANGE_COUNT"),summary.changed)) or self:L("REVIEW_READY"),{pageKey="profiles",statusKind=plan and summary.changed==0 and "success" or "warning"})
+end
+
+function STBS:ApplyPendingAddonBundle()
+  local result=self:ApplyAddonBundle(self.pendingAddonBundle);self.pendingAddonBundle=nil
+  if result.ok then self.flashMessage=self:L("BUNDLE_IMPORTED");self.flashKind="success" else self.flashMessage=self:L("BUNDLE_IMPORT_FAILED").." ("..tostring(result.code)..")";self.flashKind="error" end
+  self:ShowProfiles("transfer")
+end
+
+function STBS:ShowAddonImportDetailedDiff(payload)
+  local plan,_,_,summary=self:PlanAddonBundle(payload)
+  if not plan then self.flashMessage=self:L("BUNDLE_IMPORT_FAILED");self.flashKind="error";self:ShowProfiles("transfer");return end
+  self:ShowDetailedDiffPage(self:L("IMPORT_ALL"),plan,summary,{
+    {label=self:L("IMPORT_ALL_CONFIRM"),style="primary",wide=true,fn=function()STBS:ApplyPendingAddonBundle()end},
+    {label=self:L("BACK"),fn=function()STBS:ShowAddonImportPreview(payload)end},
+  },{pageKey="profiles"})
 end
 
 function STBS:OpenImport()
@@ -761,8 +825,18 @@ function STBS:ShowImportPreview(payload)
   local plan,_,summary=self:PlanImport(payload,{graphics=true},"profile")
   local actions={{label=self:L("IMPORT_GRAPHICS")..": "..self:L("USE_PROFILE_MODE"),fn=function()STBS:ApplyPendingImport("profile")end,style="primary",wide=true}}
   if self:GetSelectedMode() then table.insert(actions,{label=self:L("IMPORT_GRAPHICS")..": "..self:L("KEEP_MODE"),fn=function()STBS:ApplyPendingImport("current")end}) end
+  table.insert(actions,{label=self:L("SHOW_CHANGES"),wide=true,tooltip=self:L("SHOW_CHANGES_TIP"),fn=function()STBS:ShowImportDetailedDiff(payload)end})
   table.insert(actions,{label=self:L("BACK"),fn=function()STBS.pendingImport=nil;STBS:ShowProfiles()end})
   self:SetPage(self:L("IMPORT"),"|cff65cfff"..self:L("PROFILE_SUMMARY").."|r\n"..self:SafeText(payload.profile.displayName).."\n\n"..self:FormatDiff(plan,summary).."\n\n"..(summary.changed==0 and self:L("SETTINGS_UNCHANGED") or self:L("IMPORT_CONFIRMATION")),actions,summary.changed==0 and self:L("SETTINGS_UNCHANGED") or string.format(self:L("REVIEWED_CHANGE_COUNT"),summary.changed),{pageKey="profiles",statusKind=summary.changed==0 and "success" or nil})
+end
+
+function STBS:ShowImportDetailedDiff(payload)
+  local plan,_,summary=self:PlanImport(payload,{graphics=true},"profile")
+  if not plan then self.flashMessage=self:L("INVALID_IMPORT");self.flashKind="error";self:ShowProfiles();return end
+  self:ShowDetailedDiffPage(payload.profile.displayName,plan,summary,{
+    {label=self:L("IMPORT_GRAPHICS")..": "..self:L("USE_PROFILE_MODE"),style="primary",wide=true,disabled=summary.changed==0,fn=function()STBS:ApplyPendingImport("profile")end},
+    {label=self:L("BACK"),fn=function()STBS:ShowImportPreview(payload)end},
+  },{pageKey="profiles"})
 end
 
 function STBS:ShowReport(result)

@@ -20,7 +20,7 @@ The external findings below remain useful design evidence. Statements under Prod
 
 - First use is two explicit decisions: choose one of three presets, then review and confirm in the reusable addon-owned dialog. Built-in preset application is unified and has no unified/split or lighter-raid toggle. Split mode remains only for clearly labelled legacy personal/imported profile compatibility: the primary action creates a non-destructive unified copy, while exact split apply is secondary and explicitly advanced. FPS diagnostics live on their own page and expose post-apply, standalone, and preset-comparison workflows rather than a quick/accurate mode selector.
 - The dashboard has five top-level destinations: Graphics, UI Tweaks, Test FPS, Profiles and About. Graphics keeps its dedicated flat Retail sub-tab bar for Graphics Settings and the complete Zone Graphics Switcher.
-- Change previews report counts and user-visible outcomes instead of listing every CVar.
+- Default change previews report concise counts and outcomes. Optional **Show changes** opens a human-readable advanced view with localized labels, current/target values and short explanations; matching entries stay hidden, unavailable/skipped entries remain separate, and raw CVar names are not normal-user primary text.
 - Unsupported values are visibly skipped; failed writes trigger rollback and a separate result state.
 - Profile and backup lists never cap selection to the first items; actions scroll inside a fixed-size dashboard. Both kinds support explicit deletion confirmation.
 - Imported names are treated as untrusted display text so WoW color/hyperlink markup cannot spoof the UI.

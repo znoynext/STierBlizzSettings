@@ -11,7 +11,7 @@ function ns:DiffSummariesEqual(a,b)
   for _,key in ipairs({"changed","identical","skipped","unavailable","failed"}) do if a[key]~=b[key] then return false end end
   return true
 end
-local files={"Core/Constants.lua","Localization/enUS.lua","Localization/ruRU.lua","Localization/frFR.lua","Localization/deDE.lua","Localization/esES.lua","Localization/esMX.lua","Localization/ptBR.lua","Localization/koKR.lua","Localization/zhCN.lua","Localization/zhTW.lua","Localization/NewUI.lua","Localization/UITweaks.lua","Core/Bootstrap.lua","Core/Compatibility.lua","Core/Database.lua","Core/FPSBenchmark.lua","Core/ZoneGraphics.lua","UI/Style.lua","Settings/Registry.lua","Settings/Validator.lua","Settings/Reader.lua","Settings/Writer.lua","Settings/Diff.lua","Settings/Backup.lua","Profiles/Schema.lua","Profiles/Migration.lua","Profiles/Recommended.lua","Profiles/Manager.lua","UI/PerformanceWidget.lua","ImportExport/Serializer.lua","ImportExport/Codec.lua","ImportExport/Validation.lua","Settings/Transaction.lua","Core/UITweaks.lua","Core/PendingCompletion.lua"}
+local files={"Core/Constants.lua","Localization/enUS.lua","Localization/ruRU.lua","Localization/frFR.lua","Localization/deDE.lua","Localization/esES.lua","Localization/esMX.lua","Localization/ptBR.lua","Localization/koKR.lua","Localization/zhCN.lua","Localization/zhTW.lua","Localization/NewUI.lua","Localization/UITweaks.lua","Localization/DetailedDiff.lua","Core/Bootstrap.lua","Core/Compatibility.lua","Core/Database.lua","Core/FPSBenchmark.lua","Core/ZoneGraphics.lua","UI/Style.lua","Settings/Registry.lua","Settings/Validator.lua","Settings/Reader.lua","Settings/Writer.lua","Settings/Diff.lua","Settings/DetailedDiff.lua","Settings/Backup.lua","Profiles/Schema.lua","Profiles/Migration.lua","Profiles/Recommended.lua","Profiles/Manager.lua","UI/PerformanceWidget.lua","ImportExport/Serializer.lua","ImportExport/Codec.lua","ImportExport/Validation.lua","Settings/Transaction.lua","Core/UITweaks.lua","Core/PendingCompletion.lua"}
 for _,f in ipairs(files)do assert(loadfile("STierBlizzSettings/"..f))(addon,ns)end
 local oldCreateFrame=_G.CreateFrame;_G.Minimap={GetWidth=function()return 140 end};_G.CreateFrame=function()return {SetSize=function()end,SetFrameStrata=function()end,SetFrameLevel=function()end,SetPoint=function()end,ClearAllPoints=function()end,SetNormalTexture=function()end,SetHighlightTexture=function()end,SetPushedTexture=function()end,RegisterForClicks=function()end,RegisterForDrag=function()end,CreateTexture=function()return {SetTexture=function()end,SetSize=function()end,SetPoint=function()end}end,SetScript=function(self,event,handler)self[event]=handler end}end;assert(loadfile("STierBlizzSettings/Core/MinimapButton.lua"))(addon,ns)
 local opened=false;ns.ShowGraphics=function()opened="graphics" end;ns.ShowProfiles=function()opened="profiles" end;ns:CreateMinimapButton();check("minimap button is created",ns.minimapButton~=nil);ns.minimapButton.OnClick(nil,"LeftButton");check("minimap left click opens graphics",opened=="graphics");ns.minimapButton.OnClick(nil,"RightButton");check("minimap right click opens profiles",opened=="profiles");_G.CreateFrame=oldCreateFrame
@@ -26,6 +26,31 @@ _G.GetLocale=function()return "enUS"end
 check("registry contains base and raid settings",#ns.Registry>=32 and ns.RegistryByKey.graphicsShadowQuality~=nil and ns.RegistryByKey.raidGraphicsShadowQuality~=nil)
 check("registry contains verified combat readability settings",ns.RegistryByKey.countdownForCooldowns~=nil and ns.RegistryByKey.showTargetOfTarget~=nil and ns.RegistryByKey.nameplateShowEnemies~=nil)
 check("registry contains verified UI tweak CVars",ns.RegistryByKey.ResampleAlwaysSharpen and ns.RegistryByKey.ResampleSharpness and ns.RegistryByKey.ffxGlow and ns.RegistryByKey.ffxDeath and ns.RegistryByKey.ffxNether and ns.RegistryByKey.cameraDistanceMaxZoomFactor)
+do local function testDetailedDiffModel()
+  local shadow=ns.RegistryByKey.graphicsShadowQuality;local glow=ns.RegistryByKey.ffxGlow;local spell=ns.RegistryByKey.graphicsSpellDensity;local liquid=ns.RegistryByKey.graphicsLiquidDetail;local outline=ns.RegistryByKey.graphicsOutlineMode
+  local plan={
+    {setting=shadow,current="5",value="2",status="changed"},
+    {setting=glow,current="1",value="1",status="identical"},
+    {setting=spell,current=nil,value="0",status="unavailable",reason="unavailable"},
+    {setting=liquid,current="2",value="3",status="skipped",reason="unsupported"},
+    {setting=outline,current="1",value="bad",status="failed",reason="value"},
+  }
+  local summary=ns:SummarizeDiff(plan);local model=ns:BuildDetailedDiffModel(plan,summary)
+  check("detailed diff model preserves canonical summary",ns:DiffSummariesEqual(model.summary,summary) and model.summary.changed==1 and model.summary.identical==1 and model.summary.unavailable==1 and model.summary.skipped==1 and model.summary.failed==1)
+  check("detailed diff model hides identical entries by default",#model.changed==1 and #model.unavailable==1 and #model.skipped==1 and #model.failed==1)
+  check("detailed diff changed item keeps exact current target and technical identity",model.changed[1].current=="5" and model.changed[1].target=="2" and model.changed[1].technicalKey=="graphicsShadowQuality" and model.changed[1].explanationKey=="DIFF_EXPLAIN_SHADOWS")
+  check("detailed diff keeps unavailable and skipped in separate groups",model.unavailable[1].status=="unavailable" and model.unavailable[1].technicalKey=="graphicsSpellDensity" and model.skipped[1].status=="skipped" and model.skipped[1].technicalKey=="graphicsLiquidDetail")
+  summary.changed=99;check("detailed diff copies rather than aliases canonical summary",model.summary.changed==1)
+  local previousShadowLabel=_G.SHADOW_QUALITY;_G.SHADOW_QUALITY="Shadow Quality";local rendered=ns:FormatDetailedDiff(model);_G.SHADOW_QUALITY=previousShadowLabel
+  check("detailed diff renders localized label values and explanation",rendered:find("Shadow Quality",1,true) and rendered:find(string.format(ns:L("DIFF_CURRENT_TO_TARGET"),ns:L("DIFF_VALUE_LEVEL"):format("5"),ns:L("DIFF_VALUE_LEVEL"):format("2")),1,true) and rendered:find(ns:L("DIFF_EXPLAIN_SHADOWS"),1,true))
+  check("detailed diff normal view does not expose raw CVar names or identical settings",not rendered:find("graphicsShadowQuality",1,true) and not rendered:find(ns:L("UI_TWEAK_GLOW"),1,true))
+  check("detailed diff renders unavailable skipped and failed as distinct sections",rendered:find(string.format(ns:L("DETAILED_DIFF_UNAVAILABLE"),1),1,true) and rendered:find(string.format(ns:L("DETAILED_DIFF_SKIPPED"),1),1,true) and rendered:find(string.format(ns:L("DETAILED_DIFF_FAILED"),1),1,true))
+  check("detailed diff formats human-readable booleans",ns:FormatDetailedDiffValue({setting=glow,valueType=glow.valueType},"1")==ns:L("DIFF_VALUE_ENABLED"))
+  check("detailed diff formats human-readable spell density",ns:FormatDetailedDiffValue({setting=spell,valueType=spell.valueType},"0")==ns:L("DIFF_VALUE_ESSENTIAL"))
+  check("detailed diff formats human-readable camera factors",ns:FormatDetailedDiffValue({setting=ns.RegistryByKey.cameraDistanceMaxZoomFactor},"2.6")==string.format(ns:L("DIFF_VALUE_FACTOR"),2.6))
+  check("detailed diff uses a WoW-native arrow texture instead of an unsupported font glyph",ns:L("DIFF_CURRENT_TO_TARGET"):find("UI-SpellbookIcon-NextPage-Up",1,true)~=nil and not ns:L("DIFF_CURRENT_TO_TARGET"):find("→",1,true))
+  local metadataComplete=true;for _,setting in ipairs(ns.Registry)do metadataComplete=metadataComplete and type(setting.diffExplanationKey)=="string" and setting.diffExplanationKey~="" end;check("every managed setting has a detailed diff explanation",metadataComplete)
+end;testDetailedDiffModel() end
 local originalGetInfo=_G.C_CVar.GetCVarInfo;_G.C_CVar.GetCVarInfo=function()error("removed")end;check("removed CVar info fails closed",not ns:CanUseCVar("removed"));_G.C_CVar.GetCVarInfo=originalGetInfo
 local originalGet=_G.C_CVar.GetCVar;_G.C_CVar.GetCVar=function()error("removed")end;check("removed CVar read fails closed",ns:ReadSetting(ns.RegistryByKey.cameraSmoothStyle)==nil);_G.C_CVar.GetCVar=originalGet
 local originalSet=_G.C_CVar.SetCVar;_G.C_CVar.SetCVar=function()error("rejected")end;check("throwing CVar write fails closed",not ns:WriteSetting(ns.RegistryByKey.cameraSmoothStyle,"1"));_G.C_CVar.SetCVar=originalSet
@@ -439,6 +464,17 @@ do local function testPlanChangeCounts()
   ns.BuildDiff,ns.ShowAddonDialog,ns.ApplyGraphicsWithFPS=oldBuildDiff,oldDialog,oldApply
   ns.PlanImport,ns.PlanAddonBundle,ns.GetPresetFPSComparisonRecommendation=oldPlanImport,oldPlanAddonBundle,oldRecommendation
 end;testPlanChangeCounts() end
+do local function testDetailedDiffUI()
+  local oldBuildDiff=ns.BuildDiff;local previousShadowLabel=_G.SHADOW_QUALITY
+  local shadow=ns.RegistryByKey.graphicsShadowQuality;local glow=ns.RegistryByKey.ffxGlow;local spell=ns.RegistryByKey.graphicsSpellDensity
+  local plan={{setting=shadow,current="5",value="2",status="changed"},{setting=glow,current="1",value="1",status="identical"},{setting=spell,current=nil,value="0",status="unavailable",reason="unavailable"}}
+  local summary={changed=1,identical=1,skipped=0,unavailable=1,failed=0};_G.SHADOW_QUALITY="Shadow Quality"
+  ns.BuildDiff=function()return plan,ns:CopyDiffSummary(summary)end
+  ns:ShowOfficialPreview();check("concise Graphics preview keeps apply primary and detailed changes optional",pages.actions[1].label==ns:L("APPLY_AND_MEASURE") and pages.actions[2].label==ns:L("SHOW_CHANGES") and not pages.text:find("Shadow Quality",1,true))
+  pages.actions[2].fn();check("optional detailed changes page renders human labels values explanations and separate unavailable state",pages.title==ns:L("DETAILED_DIFF_TITLE") and pages.text:find("Shadow Quality",1,true) and pages.text:find(ns:L("DIFF_EXPLAIN_SHADOWS"),1,true) and pages.text:find(string.format(ns:L("DETAILED_DIFF_UNAVAILABLE"),1),1,true) and not pages.text:find("graphicsShadowQuality",1,true) and pages.actions[1].disabled==false)
+  local profile=ns:NewProfile("detailed_ui_profile","personal","Detailed UI profile");profile.sections.graphics={mode=ns.GRAPHICS_MODE_UNIFIED,base={},raid={}};profile.capturedModules={graphics=true};ns:ShowProfilePreview(profile);check("personal profile preview exposes the same optional detailed action",pages.actions[1].label==ns:L("APPLY_AND_MEASURE") and pages.actions[2].label==ns:L("SHOW_CHANGES"))
+  ns.BuildDiff=oldBuildDiff;_G.SHADOW_QUALITY=previousShadowLabel
+end;testDetailedDiffUI() end
 do local function testBackupConfirmations()
 local oldBackupDialog,backupDialog=ns.ShowAddonDialog;ns.ShowAddonDialog=function(_,spec)backupDialog=spec end
 store.graphicsShadowQuality="2";local confirmedRestoreSource=ns:CreateBackup({graphics=true},"confirmed-restore-source");store.graphicsShadowQuality="5";ns:ConfirmRestoreBackup(confirmedRestoreSource.data.id);ns:CreateBackup({graphics=true},"confirmed-restore-intervening");backupDialog.onAccept();check("restore confirmation captures stable backup ID across intervening creation",store.graphicsShadowQuality=="2")

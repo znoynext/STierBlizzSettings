@@ -24,6 +24,7 @@ Entries below are version-scoped historical records, not a description of the cu
 - Formalized legacy split personal profiles without restoring split as a built-in workflow. Profiles now label the old architecture, recommend a non-destructive unified copy that retains inactive Raid/Battleground data, and keep exact split application behind an explicit advanced backup-first action; malformed legacy data fails closed.
 - Made Save Graphics derive unified/split mode from the actual captured Blizzard `RAIDsettingsEnabled` value instead of persisted applied state. External Blizzard/addon CVar changes are reflected correctly, unavailable or unexpected values fail before persistence, and profile capture performs no CVar writes.
 - Centralized diff/result statistics around one five-field summary contract. Graphics, profiles, Zone Graphics, UI Tweaks, imports, FPS candidate apply and Backup Restore now share compatible changed/identical/skipped/unavailable/failed semantics, and previews show the three non-applicable/error states separately.
+- Added an optional human-readable **Show changes** view for Graphics, UI Tweaks, FPS recommendations, profiles and imports. It reuses the canonical diff, hides identical settings, separates unavailable/skipped/failed items, and shows localized labels, current/target values and short explanations without making raw CVar names primary text.
 
 ## 0.4.19-alpha
 

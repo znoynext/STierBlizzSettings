@@ -21,6 +21,7 @@ Localization/zhCN.lua
 Localization/zhTW.lua
 Localization/NewUI.lua
 Localization/UITweaks.lua
+Localization/DetailedDiff.lua
 Core/Bootstrap.lua
 Core/Compatibility.lua
 Core/Database.lua
@@ -32,6 +33,7 @@ Settings/Validator.lua
 Settings/Reader.lua
 Settings/Writer.lua
 Settings/Diff.lua
+Settings/DetailedDiff.lua
 Settings/Backup.lua
 Profiles/Schema.lua
 Profiles/Migration.lua
