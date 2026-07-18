@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.7-alpha
+
+- Replaced the tiny full-settings import popup with the same large responsive multiline field used by export.
+- Added an in-page **Review import** action and inline validation errors while preserving the existing data-only parser, preview, confirmation and backup-first apply flow.
+
 ## 0.4.6-alpha
 
 - Removed the redundant **View result in game** action and its explanatory copy. The button only hid the addon window and printed a chat hint; applying, measuring, reloading, backups and Undo never depended on it.

@@ -486,10 +486,10 @@ end
 
 function STBS:ShowDiagnostics() self:SetPage(self:L("DIAGNOSTICS"),self:DiagnosticReport(),{{label=self:L("COPY"),fn=function()STBS:ShowCopyBox(STBS:DiagnosticReport())end},{label=self:L("BACK"),fn=function()STBS:ShowGraphics()end}},nil,{}) end
 
-function STBS:ShowCopyBox(text)
+function STBS:ShowCopyBox(text,selectAll)
   self:CreateUI();local f=self.ui;local box=f.copyBox
   if not box then box=CreateFrame("EditBox",nil,f.content,"InputBoxTemplate");box:SetMultiLine(true);box:SetAutoFocus(false);box:SetFontObject(GameFontHighlightLarge);box:SetPoint("TOPLEFT",7,-6);box:SetScript("OnEscapePressed",function(x)x:ClearFocus()end);f.copyBox=box end
-  f.metricCard:Hide();f.body:SetText("");box:SetText(text);box:Show();box:SetFocus();box:HighlightText();f:Show();self:LayoutUI()
+  box:SetMaxLetters(self.MAX_IMPORT_BYTES);f.metricCard:Hide();f.body:SetText("");box:SetText(text or "");box:Show();box:SetFocus();if selectAll==false then box:SetCursorPosition(0) else box:HighlightText() end;f:Show();self:LayoutUI()
 end
 
 function STBS:ShowExport(profile)
@@ -503,7 +503,12 @@ function STBS:ShowAddonExport()
 end
 
 function STBS:OpenAddonImport()
-  StaticPopupDialogs["STBS_IMPORT_ADDON"]={text=self:L("IMPORT_ALL"),subText=self:L("BUNDLE_IMPORT_HELP"),button1=ACCEPT,button2=CANCEL,hasEditBox=true,maxLetters=self.MAX_IMPORT_BYTES,EditBoxOnEnterPressed=popupAcceptOnEnter,EditBoxOnTextChanged=StaticPopup_StandardNonEmptyTextHandler,OnAccept=function(p)local box=popupEditBox(p);local payload,why=STBS:ImportAddonBundle(box and box:GetText());if not payload then STBS.flashMessage=STBS:L("BUNDLE_IMPORT_FAILED").." ("..tostring(why)..")";STBS.flashKind="error";STBS:ShowProfiles("transfer");return end;STBS.pendingAddonBundle=payload;STBS:ShowAddonImportPreview(payload)end,OnShow=function(p)local box=popupEditBox(p);if box then box:SetText("");box:SetFocus()end end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_IMPORT_ADDON")
+  self:SetPage(self:L("IMPORT_ALL"),"",{{label=self:L("IMPORT_REVIEW"),style="primary",wide=true,fn=function()
+    local box=STBS.ui and STBS.ui.copyBox;local payload,why=STBS:ImportAddonBundle(box and box:GetText() or "")
+    if not payload then local f=STBS.ui;if f then f.status:SetText(STBS:L("BUNDLE_IMPORT_FAILED").." ("..tostring(why)..")");f.status:SetTextColor(1,0.35,0.3);if type(_G.UIFrameFadeIn)=="function" then UIFrameFadeIn(f.status,0.18,0.35,1) end end;if box then box:SetFocus();box:HighlightText() end;return end
+    STBS.pendingAddonBundle=payload;STBS:ShowAddonImportPreview(payload)
+  end},{label=self:L("BACK"),wide=true,fn=function()STBS:ShowProfiles("transfer")end}},self:L("BUNDLE_IMPORT_PASTE"),{pageKey="profiles",statusKind="warning"})
+  self:ShowCopyBox("",false)
 end
 
 function STBS:ShowAddonImportPreview(payload)
