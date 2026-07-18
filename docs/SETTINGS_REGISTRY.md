@@ -12,8 +12,12 @@ Research baseline: Blizzard `wow-ui-source` branch `live`, version `12.0.7.68453
 | Action bars | `countdownForCooldowns` | `1` (show cooldown numbers) |
 | Combat | `showTargetOfTarget`, `occludedSilhouettePlayer` | `1`, `1` |
 | Nameplates | `nameplateShowEnemies`, `nameplateShowAll`, `nameplateShowOffscreen` | `1`, `1`, `1` |
+| UI Tweaks — universal | `ResampleAlwaysSharpen`, `ResampleSharpness`, `ffxGlow` | `1`, `0.3`, `1` |
+| UI Tweaks — optional | `ffxDeath`, `ffxNether` | user choice (`0` or `1`) |
 
 `RAIDsettingsEnabled` is set to `0` for unified mode and `1` for split mode. `graphicsQuality` and `raidGraphicsQuality` are deliberately not written. Hardware-dependent CVars are not present in the registry.
+
+`ResampleSharpness` mirrors Blizzard's own 0.0–2.0 slider with 0.1 steps; the UI Tweaks recommendation is 0.3. The four hidden effect/sharpening toggles are never assumed to exist: the live Retail client must return writable metadata through `C_CVar.GetCVarInfo`, the pre-change value must be captured, and the post-write readback must match. A missing, protected or read-only CVar disables its control. UI Tweaks are independent of PRO/Optimized/Quality and are included in full-addon exchange only when readable.
 
 Primary evidence:
 

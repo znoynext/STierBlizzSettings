@@ -17,7 +17,7 @@ Reviewed 2026-07-16. The addon keeps a custom lightweight dashboard but follows 
 ## Product-specific decisions
 
 - First use is two explicit decisions: choose one of three presets, then review and confirm in a native popup. Unified/split mode is a compact secondary toggle; FPS diagnostics live on their own page.
-- The dashboard has four top-level destinations: Graphics, Test FPS, Profiles and About. Graphics uses Blizzard `PanelTabButtonTemplate` sub-tabs for Graphics Settings and the complete Zone Graphics Switcher, avoiding a duplicate top-level destination.
+- The dashboard has five top-level destinations: Graphics, UI Tweaks, Test FPS, Profiles and About. Graphics keeps its dedicated flat Retail sub-tab bar for Graphics Settings and the complete Zone Graphics Switcher.
 - Change previews report counts and user-visible outcomes instead of listing every CVar.
 - Unsupported values are visibly skipped; failed writes trigger rollback and a separate result state.
 - Profile and backup lists never cap selection to the first items; actions scroll inside a fixed-size dashboard. Both kinds support explicit deletion confirmation.
@@ -41,11 +41,11 @@ S-Tier now uses the same honest product principle: show concise setting outcomes
 
 The only custom bitmap is the 128×128 gold S emblem, rendered at 48 px in the header and 36 px on the minimap, so it is already sampled down rather than stretched up. The former 640×360 preview texture was removed from the addon. Window rock, dialog borders, buttons, resize handle, checkbox marks, highlights and minimap border all use Blizzard-owned textures/templates. Responsive button widths are rounded to whole UI pixels to avoid soft edges after resizing.
 
-Boolean states use a fixed 24x24 `UICheckButtonTemplate` inside a full-width clickable row, matching Blizzard's square control without stretching its artwork. Mutually exclusive presets and zone mappings remain buttons because a checkbox would communicate the wrong interaction. All visible labels use the native `GameFontNormalLarge` / `GameFontHighlightLarge` family, preserving the selected WoW typeface and existing colors.
+Boolean states use a fixed 24x24 `UICheckButtonTemplate` inside a full-width clickable row, matching Blizzard's square control without stretching its artwork. UI Tweaks uses the current `MinimalSliderWithSteppersTemplate` for resample sharpness and concise native tooltips on every CVar control. Mutually exclusive presets and zone mappings remain buttons because a checkbox would communicate the wrong interaction. All visible labels use the native `GameFontNormalLarge` / `GameFontHighlightLarge` family, preserving the selected WoW typeface and existing colors.
 
 ## Intentionally not adopted
 
-- No generic CVar editor, undocumented toggles or hidden console commands.
+- No generic CVar editor or copied lists of speculative console tweaks; only the explicit runtime-verified allowlist is exposed.
 - No Ace3 dependency solely for configuration UI.
 - No automation, alerts, combat assistance, telemetry, advertising, donations or premium UI.
 - No direct Edit Mode or keybinding writes until their complete transactional behavior is validated in the live Retail client.

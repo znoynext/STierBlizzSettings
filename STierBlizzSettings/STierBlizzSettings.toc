@@ -1,8 +1,8 @@
 ## Interface: 120007
 ## Title: S-Tier Blizz Settings
-## Notes: Three WoW graphics presets, safe zone switching, profiles/backups, preset FPS comparisons, and a live FPS/ping meter.
+## Notes: Three WoW graphics presets, verified UI tweaks, safe zone switching, profiles/backups, FPS comparisons, and a live FPS/ping meter.
 ## Author: S-Tier Blizz Settings Team
-## Version: 0.4.14-alpha
+## Version: 0.4.15-alpha
 ## SavedVariables: STierBlizzSettingsDB
 ## SavedVariablesPerCharacter: STierBlizzSettingsCharDB
 ## X-Category: Interface Enhancements
@@ -20,6 +20,7 @@ Localization/koKR.lua
 Localization/zhCN.lua
 Localization/zhTW.lua
 Localization/NewUI.lua
+Localization/UITweaks.lua
 Core/Bootstrap.lua
 Core/Compatibility.lua
 Core/Database.lua
@@ -43,6 +44,7 @@ Integrations/EditMode.lua
 Integrations/Keybindings.lua
 Integrations/BlizzardSettings.lua
 Settings/Transaction.lua
+Core/UITweaks.lua
 Core/Diagnostics.lua
 UI/MainWindow.lua
 UI/PerformanceWidget.lua

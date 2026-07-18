@@ -18,6 +18,11 @@ local entries = {
   c("nameplateShowEnemies", "interfaceGameplay", "nameplates", { ["0"]=true,["1"]=true }, { valueType="booleanString", officialProfileAllowed=true, blizzardLabel="UNIT_NAMEPLATES_SHOW_ENEMIES" }),
   c("nameplateShowAll", "interfaceGameplay", "nameplates", { ["0"]=true,["1"]=true }, { valueType="booleanString", officialProfileAllowed=true, blizzardLabel="UNIT_NAMEPLATES_AUTOMODE" }),
   c("nameplateShowOffscreen", "interfaceGameplay", "nameplates", { ["0"]=true,["1"]=true }, { valueType="booleanString", officialProfileAllowed=true, blizzardLabel="UNIT_NAMEPLATES_SHOW_OFFSCREEN" }),
+  c("ResampleAlwaysSharpen", "uiTweaks", "recommendedTweaks", { ["0"]=true,["1"]=true }, { valueType="booleanString" }),
+  c("ResampleSharpness", "uiTweaks", "recommendedTweaks", nil, { numericMinimum=0, numericMaximum=2, numericStep=0.1, numericTolerance=0.001 }),
+  c("ffxGlow", "uiTweaks", "recommendedTweaks", { ["0"]=true,["1"]=true }, { valueType="booleanString" }),
+  c("ffxDeath", "uiTweaks", "optionalTweaks", { ["0"]=true,["1"]=true }, { valueType="booleanString" }),
+  c("ffxNether", "uiTweaks", "optionalTweaks", { ["0"]=true,["1"]=true }, { valueType="booleanString" }),
 }
 local function graphicPair(base, raid, values, extra)
   extra = extra or {}; extra.graphicsValidation = "advanced"

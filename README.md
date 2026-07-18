@@ -8,20 +8,21 @@ A lightweight WoW Retail addon that applies a curated balance of FPS, image qual
 
 ## Install
 
-1. Download [STierBlizzSettings-v0.4.14-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.4.14-alpha.zip).
+1. Download [STierBlizzSettings-v0.4.15-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.4.15-alpha.zip).
 2. Extract it into `World of Warcraft/_retail_/Interface/AddOns/`.
 3. Verify the final path is `.../AddOns/STierBlizzSettings/STierBlizzSettings.toc`.
 4. Enable the addon and open it with `/stier` or the minimap button.
 
 ## What works
 
-- Four focused top-level tabs: **Graphics**, **Test FPS**, **Profiles**, and **About**. Graphics contains native **Graphics Settings** and **Zone Graphics Switcher** sub-tabs.
+- Five focused top-level tabs: **Graphics**, **UI Tweaks**, **Test FPS**, **Profiles**, and **About**. Graphics contains native **Graphics Settings** and **Zone Graphics Switcher** sub-tabs.
+- **UI Tweaks** exposes only curated live Retail CVars: universal resample sharpening/glow recommendations plus optional death and ghost-world effects. Controls fail closed when unavailable, show short hover explanations and apply through the same backup-first transaction with Undo.
 - Three presets: **PRO** for maximum practical FPS, **Optimized** for the recommended balance, and **Quality** for a better picture without wasteful maximums.
 - Optional zone profiles for world/cities, dungeons, raids, PvP/arenas and scenarios/delves. They switch only when the content type changes and are off by default.
 - Unified graphics everywhere or Blizzard's separate lighter raid/battleground profile.
 - Concise result preview without a technical CVar list and an explicit confirmation before applying.
 - A larger, resizable native WoW window that remembers its size; dragging is limited to the header so controls cannot move the window accidentally.
-- Separate Profiles, Backups and Import / Export views. Backup restore/delete actions stay visible, and one `STBSA1` string can transfer the current graphics, addon choices, zone rules and personal profiles through large export and import fields.
+- Separate Profiles, Backups and Import / Export views. Backup restore/delete actions stay visible, and one `STBSA1` string can transfer the current graphics, UI Tweaks, addon choices, zone rules and personal profiles through large export and import fields.
 - Transactional writes with automatic backup and read-back verification.
 - One-click **Undo graphics changes**.
 - A four-card Graphics dashboard with live FPS and color-coded before, after and change results from the automatic 5-second comparison, plus a dedicated Test FPS dashboard with a cancellable 20-second test, explained stability, actionable hints and visual current-vs-preset comparisons.
@@ -45,6 +46,6 @@ While Graphics is open, the addon displays Retail `GetFramerate()` live and auto
 
 No telemetry, network access, ads, premium features, donation prompts or gameplay automation are included. Every supported setting is curated and validated against current Blizzard Retail UI sources; unavailable values fail closed.
 
-Current version: **0.4.14-alpha**. Baseline: Retail 12.0.7, Interface 120007, Blizzard UI build 68453. Live-client visual testing and controlled hardware benchmarks are still required before declaring v1.0 production-ready.
+Current version: **0.4.15-alpha**. Baseline: Retail 12.0.7, Interface 120007, Blizzard UI build 68453. Live-client visual testing and controlled hardware benchmarks are still required before declaring v1.0 production-ready.
 
 See the [current project state](docs/PROJECT_STATE.md), [Russian README](README.ru.md), [preset research](docs/RECOMMENDED_PROFILE_RESEARCH.md), [architecture](docs/ARCHITECTURE.md), [UI/UX notes](docs/UI_UX_RESEARCH.md) and [test plan](docs/TEST_PLAN.md).

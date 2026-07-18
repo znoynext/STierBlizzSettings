@@ -1,6 +1,6 @@
 # Architecture
 
-`Core` owns startup, compatibility, SavedVariables, FPS/frame-time sampling, zone classification and diagnostics. `Settings` contains the curated registry, validation, verified read/write operations, diffs, backups and transactions. `Profiles` owns schema, migration, built-ins and personal profiles. `ImportExport` implements deterministic serialization and a data-only parser; it never calls `loadstring`. `UI` is lazily created from Blizzard frame primitives and exposes Graphics, Test FPS, Profiles and About plus an optional performance widget. Zone Graphics is a native sub-tab inside Graphics.
+`Core` owns startup, compatibility, SavedVariables, FPS/frame-time sampling, zone classification, curated UI Tweaks and diagnostics. `Settings` contains the registry, validation, verified read/write operations, diffs, backups and transactions. `Profiles` owns schema, migration, built-ins and personal profiles. `ImportExport` implements deterministic serialization and a data-only parser; it never calls `loadstring`. `UI` is lazily created from Blizzard frame primitives and exposes Graphics, UI Tweaks, Test FPS, Profiles and About plus an optional performance widget. Zone Graphics is a native sub-tab inside Graphics.
 
 Application is one operation: validate modules and values → read/diff → save one backup → write individual CVars → read back → report. Invalid work is rejected before combat queuing. If any write or verification fails, attempted CVars are restored in reverse order. In combat, the complete validated operation is queued for `PLAYER_REGEN_ENABLED`.
 
@@ -8,7 +8,9 @@ The Graphics tab owns the three official presets, unified/split toggle, concise 
 
 The main frame is resizable within screen-derived bounds. Content width, action columns, scroll viewport and copy box dimensions are recalculated from the current frame size. The chosen size and normalized FPS/ping position are stored locally; device-specific positions are deliberately excluded from shared exports.
 
-Profiles has three focused views. Full `STBSA1` exports use the existing deterministic serializer, checksum and data-only parser. Validation rejects unknown fields, future bundle versions, invalid presets/zones, non-graphics CVars and malformed personal profiles. Import applies graphics through the normal backup-first transaction before replacing addon preferences and profiles.
+UI Tweaks is a separate `uiTweaks` transaction module. It exposes boolean controls through Blizzard checkboxes and `ResampleSharpness` through the current `MinimalSliderWithSteppersTemplate`. Hidden engine CVars remain unavailable unless `C_CVar.GetCVarInfo` confirms they exist and are writable; every write is read back, and floating-point values use a narrow tolerance for client normalization. The draft is never written until the user confirms Apply.
+
+Profiles has three focused views. Full `STBSA1` exports use the existing deterministic serializer, checksum and data-only parser. Validation rejects unknown fields, future bundle versions, invalid presets/zones, settings outside the graphics/UI Tweaks allowlist and malformed personal profiles. Import applies shared CVars through one normal backup-first transaction before replacing addon preferences and profiles.
 
 Zone Graphics uses current Retail `C_PartyInfo.IsDelveInProgress()` plus `IsInInstance()` values to classify world, party, raid, PvP/arena and scenario/delve mappings. It is disabled by default, runs only on `PLAYER_ENTERING_WORLD` and `ZONE_CHANGED_NEW_AREA`, skips unchanged settings, and delegates every real apply to the same backup-first transaction. The performance widget uses `GetFramerate()` and the greater Home/World latency returned by `GetNetStats()` at a 0.5-second cadence.
 

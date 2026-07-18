@@ -1,6 +1,6 @@
 # Project state
 
-Last updated: 2026-07-18. Current release: **0.4.14-alpha**. Target: WoW Retail 12.0.7, Interface 120007, Blizzard UI build 68453.
+Last updated: 2026-07-18. Current release: **0.4.15-alpha**. Target: WoW Retail 12.0.7, Interface 120007, Blizzard UI build 68453.
 
 This is the short handoff for continuing work in a new Codex task. Read it before changing behavior or UI. Use `CHANGELOG.md` for version history and the linked specialist documents for implementation details.
 
@@ -8,7 +8,7 @@ This is the short handoff for continuing work in a new Codex task. Read it befor
 
 S-Tier Blizz Settings applies curated standard Blizzard settings. The goal is high practical FPS without sacrificing combat readability or useful image quality. It is not a UI replacement and must continue to look like a polished native World of Warcraft addon.
 
-Only four top-level pages are currently exposed: **Graphics**, **Test FPS**, **Profiles**, and **About**. Graphics contains **Graphics Settings** and **Zone Graphics Switcher** sub-tabs. Interface & Gameplay remains internally compatible but is intentionally hidden until its redesign.
+Five top-level pages are currently exposed: **Graphics**, **UI Tweaks**, **Test FPS**, **Profiles**, and **About**. Graphics contains **Graphics Settings** and **Zone Graphics Switcher** sub-tabs. Interface & Gameplay remains internally compatible but is intentionally hidden until its redesign.
 
 ## Implemented workflow
 
@@ -16,7 +16,8 @@ Only four top-level pages are currently exposed: **Graphics**, **Test FPS**, **P
 - The Graphics dashboard shows live FPS and measured before/after/change cards. The five-second result is local to the same scene and is never presented as a guaranteed gain or prediction.
 - Test FPS captures every frame for 20 seconds and reports average FPS, 1% Low, stability, adaptive spikes and worst frame time. It can compare current graphics with each official preset using two 20-second measurements, then restore the original settings.
 - Zone Graphics is optional and disabled by default. It maps world/city, dungeon, raid, PvP/arena and scenario/delve content to presets and delegates every real change to the same backup-first transaction.
-- Profiles combines named graphics profiles, backup history and full-addon `STBSA1` import/export. Imports are untrusted data, parsed without execution and reviewed before application.
+- UI Tweaks provides curated resample sharpening and glow recommendations plus optional death/ghost-world effects. Every control is runtime-gated through current Retail CVar metadata, includes a short tooltip and applies transactionally with a dedicated Undo path. The displayed performance cost is an expectation of about 0 FPS, never a guarantee.
+- Profiles combines named graphics profiles, backup history and full-addon `STBSA1` import/export, including available UI Tweaks values. Imports are untrusted data, parsed without execution and reviewed before application.
 - The optional bottom overlay displays real live FPS and the greater Home/World latency. Ctrl + drag moves it.
 
 ## Current UX decisions

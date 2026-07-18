@@ -14,7 +14,7 @@ function STBS:ExportProfile(profile, modules)
 end
 
 function STBS:ExportAddonBundle()
-  local db=self:InitializeDatabase();local graphics=self:CaptureModules({graphics=true})
+  local db=self:InitializeDatabase();local graphics=self:CaptureModules({graphics=true});local uiTweaks=self:CaptureModules({uiTweaks=true})
   if type(graphics)~="table" or not next(graphics) then return nil,"graphics" end
   local profiles={};local count=0
   for _,profile in ipairs(self:ListPersonalProfiles()) do
@@ -28,7 +28,7 @@ function STBS:ExportAddonBundle()
     performanceWidgetEnabled=db.preferences.performanceWidgetEnabled,
     zoneGraphics=self:Copy(db.preferences.zoneGraphics),
   }
-  local payload={bundleVersion=self.ADDON_EXPORT_VERSION,addonVersion=self.VERSION,gameFlavor="retail",clientBuild=self:GetBuild(),preferences=preferences,graphicsSettings=graphics,profiles=profiles}
+  local payload={bundleVersion=self.ADDON_EXPORT_VERSION,addonVersion=self.VERSION,gameFlavor="retail",clientBuild=self:GetBuild(),preferences=preferences,graphicsSettings=graphics,uiTweaksSettings=uiTweaks,profiles=profiles}
   local raw=self:Serialize(payload);local output=self.ADDON_EXPORT_PREFIX..self:Checksum(raw)..":"..self:Base64Encode(raw)
   if #output>self.MAX_IMPORT_BYTES then return nil,"size" end
   return output

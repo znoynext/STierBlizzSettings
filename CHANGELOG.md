@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.15-alpha
+
+- Added a dedicated **UI Tweaks** navigation page with verified universal sharpening/glow recommendations and optional death/ghost-world effects.
+- Added native Retail checkboxes, a `ResampleSharpness` stepper slider, concise hover tooltips, explicit confirmation, visible feedback and dedicated Undo.
+- Added a separate `uiTweaks` registry/transaction module with automatic backups, runtime CVar availability checks, readback verification and normalized float comparison.
+- Included available UI Tweaks values in strict data-only `STBSA1` full-addon import/export while preserving older bundles that omit the new field.
+- Documented the evidence boundary and replaced a fixed zero-FPS promise with an honest expected cost of about 0 FPS that can vary by hardware.
+
 ## 0.4.14-alpha
 
 - Moved Graphics Settings and Zone Graphics Switcher into a dedicated responsive tab bar at the top of the Graphics section.

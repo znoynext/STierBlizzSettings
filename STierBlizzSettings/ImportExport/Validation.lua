@@ -31,7 +31,7 @@ function STBS:ImportAddonBundle(text)
   local checksum,encoded=text:match("^STBSA1:([0-9a-f]+):(.+)$");if not checksum or #checksum~=8 then return nil,"format" end
   local raw=self:Base64Decode(encoded);if not raw or self:Checksum(raw)~=checksum then return nil,"integrity" end
   local parsed,payload,parse=pcall(self.ParseSerialized,self,raw);if not parsed or type(payload)~="table" then return nil,parse or "parse" end
-  if not onlyKeys(payload,{bundleVersion=true,addonVersion=true,gameFlavor=true,clientBuild=true,preferences=true,graphicsSettings=true,profiles=true}) or payload.bundleVersion~=self.ADDON_EXPORT_VERSION or payload.gameFlavor~="retail" then return nil,"payload" end
+  if not onlyKeys(payload,{bundleVersion=true,addonVersion=true,gameFlavor=true,clientBuild=true,preferences=true,graphicsSettings=true,uiTweaksSettings=true,profiles=true}) or payload.bundleVersion~=self.ADDON_EXPORT_VERSION or payload.gameFlavor~="retail" then return nil,"payload" end
   local preferences=payload.preferences
   if not onlyKeys(preferences,{graphicsPreset=true,graphicsMode=true,benchmarkMode=true,performanceWidgetEnabled=true,zoneGraphics=true}) then return nil,"preferences" end
   local validPreset={ [self.GRAPHICS_PRESET_PRO]=true,[self.GRAPHICS_PRESET_OPTIMIZED]=true,[self.GRAPHICS_PRESET_QUALITY]=true }
@@ -42,6 +42,11 @@ function STBS:ImportAddonBundle(text)
   if type(payload.graphicsSettings)~="table" or not next(payload.graphicsSettings) then return nil,"graphics" end
   for key in pairs(payload.graphicsSettings) do local setting=self.RegistryByKey[key];if not setting or setting.module~="graphics" then return nil,"graphics" end end
   local validGraphics,graphicsWhy=self:ValidateSettings(payload.graphicsSettings,false);if not validGraphics then return nil,graphicsWhy end
+  if payload.uiTweaksSettings~=nil then
+    if type(payload.uiTweaksSettings)~="table" then return nil,"uiTweaks" end
+    for key in pairs(payload.uiTweaksSettings) do local setting=self.RegistryByKey[key];if not setting or setting.module~="uiTweaks" then return nil,"uiTweaks" end end
+    local validTweaks,tweaksWhy=self:ValidateSettings(payload.uiTweaksSettings,false);if not validTweaks then return nil,tweaksWhy end
+  else payload.uiTweaksSettings={} end
   if type(payload.profiles)~="table" then return nil,"profiles" end
   local profileCount=0
   for id,profile in pairs(payload.profiles) do
@@ -56,7 +61,9 @@ end
 function STBS:ApplyAddonBundle(payload)
   if type(payload)~="table" then return self:Result(false,"payload") end
   if type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown() then return self:Result(false,"combat") end
-  local result=self:ApplySettings(payload.graphicsSettings,{graphics=true},"addon-bundle-import")
+  local settings=self:Copy(payload.graphicsSettings);local modules={graphics=true}
+  for key,value in pairs(payload.uiTweaksSettings or {}) do settings[key]=value;modules.uiTweaks=true end
+  local result=self:ApplySettings(settings,modules,"addon-bundle-import")
   if not result.ok then return result end
   local db=self:InitializeDatabase();local old=db.preferences
   db.preferences={
@@ -66,7 +73,7 @@ function STBS:ApplyAddonBundle(payload)
   }
   db.profiles=self:Copy(payload.profiles);local sequence=db.profileSequence
   for id in pairs(db.profiles) do local value=tonumber(id:match("_(%d+)$"));if value then sequence=math.max(sequence,value) end end
-  db.profileSequence=sequence;self.selectedProfileId=nil;self.selectedItemType=nil;self.selectedBackupIndex=nil;self.activeZoneCategory=nil;self.activeZonePreset=nil
+  db.profileSequence=sequence;self.selectedProfileId=nil;self.selectedItemType=nil;self.selectedBackupIndex=nil;self.activeZoneCategory=nil;self.activeZonePreset=nil;self.uiTweaksDraft=nil
   self:SetPerformanceWidgetEnabled(db.preferences.performanceWidgetEnabled)
   return self:Result(true,"bundle-imported",result.data)
 end

@@ -36,6 +36,37 @@ local function checkBox(parent,text,callback,checked)
   return row
 end
 
+local function addTooltip(frame,title,description)
+  if not frame or not description then return end
+  frame:HookScript("OnEnter",function(self)
+    GameTooltip:SetOwner(self,"ANCHOR_RIGHT");GameTooltip:SetText(title,1,0.82,0);GameTooltip:AddLine(description,1,1,1,true);GameTooltip:Show()
+  end)
+  frame:HookScript("OnLeave",function()GameTooltip:Hide()end)
+end
+
+local function sectionLabel(parent,text)
+  local row=CreateFrame("Frame",nil,parent);row:SetSize(200,28)
+  row.label=row:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");row.label:SetPoint("LEFT",3,0);row.label:SetPoint("RIGHT",-3,0);row.label:SetJustifyH("LEFT");row.label:SetText(text);row.label:SetTextColor(0.4,0.82,1)
+  function row:SetDisabled()end
+  function row:SetActive()end
+  return row
+end
+
+local function sliderRow(parent,text,minimum,maximum,step,value,callback,formatter)
+  local row=CreateFrame("Frame",nil,parent);row:SetSize(200,58)
+  row.label=row:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");row.label:SetPoint("TOPLEFT",4,-2);row.label:SetPoint("TOPRIGHT",-68,-2);row.label:SetJustifyH("LEFT");row.label:SetText(text);row.label:SetTextColor(1,0.82,0)
+  row.value=row:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge");row.value:SetPoint("TOPRIGHT",-5,-2);row.value:SetJustifyH("RIGHT")
+  row.slider=CreateFrame("Frame",nil,row,"MinimalSliderWithSteppersTemplate");row.slider:SetPoint("BOTTOMLEFT",4,0);row.slider:SetPoint("BOTTOMRIGHT",-4,0);row.slider:SetHeight(34)
+  local function format(number)return formatter and formatter(number) or tostring(number)end
+  row.slider:Init(value,minimum,maximum,(maximum-minimum)/step,nil);row.value:SetText(format(value))
+  row.slider:RegisterCallback(MinimalSliderWithSteppersMixin.Event.OnValueChanged,function(_,number)
+    local rounded=math.floor((number/step)+0.5)*step;row.value:SetText(format(rounded));callback(rounded)
+  end,row)
+  function row:SetDisabled(disabled)self.disabled=disabled;self.slider:SetEnabled(not disabled);self:SetAlpha(disabled and 0.42 or 1)end
+  function row:SetActive()end
+  return row
+end
+
 local function navButton(parent,text,icon,y,pageKey,callback)
   local b=button(parent,text,14,y,170,callback);b:SetSize(170,44);b.pageKey=pageKey
   b.label:ClearAllPoints();b.label:SetPoint("LEFT",44,0);b.label:SetJustifyH("LEFT");b.label:SetFontObject(GameFontNormalLarge)
@@ -75,11 +106,16 @@ local function layoutActionButtons(f)
   local available=math.max(360,math.floor(f.actionContent:GetWidth()+0.5));local row,col,columns=0,0,2
   for _,created in ipairs(f.pageButtons) do
     local action=created.action;local wantedColumns=action.third and (available>=660 and 3 or available>=460 and 2 or 1) or (available>=540 and 2 or 1)
+    if action.kind=="section" or action.kind=="slider" then
+      if col>0 then row=row+1;col=0 end
+      created:ClearAllPoints();created:SetPoint("TOPLEFT",0,-row*40);created:SetSize(available,action.kind=="slider" and 58 or 28);row=row+(action.kind=="slider" and 2 or 1);columns=2
+    else
     if (action.wide or wantedColumns~=columns) and col>0 then row=row+1;col=0 end
     columns=wantedColumns
     local gap=action.third and 10 or 12;local width=action.wide and available or math.floor((available-gap*(columns-1))/columns);local x=action.wide and 0 or col*(width+gap)
     created:ClearAllPoints();created:SetPoint("TOPLEFT",x,-row*40);created:SetSize(width,34)
     if action.wide then row=row+1;col=0 else col=col+1;if col==columns then row=row+1;col=0 end end
+    end
   end
   if col>0 then row=row+1 end
   f.actionRows=row;f.actionContent:SetHeight(math.max(1,row*40));return row
@@ -104,7 +140,8 @@ function STBS:LayoutUI()
   local contentTop=f.graphicsTabsVisible and 112 or 76;local availableHeight=panelHeight-contentTop-18
   f.scroll:ClearAllPoints();f.scroll:SetPoint("TOPLEFT",18,-contentTop);f.scroll:SetPoint("TOPRIGHT",-27,-contentTop)
   if f.hasActions then
-    local desired=math.max(82,(f.actionRows or 0)*40);local actionHeight=math.min(desired,math.max(122,math.min(240,availableHeight-220)))
+    local actionCap=f.currentPageKey=="uiTweaks" and 360 or 240;local contentReserve=f.currentPageKey=="uiTweaks" and 180 or 220
+    local desired=math.max(82,(f.actionRows or 0)*40);local actionHeight=math.min(desired,math.max(122,math.min(actionCap,availableHeight-contentReserve)))
     local scrollHeight=math.max(180,availableHeight-actionHeight-20)
     f.scroll:SetHeight(scrollHeight)
     f.rule:ClearAllPoints();f.rule:SetPoint("TOPLEFT",22,-(contentTop+scrollHeight+10));f.rule:SetPoint("TOPRIGHT",-26,-(contentTop+scrollHeight+10));f.rule:Show()
@@ -165,9 +202,10 @@ function STBS:CreateUI()
   local actionContent=CreateFrame("Frame",nil,actionScroll);actionContent:SetHeight(82);actionScroll:SetScrollChild(actionContent);f.actionScroll,f.actionContent=actionScroll,actionContent
   f.pageButtons={};f.navButtons={};self.ui=f
   table.insert(f.navButtons,navButton(side,self:L("GRAPHICS"),"Interface\\Icons\\INV_Misc_EngGizmos_30",-16,"graphics",function()STBS:ShowGraphics()end))
-  table.insert(f.navButtons,navButton(side,self:L("FPS_TEST"),"Interface\\Icons\\INV_Misc_PocketWatch_01",-68,"fpsTest",function()STBS:ShowFPSTest()end))
-  table.insert(f.navButtons,navButton(side,self:L("PROFILES"),"Interface\\Icons\\INV_Misc_Book_09",-120,"profiles",function()STBS:ShowProfiles()end))
-  table.insert(f.navButtons,navButton(side,self:L("ABOUT"),"Interface\\Icons\\INV_Misc_Note_05",-172,"about",function()STBS:ShowAbout()end))
+  table.insert(f.navButtons,navButton(side,self:L("UI_TWEAKS"),"Interface\\Icons\\INV_Gizmo_02",-68,"uiTweaks",function()STBS:ShowUITweaks()end))
+  table.insert(f.navButtons,navButton(side,self:L("FPS_TEST"),"Interface\\Icons\\INV_Misc_PocketWatch_01",-120,"fpsTest",function()STBS:ShowFPSTest()end))
+  table.insert(f.navButtons,navButton(side,self:L("PROFILES"),"Interface\\Icons\\INV_Misc_Book_09",-172,"profiles",function()STBS:ShowProfiles()end))
+  table.insert(f.navButtons,navButton(side,self:L("ABOUT"),"Interface\\Icons\\INV_Misc_Note_05",-224,"about",function()STBS:ShowAbout()end))
   local resize=CreateFrame("Button",nil,f);resize:SetSize(22,22);resize:SetPoint("BOTTOMRIGHT",-13,12);resize:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up");resize:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight");resize:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
   resize:SetScript("OnMouseDown",function(_,mouseButton)if mouseButton=="LeftButton" then f:StartSizing("BOTTOMRIGHT",true)end end);resize:SetScript("OnMouseUp",function()f:StopMovingOrSizing();STBS:SaveWindowSize();STBS:LayoutUI()end)
   resize:SetScript("OnEnter",function(self)GameTooltip:SetOwner(self,"ANCHOR_TOPLEFT");GameTooltip:SetText(STBS:L("RESIZE_WINDOW"));GameTooltip:Show()end);resize:SetScript("OnLeave",function()GameTooltip:Hide()end);f.resize=resize
@@ -233,7 +271,12 @@ function STBS:SetPage(title,text,actions,status,options)
   for _,nav in ipairs(f.navButtons) do nav:SetActive(nav.pageKey==options.pageKey) end
   for _,old in ipairs(f.pageButtons) do old:Hide() end;f.pageButtons={}
   for _,action in ipairs(actions or {}) do
-    local created=action.kind=="check" and checkBox(f.actionContent,action.label,action.fn,action.checked) or button(f.actionContent,action.label,0,0,200,action.fn,action.style);created.action=action;created:SetDisabled(action.disabled);created:SetActive(action.active);table.insert(f.pageButtons,created)
+    local created
+    if action.kind=="check" then created=checkBox(f.actionContent,action.label,action.fn,action.checked)
+    elseif action.kind=="slider" then created=sliderRow(f.actionContent,action.label,action.minimum,action.maximum,action.step,action.value,action.fn,action.formatter)
+    elseif action.kind=="section" then created=sectionLabel(f.actionContent,action.label)
+    else created=button(f.actionContent,action.label,0,0,200,action.fn,action.style) end
+    created.action=action;created:SetDisabled(action.disabled);created:SetActive(action.active);if action.tooltip then addTooltip(created,action.label,action.tooltip);if created.check then addTooltip(created.check,action.label,action.tooltip)end;if created.slider then addTooltip(created.slider,action.label,action.tooltip);if created.slider.Slider then addTooltip(created.slider.Slider,action.label,action.tooltip)end;if created.slider.Back then addTooltip(created.slider.Back,action.label,action.tooltip)end;if created.slider.Forward then addTooltip(created.slider.Forward,action.label,action.tooltip)end end end;table.insert(f.pageButtons,created)
   end
   f.hasActions=#f.pageButtons>0;f:Show();self:LayoutUI()
 end
@@ -287,6 +330,58 @@ function STBS:ShowGraphics()
     if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="graphics" then STBS.ui.fpsDashboardCards[1].value:SetText(value and string.format(STBS:L("LIVE_FPS_FORMAT"),math.floor(value+0.5)) or "—") end
   end)
   if not self.settingsRegistered then self.settingsRegistered=self:RegisterBlizzardSettings() end
+end
+
+function STBS:SetUITweakPageStatus(message,kind)
+  local f=self.ui;if not f or not f:IsShown() or f.currentPageKey~="uiTweaks" then self.flashMessage=message;self.flashKind=kind;return end
+  f.status:SetText(message or "")
+  if kind=="success" then f.status:SetTextColor(0.35,1,0.62) elseif kind=="error" then f.status:SetTextColor(1,0.35,0.3) elseif kind=="warning" then f.status:SetTextColor(1,0.78,0.24) else f.status:SetTextColor(0.78,0.72,0.58) end
+  if type(_G.UIFrameFadeIn)=="function" then UIFrameFadeIn(f.status,0.18,0.35,1) end
+end
+
+function STBS:ShowUITweaks()
+  self:SetLiveFPSCallback(nil);self:StopFPSBaselineSampling()
+  local draft=self:GetUITweaksDraft();local _,availability=self:GetAvailableUITweakSettings();local unavailable=0
+  for _,key in ipairs(self.UI_TWEAK_KEYS) do if not availability[key].available then unavailable=unavailable+1 end end
+  local function enabled(key)return availability[key] and availability[key].available end
+  local function choose(key,value)
+    if STBS:SetUITweakDraft(key,value) then STBS:SetUITweakPageStatus(STBS:L("UI_TWEAK_CHANGED"),"success") end
+  end
+  local actions={
+    {kind="section",label=self:L("UI_TWEAKS_RECOMMENDED"),wide=true},
+    {kind="check",label=self:L("UI_TWEAK_ALWAYS_SHARPEN"),checked=draft.ResampleAlwaysSharpen=="1",disabled=not enabled("ResampleAlwaysSharpen"),tooltip=self:L("UI_TWEAK_ALWAYS_SHARPEN_TIP"),fn=function(value)choose("ResampleAlwaysSharpen",value and "1" or "0")end},
+    {kind="check",label=self:L("UI_TWEAK_GLOW"),checked=draft.ffxGlow=="1",disabled=not enabled("ffxGlow"),tooltip=self:L("UI_TWEAK_GLOW_TIP"),fn=function(value)choose("ffxGlow",value and "1" or "0")end},
+    {kind="slider",label=self:L("UI_TWEAK_SHARPNESS"),minimum=0,maximum=2,step=0.1,value=tonumber(draft.ResampleSharpness) or 0.3,disabled=not enabled("ResampleSharpness"),tooltip=self:L("UI_TWEAK_SHARPNESS_TIP"),formatter=function(value)return string.format("%.1f",value)end,fn=function(value)choose("ResampleSharpness",string.format("%.1f",value))end},
+    {label=self:L("UI_TWEAK_USE_RECOMMENDED"),wide=true,fn=function()STBS:SelectRecommendedUITweaks();STBS.flashMessage=STBS:L("UI_TWEAK_SELECTED");STBS.flashKind="success";STBS:ShowUITweaks()end},
+    {kind="section",label=self:L("UI_TWEAKS_OPTIONAL"),wide=true},
+    {kind="check",label=self:L("UI_TWEAK_DEATH"),checked=draft.ffxDeath=="1",disabled=not enabled("ffxDeath"),tooltip=self:L("UI_TWEAK_DEATH_TIP"),fn=function(value)choose("ffxDeath",value and "1" or "0")end},
+    {kind="check",label=self:L("UI_TWEAK_NETHER"),checked=draft.ffxNether=="1",disabled=not enabled("ffxNether"),tooltip=self:L("UI_TWEAK_NETHER_TIP"),fn=function(value)choose("ffxNether",value and "1" or "0")end},
+    {label=self:L("UI_TWEAK_APPLY"),style="primary",wide=true,fn=function()STBS:ConfirmApplyUITweaks()end},
+    {label=self:L("UI_TWEAK_UNDO"),wide=true,disabled=not self:GetLatestBackupIndex("uiTweaks"),fn=function()STBS:ConfirmUndoUITweaks()end},
+  }
+  local text="|cff35e6ad"..self:L("UI_TWEAKS_TRUST").."|r\n\n|cffffd36b"..self:L("UI_TWEAKS_RECOMMENDED").."|r\n"..self:L("UI_TWEAKS_RECOMMENDED_NOTE").."\n\n|cffffd36b"..self:L("UI_TWEAKS_OPTIONAL").."|r\n"..self:L("UI_TWEAKS_OPTIONAL_NOTE").."\n\n|cff9aa7b8"..self:L("UI_TWEAK_TOOLTIP_HINT").."|r"
+  local status=self.flashMessage or (unavailable>0 and self:L("UI_TWEAK_UNAVAILABLE") or self:L("UI_TWEAKS_STATUS"));local kind=self.flashKind or (unavailable>0 and "warning" or nil);self.flashMessage=nil;self.flashKind=nil
+  self:SetPage(self:L("UI_TWEAKS_TITLE"),text,actions,status,{pageKey="uiTweaks",statusKind=kind})
+end
+
+function STBS:ConfirmApplyUITweaks()
+  local settings=self:GetAvailableUITweakSettings();local plan=self:BuildDiff(settings);local changed=0
+  for _,entry in ipairs(plan) do if entry.status=="changed" then changed=changed+1 end end
+  if changed==0 then self.flashMessage=self:L("UI_TWEAK_ALREADY");self.flashKind="success";self:ShowUITweaks();return end
+  StaticPopupDialogs["STBS_APPLY_UI_TWEAKS"]={text=self:L("UI_TWEAK_APPLY_CONFIRM"),subText=string.format(self:L("UI_TWEAK_APPLY_CONFIRM_TEXT"),changed),button1=ACCEPT,button2=CANCEL,OnAccept=function()
+    local result=STBS:ApplySettings(settings,{uiTweaks=true},"ui-tweaks")
+    if result.code=="queued" then STBS.flashMessage=STBS:L("PENDING");STBS.flashKind="warning"
+    elseif result.ok then STBS.uiTweaksDraft=nil;STBS.flashMessage=string.format(STBS:L("UI_TWEAK_APPLIED"),(result.data.uiTweaks and result.data.uiTweaks.changed) or changed);STBS.flashKind="success"
+    else STBS.flashMessage=STBS:L("APPLY_FAILED").." ("..tostring(result.code)..")";STBS.flashKind="error" end
+    STBS:ShowUITweaks()
+  end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_APPLY_UI_TWEAKS")
+end
+
+function STBS:ConfirmUndoUITweaks()
+  local index=self:GetLatestBackupIndex("uiTweaks");if not index then self.flashMessage=self:L("UI_TWEAK_ALREADY");self.flashKind="warning";self:ShowUITweaks();return end
+  StaticPopupDialogs["STBS_UNDO_UI_TWEAKS"]={text=self:L("UI_TWEAK_UNDO_CONFIRM"),subText=self:L("UI_TWEAK_UNDO_CONFIRM_TEXT"),button1=ACCEPT,button2=CANCEL,OnAccept=function()
+    local result=STBS:RestoreBackup(index,{uiTweaks=true});if result.ok then STBS.uiTweaksDraft=nil end;STBS.flashMessage=result.ok and STBS:L("UI_TWEAK_RESTORED") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowUITweaks()
+  end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_UNDO_UI_TWEAKS")
 end
 
 function STBS:GetFPSStabilityLabel(value)

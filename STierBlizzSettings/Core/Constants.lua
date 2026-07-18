@@ -2,7 +2,7 @@ local ADDON, STBS = ...
 STBS = STBS or {}
 _G[ADDON] = STBS
 STBS.ADDON = ADDON
-STBS.VERSION = "0.4.14-alpha"
+STBS.VERSION = "0.4.15-alpha"
 STBS.DB_SCHEMA = 2
 STBS.PROFILE_SCHEMA = 1
 STBS.EXPORT_PREFIX = "STBS1:"
@@ -26,7 +26,7 @@ STBS.GRAPHICS_PRESET_OPTIMIZED = "optimized"
 STBS.GRAPHICS_PRESET_QUALITY = "quality"
 STBS.BENCHMARK_QUICK = "quick"
 STBS.BENCHMARK_ACCURATE = "accurate"
-STBS.Modules = { graphics = true, interfaceGameplay = true }
+STBS.Modules = { graphics = true, interfaceGameplay = true, uiTweaks = true }
 function STBS:Result(ok, code, data) return { ok = ok, code = code, data = data } end
 function STBS:Copy(value, seen)
   if type(value) ~= "table" then return value end

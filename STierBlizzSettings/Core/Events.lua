@@ -8,6 +8,7 @@ frame:SetScript("OnEvent",function(_,event,arg)
       msg=(msg or ""):lower()
       if msg=="profiles" or msg=="backup" or msg=="restore" or msg=="save" or msg=="export" or msg=="import" then STBS:ShowProfiles()
       elseif msg=="zone" then STBS:ShowZoneGraphics()
+      elseif msg=="tweaks" or msg=="ui" then STBS:ShowUITweaks()
       elseif msg=="fps" or msg=="test" then STBS:ShowFPSTest()
       elseif msg=="about" then STBS:ShowAbout()
       elseif msg=="debug" then STBS:ShowDiagnostics()
@@ -31,6 +32,11 @@ frame:SetScript("OnEvent",function(_,event,arg)
       if pending.trigger=="fps-compare-restore" then local comparison=STBS:GetLastPresetFPSComparison();if comparison then comparison.restoreQueued=false;comparison.restoreFailed=not result.ok;STBS:StorePresetFPSComparison(comparison) end end
       STBS.fpsPresetRestorePending=nil;STBS.flashMessage=result.ok and STBS:L("FPS_COMPARE_RESTORED") or STBS:L("FPS_COMPARE_RESTORE_FAILED");STBS.flashKind=result.ok and "success" or "error"
       if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS:ShowFPSTest() end
+    end
+    if pending.trigger=="ui-tweaks" then
+      if result.ok then STBS.uiTweaksDraft=nil end
+      STBS.flashMessage=result.ok and string.format(STBS:L("UI_TWEAK_APPLIED"),(result.data and result.data.uiTweaks and result.data.uiTweaks.changed) or 0) or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error"
+      if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="uiTweaks" then STBS:ShowUITweaks() end
     end
     if result.ok and pending.options and pending.options.fpsBefore then
       STBS.reloadRecommended=true;STBS.flashMessage=STBS:L("SETTINGS_APPLIED");STBS.flashKind="success"

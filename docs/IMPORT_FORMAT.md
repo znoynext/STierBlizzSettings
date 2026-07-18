@@ -8,6 +8,6 @@ The 0.3 user interface previews and applies Graphics imports only. A graphics im
 
 ## Full addon bundle (`STBSA1`)
 
-The Profiles → Import / Export view can transfer the current built-in WoW graphics values, selected S-Tier preset/mode, benchmark choice, FPS/ping visibility, Zone Graphics mappings and validated personal profiles in one string. It intentionally excludes backup history, logs, transactions, window size and screen positions.
+The Profiles → Import / Export view can transfer the current built-in WoW graphics values, available UI Tweaks values, selected S-Tier preset/mode, benchmark choice, FPS/ping visibility, Zone Graphics mappings and validated personal profiles in one string. It intentionally excludes backup history, logs, transactions, window size and screen positions.
 
-`STBSA1` uses the same deterministic serializer, checksum and data-only parser as profile exchange. Unknown keys, invalid presets or zone categories, non-graphics settings, malformed profiles, excessive depth/entry counts, bad checksums and future versions are rejected. Import is blocked in combat and applies graphics through the normal backup-first transaction before stored preferences or profiles are replaced.
+`STBSA1` uses the same deterministic serializer, checksum and data-only parser as profile exchange. Unknown keys, invalid presets or zone categories, settings outside the graphics/UI Tweaks allowlist, malformed profiles, excessive depth/entry counts, bad checksums and future versions are rejected. Import is blocked in combat and applies shared CVars through one normal backup-first transaction before stored preferences or profiles are replaced. Older valid bundles without `uiTweaksSettings` remain accepted.
