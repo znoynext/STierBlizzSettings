@@ -8,19 +8,20 @@ There is no hardware-independent setting set that can guarantee the maximum FPS 
 
 The Blizzard source proves which controls exist, their CVar names, ranges, support gates and interaction rules. It does not prove a universal FPS gain. Controlled hardware benchmarks are the only valid way to quantify that claim; the required method is documented in [OPTIMAL_PROFILE_BENCHMARK.md](OPTIMAL_PROFILE_BENCHMARK.md).
 
+The values below are the current active unified/base values used by the built-in Graphics workflow. Retained `raidGraphics*` values belong to split-profile compatibility and are not a second built-in preset choice.
+
 | CVar group | UI label | PRO / Optimized / Quality | impact / confidence |
 |---|---|---:|---|
-| `graphics*ShadowQuality` | Shadow Quality | 1 / 2 / 3 | visual and GPU load; verified identifier/value range in UI |
-| `*LiquidDetail` | Liquid Detail | 1 / 2 / 3 | visible GPU effect scaled across presets |
-| `*ParticleDensity` | Particle Density | 3 / 4 / 5 | never disabled; preserves readable combat effects |
-| `*SSAO`, `*DepthEffects`, `*ComputeEffects` | Advanced Graphics | 0 / 1 / 2 | costly effects scaled together; client validation still applied |
-| `*OutlineMode`, `*ProjectedTextures` | Outline Mode / Projected Textures | 2 / 1 in every preset | combat visibility; enforced safety rule |
-| `*SpellDensity` | Spell Density | 0 / 2 / 2 | PRO uses Blizzard's Essential option; only when the feature API says supported |
-| `*ViewDistance` | View Distance | 4 / 6 / 8 | CPU/GPU and world readability balance |
-| `*EnvironmentDetail` | Environment Detail | 1 / 4 / 7 | PRO uses the minimum; higher presets restore useful world detail |
-| `*GroundClutter` | Ground Clutter | 1 in every preset | minimum decorative clutter while projected combat textures remain enabled |
+| `graphicsShadowQuality` | Shadow Quality | 1 / 2 / 3 | visual and GPU load; verified identifier/value range in UI |
+| `graphicsLiquidDetail` | Liquid Detail | 1 / 2 / 3 | visible GPU effect scaled across presets |
+| `graphicsParticleDensity` | Particle Density | 3 / 4 / 5 | never disabled; preserves readable combat effects |
+| `graphicsSSAO`, `graphicsDepthEffects`, `graphicsComputeEffects` | Advanced Graphics | 0 / 1 / 2 | costly effects scaled together; client validation still applied |
+| `graphicsOutlineMode`, `graphicsProjectedTextures` | Outline Mode / Projected Textures | 2 / 1 in every preset | combat visibility; enforced safety rule |
+| `graphicsSpellDensity` | Spell Density | 0 / 2 / 2 | PRO uses Blizzard's Essential option; only when the feature API says supported |
+| `graphicsViewDistance` | View Distance | 4 / 6 / 8 | CPU/GPU and world readability balance |
+| `graphicsEnvironmentDetail` | Environment Detail | 1 / 4 / 7 | PRO uses the minimum; higher presets restore useful world detail |
+| `graphicsGroundClutter` | Ground Clutter | 1 in every preset | minimum decorative clutter while projected combat textures remain enabled |
 | `ffxAntiAliasingMode`, `MSAAQuality`, `msaaAlphaTest` | Antialiasing | best supported CMAA, MSAA off, alpha-test off | capability-gated image AA; avoids MSAA cost and disables its dependent option |
-| `cameraSmoothStyle` | Camera Follow Style | 0 | reversibly disables automatic camera adjustment |
 
 ## Complete Retail graphics coverage
 
@@ -54,6 +55,6 @@ The built-in Graphics flow uses one active Blizzard quality set. Lower-cost raid
 
 The audit covers every control registered in Retail `Graphics.lua`. Resolution is a Blizzard proxy backed by `C_VideoOptions`, not a normal CVar, so the addon deliberately does not pretend that it can safely port or restore it through the CVar registry.
 
-The Interface & Gameplay baseline also enables standard Blizzard controls that expose information rather than automate play: cooldown numbers, target-of-target, the occluded player silhouette, enemy nameplates, always-visible nameplates and off-screen nameplate indicators. These choices improve combat readability but remain preferences, so every change is previewed and backed up. Audio, accessibility, Edit Mode, bindings, mouse behavior and UI scale are deliberately excluded.
+The retained internal Interface & Gameplay baseline sets `cameraSmoothStyle=0` and enables standard Blizzard controls that expose information rather than automate play: cooldown numbers, target-of-target, the occluded player silhouette, enemy nameplates, always-visible nameplates and off-screen nameplate indicators. It has no current top-level page or built-in apply action and remains for compatibility/research rather than the visible Graphics workflow. Audio, accessibility, Edit Mode, bindings, mouse behavior and UI scale are deliberately excluded.
 
 The profile remains a conservative expert baseline, not a universal benchmark result. The exact expected FPS improvement depends on hardware, resolution, zone and encounter. The status is `expert_baseline_unbenchmarked`; no fixed FPS percentage may be advertised until the benchmark matrix has real results.

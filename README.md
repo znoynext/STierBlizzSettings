@@ -18,18 +18,18 @@ A lightweight WoW Retail addon that applies a curated balance of FPS, image qual
 - Five focused top-level tabs: **Graphics**, **UI Tweaks**, **Test FPS**, **Profiles**, and **About**. Graphics contains native **Graphics Settings** and **Zone Graphics Switcher** sub-tabs.
 - **UI Tweaks** exposes only curated live Retail CVars: universal resample sharpening/glow recommendations plus optional death/ghost-world effects and maximum camera distance. It is autonomous: graphics presets never change these values. Controls fail closed when unavailable, show short hover explanations and apply through a dedicated backup-first transaction with Undo.
 - Three presets: **PRO** for maximum practical FPS, **Optimized** for the recommended balance, and **Quality** for a better picture without wasteful maximums.
-- Optional zone profiles for world/cities, dungeons, raids, PvP/arenas and scenarios/delves. They switch only when the content type changes and are off by default.
+- Optional zone profiles for world/cities, dungeons, raids, PvP/arenas and scenarios/delves. They are off by default; automatic checks run after entering the world or changing zones, and only a real settings diff is applied.
 - One clear preset at a time; optional Zone Graphics is the single place for content-specific switching.
 - Concise result preview without a technical CVar list and an explicit confirmation before applying.
 - A larger, resizable native WoW window that remembers its size; dragging is limited to the header so controls cannot move the window accidentally.
-- Separate Profiles, Backups and Import / Export views. Backup restore/delete actions stay visible, and one `STBSA1` string can transfer the current graphics, UI Tweaks, addon choices, zone rules and personal profiles through large export and import fields.
+- Separate Profiles, Backups and Import / Export views. Backup restore/delete actions stay visible, and one `STBSA1` string can transfer current graphics, available UI Tweaks, selected preset/mode, stored benchmark choice, performance-widget enabled state, zone rules and personal profiles through large export and import fields. Backup history and screen positions are not exported.
 - Transactional writes with automatic backup and read-back verification.
 - One-click **Undo graphics changes**.
 - A four-card Graphics dashboard with live FPS and color-coded before, after and change results. Applying a preset opens a smooth 5-second progress dialog and then offers Reload UI automatically. Test FPS adds a cancellable 20-second test, explained stability, actionable hints and visual current-vs-preset comparisons. If both Average FPS and 1% Low improve by at least 5%, the tested preset can be applied directly with confirmation and a fresh backup.
 - Optional compact bottom-screen FPS and real Home/World ping indicator with red-to-green status colors.
-- Personal graphics profiles plus backup history in one screen.
+- Personal graphics profiles plus a separate backup-history view in the Profiles section.
 - Apply, rename, export and delete profiles; restore or delete backups.
-- Strict data-only `STBS1:` import. Imported text is never executed.
+- Deterministic `STBS1:` profile export with a strict data-only importer. The importer exists in code but has no current Profiles launcher; the visible transfer page exposes full-addon `STBSA1` import. Imported text is never executed.
 - Clear colored feedback after saves, backups, deletes, restores, and applies.
 - A gold `S` minimap icon, larger standard WoW fonts, and scalable Blizzard Retail-style buttons, checkboxes and addon-owned modal dialogs with dark surfaces, restrained gold states, smooth feedback and red reserved for destructive actions.
 - The header prominently shows the detected active graphics preset in the standard large addon font: **PRO**, **Optimized**, **Quality**, or **Custom** after manual changes.

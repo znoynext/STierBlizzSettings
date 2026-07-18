@@ -1,5 +1,7 @@
 # Changelog
 
+Entries below are version-scoped historical records, not a description of the current UI or architecture. See `docs/PROJECT_STATE.md` and `docs/ARCHITECTURE.md` for current behavior and contracts.
+
 ## 0.4.20-alpha
 
 - Clarified the recommended UI Tweaks note so its expected performance cost is explicitly shown as **about 0 FPS**.
