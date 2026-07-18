@@ -1,63 +1,123 @@
 # Project state
 
-Last updated: 2026-07-18. Current release: **0.4.20-alpha**. Target: WoW Retail 12.0.7, Interface 120007, Blizzard UI build 68453.
+Last updated: 2026-07-18.
 
-This is the short handoff for continuing work in a new Codex task. Read it before changing behavior or UI. Use `CHANGELOG.md` for version history and the linked specialist documents for implementation details.
+This file is a compact snapshot of the implementation on `main`, not a permanent specification or version history. Use `CHANGELOG.md` for release history and inspect current code and tests before changing behavior.
 
-## Product direction
+## Current release state
 
-S-Tier Blizz Settings applies curated standard Blizzard settings. The goal is high practical FPS without sacrificing combat readability or useful image quality. It is not a UI replacement and must continue to look like a polished native World of Warcraft addon.
+- Addon version: **0.4.20-alpha** in both `Core/Constants.lua` and the TOC.
+- Client target: **WoW Retail 12.0.7**, Interface **120007**.
+- Verified registry baseline: Blizzard client build **68453** (`12.0.7.68453`); the same build is used by the Lua test harness.
+- Status: **alpha**. Live-client visual QA and controlled hardware benchmarks are still required before a stable/production release.
 
-Five top-level pages are currently exposed: **Graphics**, **UI Tweaks**, **Test FPS**, **Profiles**, and **About**. Graphics contains **Graphics Settings** and **Zone Graphics Switcher** sub-tabs. Interface & Gameplay remains internally compatible but is intentionally hidden until its redesign.
+## Current product navigation
 
-## Implemented workflow
+The main window exposes five top-level pages:
 
-- Graphics offers PRO, Optimized and Quality as one active Blizzard graphics set. The former lighter-raid checkbox is removed because Zone Graphics owns content-aware switching. Every apply shows a concise preview, asks for confirmation, creates a backup first, writes transactionally and verifies results.
-- The Graphics dashboard shows live FPS and measured before/after/change cards. Its five-second check has a centered smooth progress dialog and automatically offers Reload UI when finished; no permanent Reload button is shown. The result is local to the same scene and is never presented as a guaranteed gain or prediction.
-- Test FPS captures every frame for 20 seconds and reports average FPS, 1% Low, stability, adaptive spikes and worst frame time. It can compare current graphics with each official preset using two 20-second measurements, then restore the original settings. A verified restore followed by at least 5% gains in both Average FPS and 1% Low exposes a confirmed backup-first action to apply the exact tested unified preset.
-- Zone Graphics is optional and disabled by default. It maps world/city, dungeon, raid, PvP/arena and scenario/delve content to presets and delegates every real change to the same backup-first transaction.
-- UI Tweaks provides curated resample sharpening and glow recommendations plus optional death/ghost-world effects and a `1.9 / 2.6` maximum-camera-distance toggle. It is an autonomous transaction module: built-in and zone graphics presets never read or change its values. Every control is runtime-gated through current Retail CVar metadata, includes a short tooltip and applies transactionally with a dedicated Undo path. The displayed performance cost is an expectation of about 0 FPS, never a guarantee.
-- Profiles combines named graphics profiles, backup history and full-addon `STBSA1` import/export, including available UI Tweaks values. Imports are untrusted data, parsed without execution and reviewed before application.
-- The optional bottom overlay displays real live FPS and the greater Home/World latency. Ctrl + drag moves it.
+1. **Graphics**
+2. **UI Tweaks**
+3. **Test FPS**
+4. **Profiles**
+5. **About**
 
-## Current UX decisions
+Graphics has two sub-tabs: **Graphics Settings** and **Zone Graphics Switcher**. Profiles has **Profiles**, **Backups**, and **Import / Export** views. Interface & Gameplay has no current top-level page; its module and profile fields remain only for compatibility.
 
-- Use standard WoW fonts, dark native panels, restrained gold accents and readable text sizes. Avoid unrelated modern web styling.
-- The shared control system is in `UI/Style.lua`: buttons and checkboxes use flat dark Retail surfaces, thin scalable borders, gold active states and smooth hover/press feedback; red fills remain exclusive to destructive buttons. Every addon confirmation or text-entry prompt must use `ShowAddonDialog`; do not add new `StaticPopup` windows.
-- Graphics sub-tabs live in a dedicated responsive bar at the top of the page, above its title and status text.
-- The main window is resizable, opens centered and is not clamped to screen edges. Layout must remain responsive at supported sizes.
-- Every user action must produce visible success, warning or error feedback.
-- The header prominently displays the actual active PRO, Optimized or Quality preset in `GameFontNormalLarge`; otherwise it shows Custom.
-- Do not fake a live game preview. Addons cannot render the world with unapplied graphics settings or diagnose GPU/CPU load and temperatures.
+## Current Graphics workflow
 
-## Safety boundaries
+- Built-in presets are **PRO**, **Optimized**, and **Quality**. The header detects the actually active preset and otherwise shows Custom.
+- The primary UI selects a preset, shows a diff preview, asks for confirmation, applies it through the graphics transaction, then runs the five-second post-apply measurement. Built-in UI applies always use **unified** graphics (`RAIDsettingsEnabled=0`).
+- Zone Graphics and preset FPS comparisons also use unified graphics. The old **split** mode is still accepted by SavedVariables, profile schema, import, flattening, restore, and personal-profile application, but there is no current split-mode selector in Graphics.
+- The graphics registry intentionally does not manage monitor/display choice, resolution, render scale, refresh rate, V-Sync, graphics API, FPS caps, or latency controls. Anti-aliasing is selected only when the client reports support.
+- Official presets currently preserve projected textures, usable particles and outlines, and high texture resolution while scaling more expensive quality settings.
 
-- Use only verified current Retail APIs and CVars. Unsupported settings fail closed.
-- Preserve resolution, render scale, V-Sync, display/API choice, FPS caps and other hardware- or preference-dependent settings.
-- Official presets preserve projected textures, particles, combat outlines and high-quality texture resolution. PRO uses minimum environment detail and ground clutter, with Essential spell density.
-- No telemetry, networking, ads, premium gating, donation prompts, combat automation or obfuscation.
+## Current Zone Graphics behavior
 
-## Validation and release workflow
+- Zone Graphics is opt-in and disabled by default.
+- Assignments are stored as a category-to-preset map: `world`, `party`, `raid`, `pvp`, and `scenario` each select `pro`, `optimized`, or `quality`.
+- Defaults are Optimized for World/City, Dungeon, and Scenario/Delve; PRO for Raid and PvP/Arena.
+- `C_PartyInfo.IsDelveInProgress()` maps an active Delve to `scenario`; otherwise `IsInInstance()` maps party, raid, scenario, PvP/arena, and falls back to world.
+- Enabling the feature applies the current assignment immediately. Assignments can be cycled without applying, and **Apply for current zone** is available explicitly.
+- Automatic checks run 0.8 seconds after `PLAYER_ENTERING_WORLD` and `ZONE_CHANGED_NEW_AREA`. Unchanged settings skip the transaction and backup.
+- In combat, a validated zone transaction uses the shared single pending slot and runs on `PLAYER_REGEN_ENABLED`.
+- Zone switching is suspended while the standalone/preset FPS test flag is active and while a preset restore is pending. More limited interactions are listed under current technical debt.
 
-1. Run `lua Tests/run.lua` and `git diff --check`.
-2. Review the complete diff and ensure no secrets or temporary files are included.
-3. Build with `./build-release.ps1 -Version <version>` and inspect the ZIP contents.
-4. Update README download links, version constants, TOC, changelog and relevant docs for each release.
-5. Commit and push validated repository changes to the current branch.
+## Current UI Tweaks
 
-Automated Lua tests do not replace visual testing in the live Retail client. In this local collaboration, copy released addon sources to `C:\Program Files (x86)\World of Warcraft\_retail_\Interface\AddOns\STierBlizzSettings`, verify hashes, and let the user run `/reload`. Do not attempt to control or enter the user's WoW client.
+UI Tweaks is an autonomous `uiTweaks` module. Graphics presets and Zone Graphics do not read, write, or back up its settings.
 
-## Known unfinished work
+- Recommended image controls: resample sharpening enable, sharpness amount, and glow.
+- Optional visual controls: death and ghost/nether effects.
+- Optional camera control: maximum camera distance toggle between `1.9` and `2.6`.
+- Each control is runtime-gated by current CVar metadata. Changes remain in a draft until confirmation, then use the normal transaction and a module-specific backup. The page exposes a dedicated latest-backup Undo.
 
-- Interface & Gameplay is postponed and hidden.
-- Production v1.0 still requires live-client visual QA at multiple resolutions and controlled hardware benchmarks.
-- Preset values are researched and validated, but no fixed FPS gain can be promised across hardware, zones or combat load.
+The registry is the source for exact CVar names and value ranges; this snapshot intentionally does not duplicate it.
+
+## Current transaction and backup behavior
+
+- `ApplySettings` validates modules, allowlisted settings, and values before either writing or combat queuing.
+- Outside combat it builds a diff, captures a backup of every readable setting in each selected module, writes changed values, and verifies every write by reading it back.
+- A write or read-back failure rolls back attempted writes in reverse order. The result and rollback outcome are stored in a transaction history capped at 20 entries.
+- Unsupported values are skipped and unavailable entries are reported; the UI receives changed, identical, skipped, unavailable, and failed counts.
+- Combat work is copied into one in-memory pending slot and re-enters the same validation/transaction path on `PLAYER_REGEN_ENABLED`.
+- Backups store timestamp, addon/client build, trigger, affected modules, captured values, and read failures. The default history limit is 10 and is normalized to 1–50.
+- Restore filters removed registry keys, creates a safety backup, then applies the selected saved values transactionally.
+
+## Current FPS workflows
+
+- **Post-apply:** the Graphics page keeps up to 20 baseline samples at 0.25-second intervals, then captures 20 post-apply samples over **5 seconds**. A non-cancellable progress dialog is shown and Reload UI is offered afterwards.
+- **Standalone:** one **20-second** `OnUpdate` frame-time capture reports average FPS, 1% Low, stability, adaptive spikes, and worst frame time.
+- **Preset comparison:** captures current graphics for **20 seconds**, transactionally applies one unified built-in preset, waits 0.75 seconds, captures it for **20 seconds**, and transactionally restores the original graphics. A temporary restore backup is removed only after verified restoration, leaving the candidate-apply backup as the user rollback point.
+- A preset recommendation appears only after restoration when rounded Average FPS and rounded 1% Low both improve by at least 5%. Applying it requires confirmation and uses the normal graphics workflow plus the five-second follow-up.
+- FPS results are character-local measurements, not universal performance guarantees.
+
+## Current profiles, backups, and transfer
+
+- The UI creates, renames, applies, exports, and deletes named personal **graphics** profiles. A profile retains unified/split mode so older split profiles can still be applied.
+- Backup History is a separate record list with manual graphics backup, restore, and delete actions. Restore always creates a safety backup first.
+- `STBS1` profile export/import uses deterministic serialization, an integrity checksum, and a data-only parser. Individual export is exposed; the graphics import/preview flow exists in code but no current Profiles action opens it.
+- `STBSA1` full-addon bundles contain current graphics, available UI Tweaks, selected graphics preset/mode, benchmark mode, Zone Graphics assignments, performance-widget enabled state, and personal profiles. They exclude backup/transaction history and screen-specific layout values.
+- Full-addon import applies graphics and UI Tweaks in one backup-first transaction, then replaces imported preferences and personal profiles. It is rejected in combat rather than queued.
+- Imported text is untrusted: size/depth/entry/string limits, exact schemas, checksums, field allowlists, registry validation, and display-text escaping are enforced without `load` or `loadstring`.
+- Legacy profile data without a schema version normalizes to profile schema 1; future profile schemas are rejected. A version-1 full bundle without `uiTweaksSettings` remains accepted as an empty UI Tweaks payload.
+
+## Current UI architecture
+
+- `UI/Style.lua` supplies the shared scalable button and checkbox system. `UI/MainWindow.lua` owns the lazily created page shell, responsive action layout, graphics sub-tabs, FPS dashboards, and the current slider wrapper.
+- `ShowAddonDialog` is the reusable confirmation/text-entry component. FPS tests use a separate reusable progress modal.
+- The main window opens centered, is resizable within screen-derived bounds, saves its size, and is deliberately not clamped to screen edges.
+- The minimap button opens Graphics on left click and Profiles on right click; Ctrl is not required to drag it around the minimap.
+- The Blizzard Settings launcher is registered lazily when Graphics is first shown.
+- The optional performance widget shows live FPS and the greater Home/World latency every 0.5 seconds. Ctrl + drag moves it; enabled state and normalized position persist locally.
+
+## Current tests and validation
+
+- Run the pure Lua regression suite with `lua Tests/run.lua`.
+- Run whitespace/error validation with `git diff --check`.
+- The suite covers registry safety, profiles/migration, serialization/import, transactions/rollback, backups, FPS workflows, Zone Graphics, UI Tweaks, localization, and important UI source contracts.
+- Automated Lua tests do not replace visual and behavioral testing in a live WoW Retail client.
+
+## Current known limitations and technical debt
+
+- Pending work is one non-persistent in-memory slot. A later operation is rejected while it is occupied; there is no priority/provenance model, queued Zone Graphics is not reclassified at combat end, and queued graphics/profile flows record the selected preset/mode before the transaction succeeds.
+- Backups have no stable unique ID or structured provenance; UI and delayed cleanup rely on mutable list indices plus timestamp/trigger. General `ApplySettings` can also create a backup when its whole diff is identical, although Zone Graphics and UI Tweaks pre-check their no-op paths.
+- Core DB schema `2` is assigned during normalization without an explicit versioned DB migration or future-schema rejection. Profile migration is separate and currently only normalizes legacy schema-1 data.
+- `benchmarkMode` and the two-phase 10+10-second `StartAccurateFPSComparison` path remain stored code but are not used by the current UI. Recommendation thresholds use rounded metrics, and stored FPS results do not identify the scene in which they were measured.
+- Zone Graphics blocks standalone/preset tests and pending preset restoration, but it does not block the five-second post-apply sampler or the unused legacy accurate sampler.
+- Individual `STBS1` profile import is implemented but is not reachable from the current Profiles navigation; only full-addon import is exposed there.
+- Full-addon import preserves window size and performance-widget position, but replacing preferences currently drops the device-local minimap button angle.
+- Live Retail QA across supported resolutions and controlled hardware benchmarking remain outstanding.
+
+## Continuation workflow
+
+1. Read `AGENTS.md` and this snapshot.
+2. Inspect the current implementation and regression tests for the affected area.
+3. Prefer the current task, production code, tests, and this snapshot over stale historical or research documents; report and update contradictions when they are in scope.
 
 ## Detailed references
 
 - Architecture: `docs/ARCHITECTURE.md`
-- Preset evidence and coverage: `docs/RECOMMENDED_PROFILE_RESEARCH.md`
-- UI/UX research: `docs/UI_UX_RESEARCH.md`
+- Preset evidence: `docs/RECOMMENDED_PROFILE_RESEARCH.md`
 - Registry: `docs/SETTINGS_REGISTRY.md`
 - Import format: `docs/IMPORT_FORMAT.md`
 - Test plan: `docs/TEST_PLAN.md`
