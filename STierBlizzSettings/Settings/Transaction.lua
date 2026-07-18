@@ -101,7 +101,8 @@ function STBS:ApplySettings(settings, modules, trigger, options, pending)
     return self:Result(false,queued.ok and "queued" or queued.code,queued.data)
   end
   local snapshotResult=self:BuildTransactionSnapshot(plan,modules);if not snapshotResult.ok then return snapshotResult end;local snapshot=snapshotResult.data
-  local backup = options.skipBackup and self:Result(true,"skipped") or self:CreateBackup(modules,trigger,options.backupSource or "legacy",options.deferBackupTrim==true,options.backupSessionId);if not backup.ok then return backup end
+  if options.deferBackupTrim==true then self:BeginBackupRetentionDeferral() end
+  local backup = options.skipBackup and self:Result(true,"skipped") or self:CreateBackup(modules,trigger,options.backupSource or "legacy",options.deferBackupTrim==true,options.backupSessionId);if not backup.ok then if options.deferBackupTrim==true then self:EndBackupRetentionDeferral() end;return backup end
   if backup.data then for key,previous in pairs(snapshot.previous) do backup.data.values[key]=previous;backup.data.readFailures[key]=nil end end
   result.backup=backup.data;result.snapshot=self:Copy(snapshot)
   local attempted={}
@@ -124,10 +125,11 @@ function STBS:ApplySettings(settings, modules, trigger, options, pending)
       end
       result.rollback=rollback
       local db=self:InitializeDatabase();table.insert(db.transactions,1,{time=time(),trigger=trigger,modules=self:Copy(modules),result=self:Copy(result),code=rollback.failed==0 and "rolled-back" or "rollback-failed"});while #db.transactions>20 do table.remove(db.transactions) end
+      if options.deferBackupTrim==true then self:EndBackupRetentionDeferral() end
       return self:Result(false,rollback.failed==0 and "rolled-back" or "rollback-failed",result)
     end
   end end
-  local db=self:InitializeDatabase();table.insert(db.transactions,1,{time=time(),trigger=trigger,modules=self:Copy(modules),result=self:Copy(result),code="applied"});while #db.transactions>20 do table.remove(db.transactions) end;return self:Result(true,"applied",result)
+  local db=self:InitializeDatabase();table.insert(db.transactions,1,{time=time(),trigger=trigger,modules=self:Copy(modules),result=self:Copy(result),code="applied"});while #db.transactions>20 do table.remove(db.transactions) end;if options.deferBackupTrim==true then self:EndBackupRetentionDeferral() end;return self:Result(true,"applied",result)
 end
 
 function STBS:CompletePendingOperation()

@@ -30,6 +30,33 @@ function STBS:AllocateBackupId(db)
   db.backupSequence=sequence;return candidate
 end
 
+function STBS:IsBackupRecoveryRequired(backup)
+  return type(backup)=="table" and backup.recoveryRequired==true
+end
+
+function STBS:ApplyBackupRetention(db)
+  db=db or self:InitializeDatabase();local limit=db.preferences.backupLimit;local ordinary=0
+  for _,backup in ipairs(db.backups) do if not self:IsBackupRecoveryRequired(backup) then ordinary=ordinary+1 end end
+  local removed={}
+  for index=#db.backups,1,-1 do
+    if ordinary<=limit then break end
+    if not self:IsBackupRecoveryRequired(db.backups[index]) then table.insert(removed,1,table.remove(db.backups,index));ordinary=ordinary-1 end
+  end
+  return removed
+end
+
+function STBS:BeginBackupRetentionDeferral()
+  self.backupRetentionDeferrals=(tonumber(self.backupRetentionDeferrals) or 0)+1
+end
+
+function STBS:EndBackupRetentionDeferral()
+  self.backupRetentionDeferrals=math.max(0,(tonumber(self.backupRetentionDeferrals) or 0)-1)
+end
+
+function STBS:HasDeferredBackupRetention()
+  return (tonumber(self.backupRetentionDeferrals) or 0)>0 or type(self.HasDeferredFPSComparisonBackups)=="function" and self:HasDeferredFPSComparisonBackups()
+end
+
 local function validPresets(self)
   return { [self.GRAPHICS_PRESET_PRO]=true,[self.GRAPHICS_PRESET_OPTIMIZED]=true,[self.GRAPHICS_PRESET_QUALITY]=true }
 end
@@ -148,8 +175,8 @@ local function normalizeDatabase(self,db)
   for category,preset in pairs(defaults) do if not presets[zone.assignments[category]] then zone.assignments[category]=preset end end
   if type(db.profiles)~="table" then db.profiles={} end
   if type(db.backups)~="table" then db.backups={} end
-  local backupIds={};for index=#db.backups,1,-1 do local backup=db.backups[index];if type(backup)~="table" or not validBackupId(backup.id) or backupIds[backup.id] or type(backup.timestamp)~="number" or type(backup.values)~="table" or type(backup.affectedModules)~="table" then table.remove(db.backups,index) else backupIds[backup.id]=true;backup.source=self:IsBackupSource(backup.source) and backup.source or "legacy" end end
-  if not (type(self.HasDeferredFPSComparisonBackups)=="function" and self:HasDeferredFPSComparisonBackups()) then while #db.backups>db.preferences.backupLimit do table.remove(db.backups) end end
+  local backupIds={};for index=#db.backups,1,-1 do local backup=db.backups[index];if type(backup)~="table" or not validBackupId(backup.id) or backupIds[backup.id] or type(backup.timestamp)~="number" or type(backup.values)~="table" or type(backup.affectedModules)~="table" then table.remove(db.backups,index) else backupIds[backup.id]=true;backup.source=self:IsBackupSource(backup.source) and backup.source or "legacy";backup.recoveryRequired=backup.recoveryRequired==true and true or nil;if backup.recoveryForBackupId~=nil and not validBackupId(backup.recoveryForBackupId) then backup.recoveryForBackupId=nil end end end
+  if not self:HasDeferredBackupRetention() then self:ApplyBackupRetention(db) end
   db.backupSequence=normalizedBackupSequence(db.backupSequence)
   if type(db.log)~="table" then db.log={} end
   if type(db.transactions)~="table" then db.transactions={} end

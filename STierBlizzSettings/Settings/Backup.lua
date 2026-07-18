@@ -17,12 +17,12 @@ function STBS:CreateBackup(modules, trigger, source, deferTrim, sessionId)
   local validModules, modulesWhy = self:ValidateModules(modules); if not validModules then return self:Result(false,modulesWhy) end
   local values, failures = self:CaptureModules(modules)
   local build = self:GetBuild(); local backup = { id=self:AllocateBackupId(db),timestamp=time(), addonVersion=self.VERSION, clientBuild=build, trigger=trigger, source=source, sessionId=sessionId, affectedModules=self:Copy(modules), values=values, readFailures=failures }
-  table.insert(db.backups, 1, backup); if not deferTrim then while #db.backups > db.preferences.backupLimit do table.remove(db.backups) end end
+  table.insert(db.backups, 1, backup); if not deferTrim then self:ApplyBackupRetention(db) end
   return self:Result(true,"created",backup)
 end
 function STBS:FinalizeBackupLimit()
   local db,databaseFailure=self:RequireWritableDatabase();if not db then return databaseFailure end
-  while #db.backups>db.preferences.backupLimit do table.remove(db.backups) end;return self:Result(true,"finalized")
+  local removed=self:ApplyBackupRetention(db);return self:Result(true,"finalized",{removed=removed,count=#removed})
 end
 function STBS:GetBackupById(id)
   if not self:IsBackupId(id) then return nil,nil end
@@ -74,11 +74,21 @@ function STBS:FinalizeBackupRestoreResult(id,modules,omitted,result)
     result.data.restoreStatus="failed"
   end
   result.data.summary=self:Copy(summary)
+  local db=self:IsDatabaseSchemaSupported() and type(_G.STierBlizzSettingsDB)=="table" and _G.STierBlizzSettingsDB or nil;local safetyBackup=result.data.backup
+  if db and type(safetyBackup)=="table" then
+    if result.ok then
+      for _,backup in ipairs(db.backups) do if backup.recoveryForBackupId==id then backup.recoveryRequired=nil;backup.recoveryForBackupId=nil end end
+    else
+      for _,backup in ipairs(db.backups) do if backup.id==id or backup==safetyBackup then backup.recoveryRequired=true;backup.recoveryForBackupId=id end end
+    end
+    self:FinalizeBackupLimit()
+  end
   return result
 end
 
 function STBS:GetBackupRestoreFeedback(result)
   local summary=type(result)=="table" and type(result.data)=="table" and type(result.data.restore)=="table" and result.data.restore or emptyRestoreSummary()
+  if result and result.code=="queued" then return self:L("RESTORE_QUEUED"),"warning" end
   if result and result.code=="restore-complete" then
     if summary.restored==0 then return self:L("SETTINGS_UNCHANGED"),"success" end
     return string.format(self:L("RESTORE_COMPLETE_SUMMARY"),summary.restored,summary.identical),"success"
@@ -99,7 +109,7 @@ function STBS:RestoreBackupById(id, modules)
   if not next(settings) then local omittedCount=omitted.skipped+omitted.unavailable+omitted.failed;return self:FinalizeBackupRestoreResult(id,modules,omitted,self:Result(false,omittedCount>0 and "unavailable" or "no-settings",{summary=emptyRestoreSummary()})) end
   local validSettings, settingsWhy = self:ValidateSettings(settings, false); if not validSettings then return self:FinalizeBackupRestoreResult(id,modules,omitted,self:Result(false,"restore-failed",{reason=settingsWhy,summary={failed=1}})) end
   local context={reason="backup-restore",backupId=id,restoreOmitted=omitted}
-  local result = self:ApplySettings(settings, modules, "restore", { backupSource = "restore-safety" }, { kind="recovery",context=context })
+  local result = self:ApplySettings(settings, modules, "restore", { backupSource = "restore-safety",deferBackupTrim=true }, { kind="recovery",context=context })
   return self:FinalizeBackupRestoreResult(id,modules,omitted,result)
 end
 function STBS:RestoreBackup(id, modules)

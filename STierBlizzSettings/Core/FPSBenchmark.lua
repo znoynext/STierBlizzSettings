@@ -79,6 +79,8 @@ function STBS:CleanupFPSComparisonSession(sessionId)
 end
 function STBS:FinalizeFPSComparisonRestore(result,sessionId)
   if type(result)=="table" and result.ok then return self:CleanupFPSComparisonSession(sessionId) end
+  local db=self:IsDatabaseSchemaSupported() and type(_G.STierBlizzSettingsDB)=="table" and _G.STierBlizzSettingsDB or nil
+  if db then for _,backup in ipairs(db.backups) do if backup.source=="fps-comparison-temp" and backup.sessionId==sessionId then backup.recoveryRequired=true end end end
   self:CloseFPSComparisonSession(sessionId)
   if not self:HasDeferredFPSComparisonBackups() then self:FinalizeBackupLimit() end;return self:Result(false,"restore-not-successful",{sessionId=sessionId})
 end
