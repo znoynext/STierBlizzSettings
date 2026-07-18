@@ -71,6 +71,7 @@ _G.STierBlizzSettingsDB.profiles.corrupt="bad";local safeList=ns:ListPersonalPro
 assert(loadfile("STierBlizzSettings/UI/MainWindow.lua"))(addon,ns)
 local mainWindowSourceFile=assert(io.open("STierBlizzSettings/UI/MainWindow.lua","rb"));local mainWindowSource=mainWindowSourceFile:read("*a");mainWindowSourceFile:close();check("main addon window can move beyond screen edges",mainWindowSource:find("f:SetClampedToScreen(false)",1,true)~=nil)
 check("redundant view-in-game action is absent",not mainWindowSource:find("ViewInGame",1,true) and ns.Locale.enUS.VIEW_IN_GAME==nil)
+check("multiline import and export sheet has no single-line input template",not mainWindowSource:find("InputBoxTemplate",1,true))
 local selectedMode,pages=nil,{}
 ns.CreateUI=function()end;ns.SetPage=function(_,title,text,actions,status,options)pages={title=title,text=text,actions=actions,status=status,options=options}end;ns.RegisterBlizzardSettings=function()return true end
 for i=1,3 do local profile=ns:NewProfile("ui_profile_"..i,"personal","UI Profile "..i);profile.sections.graphics={mode=ns.GRAPHICS_MODE_UNIFIED,base={},raid={}};profile.capturedModules={graphics=true};_G.STierBlizzSettingsDB.profiles[profile.id]=profile end;ns:ShowProfiles();check("combined profile page exposes profiles and backups",#pages.actions>=10 and pages.options.pageKey=="profiles")

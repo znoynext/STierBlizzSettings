@@ -488,7 +488,7 @@ function STBS:ShowDiagnostics() self:SetPage(self:L("DIAGNOSTICS"),self:Diagnost
 
 function STBS:ShowCopyBox(text,selectAll)
   self:CreateUI();local f=self.ui;local box=f.copyBox
-  if not box then box=CreateFrame("EditBox",nil,f.content,"InputBoxTemplate");box:SetMultiLine(true);box:SetAutoFocus(false);box:SetFontObject(GameFontHighlightLarge);box:SetPoint("TOPLEFT",7,-6);box:SetScript("OnEscapePressed",function(x)x:ClearFocus()end);f.copyBox=box end
+  if not box then box=CreateFrame("EditBox",nil,f.content);box:SetMultiLine(true);box:SetAutoFocus(false);box:SetFontObject(GameFontHighlightLarge);box:SetPoint("TOPLEFT",7,-6);box:SetScript("OnEscapePressed",function(x)x:ClearFocus()end);f.copyBox=box end
   box:SetMaxLetters(self.MAX_IMPORT_BYTES);f.metricCard:Hide();f.body:SetText("");box:SetText(text or "");box:Show();box:SetFocus();if selectAll==false then box:SetCursorPosition(0) else box:HighlightText() end;f:Show();self:LayoutUI()
 end
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.8-alpha
+
+- Removed the single-line input artwork from the shared multiline import/export sheet so text now fills the page cleanly at every window size.
+
 ## 0.4.7-alpha
 
 - Replaced the tiny full-settings import popup with the same large responsive multiline field used by export.
