@@ -45,4 +45,4 @@
 
 Текущая версия: **0.4.13-alpha**. Базовая совместимость: Retail 12.0.7, Interface 120007, Blizzard UI build 68453. До production v1.0 требуется визуальная проверка в живом клиенте и контролируемые аппаратные бенчмарки.
 
-Подробнее: [исследование пресетов](docs/RECOMMENDED_PROFILE_RESEARCH.md), [архитектура](docs/ARCHITECTURE.md), [заметки UI/UX](docs/UI_UX_RESEARCH.md) и [план тестирования](docs/TEST_PLAN.md).
+Подробнее: [текущее состояние проекта](docs/PROJECT_STATE.md), [исследование пресетов](docs/RECOMMENDED_PROFILE_RESEARCH.md), [архитектура](docs/ARCHITECTURE.md), [заметки UI/UX](docs/UI_UX_RESEARCH.md) и [план тестирования](docs/TEST_PLAN.md).

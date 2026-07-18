@@ -1,5 +1,6 @@
 # S-Tier Blizz Settings rules
 
+- Read `docs/PROJECT_STATE.md` before changing behavior or UI. Update it whenever shipped functionality, UX decisions, safety boundaries, limitations or the local continuation workflow materially changes.
 - Target current WoW Retail APIs only; verify every API and CVar in Blizzard source before use.
 - Do not invent APIs or undocumented CVars. Fail closed for unavailable settings.
 - No combat/gameplay automation, ads, premium gating, donation prompts, telemetry or obfuscation.
