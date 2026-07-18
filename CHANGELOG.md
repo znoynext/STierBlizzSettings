@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.17-alpha
+
+- Added a concise post-comparison recommendation when a tested preset improves both Average FPS and 1% Low by at least 5%.
+- Added a prominent one-click apply action for the recommended preset with explicit confirmation, a fresh graphics backup, verified transactional application and the normal five-second follow-up measurement.
+- Suppressed recommendations for normal run-to-run variance, mixed results, incomplete restoration and presets already applied from the result.
+
 ## 0.4.16-alpha
 
 - Replaced the remaining legacy checkbox frame with a scalable flat control that matches the shared Retail-style buttons.

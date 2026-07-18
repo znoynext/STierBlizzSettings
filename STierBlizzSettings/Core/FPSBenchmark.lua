@@ -112,7 +112,7 @@ function STBS:StartPresetFPSComparison(preset,doneCallback)
   local function finish(comparison,restoreResult,errorResult)
     if self.fpsTestRun~=state then return end
     self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsAccuratePhase=nil;self.fpsTestFrame=nil;self.fpsTestRun=nil;self.fpsPresetComparison=nil
-    if comparison then comparison.preset=preset;comparison.restoreQueued=restoreResult and restoreResult.code=="queued" or false;comparison.restoreFailed=restoreResult and not restoreResult.ok and restoreResult.code~="queued" or false;self:StoreStandaloneFPSTest(comparison.beforeStats);self:StorePresetFPSComparison(comparison) end
+    if comparison then comparison.preset=preset;comparison.mode=mode;comparison.restoreQueued=restoreResult and restoreResult.code=="queued" or false;comparison.restoreFailed=restoreResult and not restoreResult.ok and restoreResult.code~="queued" or false;self:StoreStandaloneFPSTest(comparison.beforeStats);self:StorePresetFPSComparison(comparison) end
     if doneCallback then doneCallback(comparison,restoreResult,errorResult) end
   end
   local started=self:CaptureFrameTimes(PRESET_COMPARE_PHASE_SECONDS,"comparison-current",function(beforeTimes)

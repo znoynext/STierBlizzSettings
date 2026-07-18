@@ -401,6 +401,18 @@ function STBS:FormatStandaloneFPSTest(result)
   return string.format(self:L("FPS_TEST_STABILITY_EXPLAIN"),stability).."\n"..string.format(self:L("FPS_TEST_SPIKES"),spikes).." · "..string.format(self:L("FPS_TEST_WORST"),worst).."\n\n|cffffd36b"..self:L("FPS_TEST_ADVICE").."|r\n"..diagnosis.."\n|cff9aa7b8"..self:L("FPS_DIAG_LIMIT").."|r"
 end
 
+function STBS:GetPresetFPSComparisonRecommendation(comparison)
+  if type(comparison)~="table" or comparison.restoreQueued or comparison.restoreFailed or comparison.applied or not self:IsGraphicsPreset(comparison.preset) or (comparison.mode~=self.GRAPHICS_MODE_UNIFIED and comparison.mode~=self.GRAPHICS_MODE_SPLIT) then return nil end
+  local beforeStats,afterStats=comparison.beforeStats,comparison.afterStats;if type(beforeStats)~="table" or type(afterStats)~="table" then return nil end
+  local function rounded(value)return math.floor((tonumber(value) or 0)+0.5)end
+  local function percent(before,after)return before>0 and math.floor((after-before)/before*100+0.5) or 0 end
+  local beforeAverage,afterAverage=rounded(beforeStats.average),rounded(afterStats.average);local beforeLow,afterLow=rounded(beforeStats.onePercentLow),rounded(afterStats.onePercentLow)
+  if beforeAverage<=0 or afterAverage<=0 or beforeLow<=0 or afterLow<=0 then return nil end
+  local averagePercent,lowPercent=percent(beforeAverage,afterAverage),percent(beforeLow,afterLow)
+  if averagePercent<5 or lowPercent<5 then return nil end
+  return {preset=comparison.preset,averagePercent=averagePercent,lowPercent=lowPercent}
+end
+
 function STBS:BuildPresetFPSComparisonDashboard(comparison)
   if type(comparison)~="table" or type(comparison.beforeStats)~="table" or type(comparison.afterStats)~="table" then return nil end
   local function rounded(value)return math.floor((tonumber(value) or 0)+0.5)end
@@ -424,8 +436,9 @@ end
 
 function STBS:ShowFPSTest()
   self:StartFPSBaselineSampling();local result=self:GetLastStandaloneFPSTest();local measuring=self.fpsTestMeasurement==true;local preferences=self:InitializeDatabase().preferences
-  local comparison=self:GetLastPresetFPSComparison();local comparisonDashboard=self:BuildPresetFPSComparisonDashboard(comparison);local restoreText=comparison and (comparison.restoreQueued and self:L("FPS_COMPARE_RESTORE_QUEUED") or comparison.restoreFailed and self:L("FPS_COMPARE_RESTORE_FAILED") or self:L("FPS_COMPARE_RESTORED"));local restoreColor=comparison and (comparison.restoreFailed and "|cffff6154" or comparison.restoreQueued and "|cffffd36b" or "|cff9aa7b8") or ""
-  local resultText=self:FormatStandaloneFPSTest(result);local text=comparisonDashboard and ("|cffffd36b"..self:L("FPS_COMPARE_DASH_HELP").."|r\n\n"..restoreColor..restoreText.."|r") or (self:L("FPS_TEST_HELP").."\n\n|cffffd36b"..self:L("FPS_TEST_DETAILS").."|r\n"..resultText)
+  local comparison=self:GetLastPresetFPSComparison();local comparisonDashboard=self:BuildPresetFPSComparisonDashboard(comparison);local recommendation=self:GetPresetFPSComparisonRecommendation(comparison);local restoreText=comparison and (comparison.restoreQueued and self:L("FPS_COMPARE_RESTORE_QUEUED") or comparison.restoreFailed and self:L("FPS_COMPARE_RESTORE_FAILED") or self:L("FPS_COMPARE_RESTORED"));local restoreColor=comparison and (comparison.restoreFailed and "|cffff6154" or comparison.restoreQueued and "|cffffd36b" or "|cff9aa7b8") or ""
+  local recommendationText=recommendation and ("\n\n|cff59ff9f"..string.format(self:L("FPS_COMPARE_RECOMMEND"),self:GetPresetLabel(recommendation.preset)).."|r") or ""
+  local resultText=self:FormatStandaloneFPSTest(result);local text=comparisonDashboard and ("|cffffd36b"..self:L("FPS_COMPARE_DASH_HELP").."|r\n\n"..restoreColor..restoreText.."|r"..recommendationText) or (self:L("FPS_TEST_HELP").."\n\n|cffffd36b"..self:L("FPS_TEST_DETAILS").."|r\n"..resultText)
   local function startStandalone()
     local started,why=STBS:StartStandaloneFPSTest(function()STBS:HideFPSTestModal();if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS.flashMessage=STBS:L("FPS_TEST_COMPLETE");STBS.flashKind="success";STBS:ShowFPSTest()end end)
     if started then STBS:ShowFPSTestModal("standalone") else STBS.flashMessage=why=="busy" and STBS:L("FPS_TEST_BUSY") or STBS:L("FPS_TEST_UNAVAILABLE");STBS.flashKind="error";STBS:ShowFPSTest() end
@@ -436,13 +449,16 @@ function STBS:ShowFPSTest()
     end)
     if started then STBS:ShowFPSTestModal("comparison",preset) else local key=why=="combat" and "FPS_COMPARE_COMBAT" or why=="pending" and "FPS_COMPARE_PENDING" or why=="busy" and "FPS_TEST_BUSY" or "FPS_TEST_UNAVAILABLE";STBS.flashMessage=STBS:L(key);STBS.flashKind="error";STBS:ShowFPSTest() end
   end
-  local actions={
-    {label=self:L("FPS_TEST_START"),style="primary",wide=true,disabled=measuring,fn=startStandalone},
+  local actions={}
+  if recommendation then table.insert(actions,{label=string.format(self:L("FPS_COMPARE_APPLY"),self:GetPresetLabel(recommendation.preset)),style="primary",wide=true,disabled=measuring,fn=function()STBS:ConfirmApplyFPSComparisonPreset(comparison)end}) end
+  table.insert(actions,{label=self:L("FPS_TEST_START"),style="primary",wide=true,disabled=measuring,fn=startStandalone})
+  local comparisonActions={
     {label=string.format(self:L("FPS_COMPARE_BUTTON"),self:L("PRESET_PRO")),third=true,disabled=measuring,fn=function()comparePreset(STBS.GRAPHICS_PRESET_PRO)end},
     {label=string.format(self:L("FPS_COMPARE_BUTTON"),self:L("PRESET_OPTIMIZED")),third=true,disabled=measuring,fn=function()comparePreset(STBS.GRAPHICS_PRESET_OPTIMIZED)end},
     {label=string.format(self:L("FPS_COMPARE_BUTTON"),self:L("PRESET_QUALITY")),third=true,disabled=measuring,fn=function()comparePreset(STBS.GRAPHICS_PRESET_QUALITY)end},
     {kind="check",label=self:L("WIDGET_CHECK"),checked=preferences.performanceWidgetEnabled,wide=true,fn=function(checked)STBS:SetPerformanceWidgetEnabled(checked);STBS.flashMessage=checked and STBS:L("WIDGET_ENABLED") or STBS:L("WIDGET_DISABLED");STBS.flashKind="success";STBS:ShowFPSTest()end},
   }
+  for _,action in ipairs(comparisonActions) do table.insert(actions,action) end
   local live=self:ReadFramerate();local average=result and math.floor(result.average+0.5);local low=result and math.floor(result.onePercentLow+0.5);local stability=result and math.floor(result.stability+0.5);local stabilityColor=stability and (stability>=85 and {0.35,1,0.62} or stability>=70 and {1,0.82,0.2} or {1,0.38,0.3}) or {0.65,0.65,0.6}
   local dashboard=comparisonDashboard or {
     {label=self:L("FPS_DASH_LIVE"),value=live and string.format(self:L("LIVE_FPS_FORMAT"),math.floor(live+0.5)) or "—",color={0.45,1,0.72}},
@@ -453,6 +469,13 @@ function STBS:ShowFPSTest()
   local status=self.flashMessage or (measuring and self:L("FPS_TEST_RUNNING") or self:L("FPS_TEST_READY"));local statusKind=self.flashKind or (measuring and "warning" or nil);self.flashMessage=nil;self.flashKind=nil
   self:SetPage(self:L("FPS_TEST_TITLE"),text,actions,status,{pageKey="fpsTest",fpsDashboard=dashboard,fpsComparison=comparisonDashboard~=nil,fpsLegend=comparisonDashboard and string.format(self:L("FPS_COMPARE_DASH_LEGEND"),self:GetPresetLabel(comparison.preset)) or nil,statusKind=statusKind})
   self:SetLiveFPSCallback(function(value)if not comparisonDashboard and STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS.ui.fpsDashboardCards[1].value:SetText(value and string.format(STBS:L("LIVE_FPS_FORMAT"),math.floor(value+0.5)) or "—") end end)
+end
+
+function STBS:ConfirmApplyFPSComparisonPreset(comparison)
+  local recommendation=self:GetPresetFPSComparisonRecommendation(comparison);if not recommendation then self.flashMessage=self:L("FPS_COMPARE_RECOMMEND_EXPIRED");self.flashKind="warning";self:ShowFPSTest();return end
+  local preset=recommendation.preset;local mode=comparison.mode;local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,preset),{graphics=true});local plan=self:BuildDiff(settings);local label=self:GetPresetLabel(preset)
+  StaticPopupDialogs["STBS_APPLY_FPS_COMPARISON"]={text=string.format(self:L("FPS_COMPARE_APPLY_CONFIRM"),label),subText=string.format(self:L("FPS_COMPARE_APPLY_CONFIRM_TEXT"),#plan),button1=string.format(self:L("FPS_COMPARE_APPLY"),label),button2=CANCEL,OnAccept=function()local result=STBS:ApplyGraphicsWithFPS(settings,"fps-comparison-apply",mode,preset);if result.ok or result.code=="queued" then comparison.applied=true;STBS:StorePresetFPSComparison(comparison) end end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3}
+  StaticPopup_Show("STBS_APPLY_FPS_COMPARISON")
 end
 
 function STBS:ShowOfficialPreview()
@@ -470,7 +493,7 @@ function STBS:ConfirmApplyGraphics(count)
   StaticPopup_Show("STBS_APPLY_GRAPHICS")
 end
 
-function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode)
+function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode,selectedPreset)
   local function applyNow(options)
     if settings then return self:ApplySettings(settings,{graphics=true},trigger or "personal-graphics",options) end
     return self:ApplyOfficial("graphics",options)
@@ -479,11 +502,13 @@ function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode)
   if result.ok then
     self.reloadRecommended=true
     if selectedMode then self:SetSelectedMode(selectedMode) end
+    if selectedPreset then self:SetSelectedPreset(selectedPreset) end
     local measuring=self:StartFPSPostMeasurement(before,function()if STBS.ui and STBS.ui:IsShown() then STBS:ShowGraphics() end end)
     self.flashMessage=measuring and self:L("SETTINGS_APPLIED") or self:L("SETTINGS_APPLIED_NO_MEASURE");self.flashKind="success"
     self:ShowGraphics()
   elseif result.code=="queued" then
     if selectedMode then self:SetSelectedMode(selectedMode) end
+    if selectedPreset then self:SetSelectedPreset(selectedPreset) end
     self.flashMessage=self:L("PENDING_FPS");self.flashKind="warning";self:ShowGraphics()
   else self:ShowReport(result) end
   return result
