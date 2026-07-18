@@ -35,7 +35,7 @@ Reviewed 2026-07-16. The addon keeps a custom lightweight dashboard but follows 
 - Screenshoter temporarily changes real graphics for a capture and then restores them. ScreenPlus likewise enters a camera mode, hides UI, takes the real screenshot and restores state.
 - The reviewed Retail API exposes `Screenshot()` as an action but no addon-readable framebuffer or render-to-texture API for the current world, and there is no supported way to render the world twice with different unapplied CVars. A static texture labelled as a live preset preview would therefore be misleading.
 
-S-Tier now uses the same honest product principle: show concise setting outcomes before confirmation, apply through a backup-first transaction, then let the player hide the window and inspect the actual game scene. Undo remains one click away.
+S-Tier now uses the same honest product principle: show concise setting outcomes before confirmation, apply through a backup-first transaction, then let the player close the addon normally and inspect the actual game scene. A dedicated action that only duplicated the close button was intentionally removed; Undo remains one click away.
 
 ## Texture and control audit
 

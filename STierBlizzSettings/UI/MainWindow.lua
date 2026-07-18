@@ -245,7 +245,7 @@ function STBS:ShowGraphics()
   self:StartFPSBaselineSampling()
   local mode=self:GetSelectedMode();local preset=self:GetSelectedPreset()
   local metric=self:GetLastFPSMetric();local measuring=self.fpsAfterMeasurement or self.fpsAccurateMeasurement or self.fpsTestMeasurement;local metricText=measuring and self:L("FPS_MEASURING") or self:FormatFPSMetric(metric)
-  local text="|cffffd36b"..self:L("QUICK_START").."|r\n"..self:L("QUICK_START_TEXT").."\n\n|cffffd36b"..self:L("SAVE_OWN_TITLE").."|r\n"..self:L("SAVE_OWN_TEXT").."\n\n|cff9aa7b8"..self:L("GRAPHICS_SELECTION_SUMMARY").."\n"..self:L("IN_GAME_PREVIEW_HELP").."|r"
+  local text="|cffffd36b"..self:L("QUICK_START").."|r\n"..self:L("QUICK_START_TEXT").."\n\n|cffffd36b"..self:L("SAVE_OWN_TITLE").."|r\n"..self:L("SAVE_OWN_TEXT").."\n\n|cff9aa7b8"..self:L("GRAPHICS_SELECTION_SUMMARY").."|r"
   local latest=self:GetLatestBackupIndex("graphics")
   local actions={
     {label=self:L("PRESET_PRO"),third=true,fn=function()STBS:SetSelectedPreset(STBS.GRAPHICS_PRESET_PRO);STBS.flashMessage=STBS:L("PRESET_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=preset==self.GRAPHICS_PRESET_PRO},
@@ -255,7 +255,6 @@ function STBS:ShowGraphics()
     {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ShowOfficialPreview("graphics")end,style="primary",wide=true,disabled=measuring},
   }
   if self.reloadRecommended then table.insert(actions,{label=self:L("RELOAD_UI"),fn=function()STBS:ConfirmReloadUI()end,style="primary",wide=true,disabled=measuring and true or false}) end
-  if self.reloadRecommended then table.insert(actions,{label=self:L("VIEW_IN_GAME"),fn=function()STBS:ViewInGame()end,wide=true,disabled=measuring and true or false}) end
   table.insert(actions,{label=self:L("UNDO"),fn=function()STBS:ConfirmUndoGraphics()end,disabled=not latest})
   table.insert(actions,{label=self:L("PROFILES"),fn=function()STBS:ShowProfiles()end})
   local phase=self.fpsAccuratePhase=="before" and self:L("FPS_MEASURING_BEFORE") or self.fpsAccuratePhase=="after" and self:L("FPS_MEASURING_AFTER") or self:L("FPS_MEASURING")
@@ -324,11 +323,6 @@ function STBS:ShowFPSTest()
   local status=self.flashMessage or (measuring and self:L("FPS_TEST_RUNNING") or self:L("FPS_TEST_READY"));local statusKind=self.flashKind or (measuring and "warning" or nil);self.flashMessage=nil;self.flashKind=nil
   self:SetPage(self:L("FPS_TEST_TITLE"),text,actions,status,{pageKey="fpsTest",fpsDashboard=dashboard,statusKind=statusKind})
   self:SetLiveFPSCallback(function(value)if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS.ui.fpsDashboardCards[1].value:SetText(value and string.format(STBS:L("LIVE_FPS_FORMAT"),math.floor(value+0.5)) or "—") end end)
-end
-
-function STBS:ViewInGame()
-  if self.ui then self.ui:Hide() end
-  self:Print("VIEW_IN_GAME_CHAT")
 end
 
 function STBS:ShowOfficialPreview()

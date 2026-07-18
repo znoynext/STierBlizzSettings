@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.6-alpha
+
+- Removed the redundant **View result in game** action and its explanatory copy. The button only hid the addon window and printed a chat hint; applying, measuring, reloading, backups and Undo never depended on it.
+
 ## 0.4.5-alpha
 
 - Removed screen-edge clamping from the main addon window so it can be dragged partially or fully beyond the display bounds. Reloading the UI still restores its default centered position.
