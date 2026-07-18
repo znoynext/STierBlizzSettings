@@ -82,7 +82,7 @@ Fresh databases and databases with missing/corrupted version metadata use a sepa
 
 `RequireWritableDatabase` is the single account-persistence boundary. On a supported current database it returns the real normalized table. On an unsupported schema it returns `database-schema-unsupported`, so managed transactions, backups/retention/restore/delete, profile save/rename/delete, applied graphics commits, Zone Graphics preferences, benchmark/widget/window/minimap preferences, full import, transaction history, and logging cannot mutate either the future database or the fallback view or report false success. Read-only UI rendering and runtime-only drafts remain safe; character-local FPS results use the separate `STierBlizzSettingsCharDB` and are not claims about the unsupported account schema. This boundary prevents crashes without pretending that fallback writes were persisted.
 
-Future persisted changes add exactly one migration under their source version. Stable backup identity belongs to schema 4 and structured backup provenance to schema 5. Device-local preferences must be preserved by shared-data import; the current full-addon import preserves window/widget fields but omits `minimapAngle` when replacing preferences.
+Future persisted changes add exactly one migration under their source version. Stable backup identity belongs to schema 4 and structured backup provenance to schema 5. Full-addon import never replaces the preferences table: it patches only the validated shared STBSA1 preference fields. Backup limits, window size, Performance Widget position, minimap angle, and unknown future device-local fields remain untouched when absent from that contract.
 
 ## Profiles
 
@@ -96,7 +96,7 @@ Exports use a deterministic serializer with sorted keys and cycle/depth restrict
 
 Imports use a purpose-built data parser rather than `load`, `loadstring`, or execution of Lua source. Input size, nesting depth, entry count, string length, prefix/version/flavor, and checksum are bounded before data is accepted. Profile and full-addon validators reject unknown fields, unknown registry settings, invalid module ownership, future schemas, and malformed preferences/profiles. Imported strings displayed by the UI pass through `SafeText`.
 
-A full-addon bundle applies shared graphics/UI Tweaks through one normal backup-first transaction. Only after that transaction reports success are validated preferences and personal profiles installed. Individual `STBS1` profile import is implemented in the import layer, but the current Profiles navigation has no launcher for it.
+A full-addon bundle applies shared graphics/UI Tweaks through one normal backup-first transaction. Only after that transaction reports success are validated shared preferences patched by explicit allowlist and personal profiles replaced. Applied graphics preset/mode are derived from verified client values rather than blindly copied from payload metadata. The existing preferences table and every non-contract local/device field retain their identity and value. Individual `STBS1` profile import is implemented in the import layer, but the current Profiles navigation has no launcher for it.
 
 ## FPS architecture
 

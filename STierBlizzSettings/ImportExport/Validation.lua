@@ -67,12 +67,12 @@ function STBS:ApplyAddonBundle(payload)
   for key,value in pairs(payload.uiTweaksSettings or {}) do settings[key]=value;modules.uiTweaks=true end
   local result=self:ApplySettings(settings,modules,"addon-bundle-import",{backupSource="addon-import"},{kind="graphics-user",context={source="addon-bundle-import"}})
   if not result.ok then return result end
-  local db=self:InitializeDatabase();local old=db.preferences
-  db.preferences={
-    backupLimit=old.backupLimit,windowWidth=old.windowWidth,windowHeight=old.windowHeight,performanceWidgetPosition=old.performanceWidgetPosition,
-    graphicsPreset=old.graphicsPreset,graphicsMode=old.graphicsMode,benchmarkMode=payload.preferences.benchmarkMode,
-    performanceWidgetEnabled=payload.preferences.performanceWidgetEnabled,zoneGraphics=self:Copy(payload.preferences.zoneGraphics),
-  }
+  local db=self:InitializeDatabase();local preferences=db.preferences;local imported=payload.preferences
+  -- Patch only the shared STBSA1 contract. Applied graphics state is committed below
+  -- from verified client values; every other preference remains local to this device.
+  preferences.benchmarkMode=imported.benchmarkMode
+  preferences.performanceWidgetEnabled=imported.performanceWidgetEnabled
+  preferences.zoneGraphics=self:Copy(imported.zoneGraphics)
   db.profiles=self:Copy(payload.profiles);local sequence=db.profileSequence
   for id in pairs(db.profiles) do local value=tonumber(id:match("_(%d+)$"));if value then sequence=math.max(sequence,value) end end
   db.profileSequence=sequence;self.selectedProfileId=nil;self.selectedItemType=nil;self.selectedBackupId=nil;self.activeZoneCategory=nil;self.activeZonePreset=nil;self.uiTweaksDraft=nil;self.graphicsPresetSelection=nil;self.graphicsModeSelection=nil;self:SyncAppliedGraphicsState()
