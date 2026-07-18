@@ -5,6 +5,6 @@ function STBS:RegisterBlizzardSettings()
   local panel=CreateFrame("Frame",nil,UIParent)
   local title=panel:CreateFontString(nil,"ARTWORK","GameFontNormalLarge");title:SetPoint("TOPLEFT",16,-16);title:SetText(self:L("TITLE"))
   local description=panel:CreateFontString(nil,"ARTWORK","GameFontHighlight");description:SetPoint("TOPLEFT",title,"BOTTOMLEFT",0,-12);description:SetWidth(620);description:SetJustifyH("LEFT");description:SetText(self:L("HOME_TEXT"))
-  local open=CreateFrame("Button",nil,panel,"UIPanelButtonTemplate");open:SetSize(240,30);open:SetPoint("TOPLEFT",description,"BOTTOMLEFT",0,-18);open:SetText(self:L("TITLE"));open:SetScript("OnClick",function()STBS:ShowHome()end)
+  local open=self:CreateModernButton(panel,self:L("TITLE"),240,30,function()STBS:ShowHome()end);open:SetPoint("TOPLEFT",description,"BOTTOMLEFT",0,-18)
   local category = Settings.RegisterCanvasLayoutCategory(panel, self:L("TITLE")); Settings.RegisterAddOnCategory(category);self.settingsCategory=category;return true
 end

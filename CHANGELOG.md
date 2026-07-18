@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.13-alpha
+
+- Replaced stretched red panel buttons with a shared scalable Blizzard Retail-style system across navigation, actions, graphics tabs, the FPS modal and Blizzard Settings integration.
+- Added flat dark surfaces, thin bronze borders, a gold selected indicator, restrained primary emphasis and smooth hover/press feedback.
+- Reserved red button fills for destructive actions and kept disabled states explicit.
+
 ## 0.4.12-alpha
 
 - Replaced the wide Graphics FPS strip with four responsive native-style cards for live FPS, before apply, after apply and the signed change.

@@ -18,15 +18,7 @@ local function popupAcceptOnEnter(editBox)
 end
 
 local function button(parent,text,x,y,width,callback,style)
-  local b=CreateFrame("Button",nil,parent,"UIPanelButtonTemplate")
-  b:SetSize(width or 200,34);b:SetPoint("TOPLEFT",x,y)
-  b:SetText(text);b.label=b:GetFontString();b.label:SetFontObject(GameFontNormalLarge)
-  b.label:SetTextColor(style=="danger" and 1 or style=="primary" and 1 or 0.92,style=="danger" and 0.36 or style=="primary" and 0.82 or 0.82,style=="danger" and 0.3 or style=="primary" and 0 or 0.68)
-  local highlight=b:GetHighlightTexture();local hoverGroup=highlight and highlight:CreateAnimationGroup();if hoverGroup then local hover=hoverGroup:CreateAnimation("Alpha");hover:SetFromAlpha(0.35);hover:SetToAlpha(1);hover:SetDuration(0.14);hover:SetSmoothing("OUT") end
-  b:SetScript("OnClick",callback)
-  b:SetScript("OnEnter",function(self)if not self.disabled and hoverGroup then hoverGroup:Stop();hoverGroup:Play()end end)
-  function b:SetActive(active)self.active=active;if active then self:LockHighlight();self.label:SetTextColor(1,0.82,0) else self:UnlockHighlight();self.label:SetTextColor(style=="danger" and 1 or style=="primary" and 1 or 0.92,style=="danger" and 0.36 or style=="primary" and 0.82 or 0.82,style=="danger" and 0.3 or style=="primary" and 0 or 0.68) end end
-  function b:SetDisabled(disabled)self.disabled=disabled;self:SetEnabled(not disabled);self:SetAlpha(disabled and 0.42 or 1)end
+  local b=STBS:CreateModernButton(parent,text,width or 200,34,callback,style);b:SetPoint("TOPLEFT",x,y)
   return b
 end
 
@@ -52,13 +44,13 @@ local function navButton(parent,text,icon,y,pageKey,callback)
 end
 
 local function panelTab(parent,text,callback)
-  local tab=CreateFrame("Button",nil,parent,"PanelTabButtonTemplate");tab:SetText(text);tab:SetScript("OnClick",function()if type(_G.PlaySound)=="function" and _G.SOUNDKIT and _G.SOUNDKIT.IG_CHARACTER_INFO_TAB then _G.PlaySound(_G.SOUNDKIT.IG_CHARACTER_INFO_TAB)end;callback()end)
-  tab:SetNormalFontObject(GameFontNormal);tab:SetHighlightFontObject(GameFontHighlight);tab:SetDisabledFontObject(GameFontHighlight);tab:Hide()
+  local tab=STBS:CreateModernButton(parent,text,180,32,function()if type(_G.PlaySound)=="function" and _G.SOUNDKIT and _G.SOUNDKIT.IG_CHARACTER_INFO_TAB then _G.PlaySound(_G.SOUNDKIT.IG_CHARACTER_INFO_TAB)end;callback()end)
+  tab.label:SetFontObject(GameFontNormal);tab:SetWidth(math.max(150,math.min(235,tab.label:GetStringWidth()+38)));tab.accent:ClearAllPoints();tab.accent:SetPoint("BOTTOMLEFT",1,1);tab.accent:SetPoint("BOTTOMRIGHT",-1,1);tab.accent:SetHeight(3);tab:Hide()
   return tab
 end
 
 local function setPanelTabActive(tab,active)
-  if active then PanelTemplates_SelectTab(tab);tab:SetDisabledFontObject(GameFontHighlight) else PanelTemplates_DeselectTab(tab);tab:SetNormalFontObject(GameFontNormal) end
+  tab:SetActive(active)
 end
 
 local function resultSummary(data)
@@ -197,9 +189,9 @@ function STBS:CreateFPSTestModal()
   dialog.progress=CreateFrame("StatusBar",nil,dialog,"BackdropTemplate");dialog.progress:SetPoint("TOPLEFT",44,-145);dialog.progress:SetPoint("TOPRIGHT",-44,-145);dialog.progress:SetHeight(19);dialog.progress:SetStatusBarTexture("Interface\\RaidFrame\\Raid-Bar-Hp-Fill");dialog.progress:SetStatusBarColor(0.78,0.52,0.08);dialog.progress:SetMinMaxValues(0,1);dialog.progress:SetValue(0);dialog.progress.displayValue=0;dialog.progress.targetValue=0;dialog.progress.maximum=1;dialog.progress:SetScript("OnUpdate",updateSmoothProgress);dialog.progress:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=9,insets={left=2,right=2,top=2,bottom=2}});dialog.progress:SetBackdropColor(0.025,0.02,0.015,1)
   local fill=dialog.progress:GetStatusBarTexture();fill:SetHorizTile(false);fill:SetVertTile(false);dialog.progress.spark=dialog.progress:CreateTexture(nil,"OVERLAY");dialog.progress.spark:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark");dialog.progress.spark:SetBlendMode("ADD");dialog.progress.spark:SetSize(18,29);dialog.progress.spark:SetPoint("CENTER",fill,"RIGHT",-2,0);dialog.progress.spark:SetVertexColor(1,0.82,0.3);dialog.progress.spark:SetAlpha(0)
   dialog.progressText=dialog.progress:CreateFontString(nil,"OVERLAY","GameFontHighlight");dialog.progressText:SetPoint("CENTER")
-  dialog.cancel=CreateFrame("Button",nil,dialog,"UIPanelButtonTemplate");dialog.cancel:SetSize(190,30);dialog.cancel:SetPoint("BOTTOM",0,23);dialog.cancel:SetText(self:L("FPS_TEST_CANCEL"));dialog.cancel:GetFontString():SetFontObject(GameFontNormalLarge);dialog.cancel:SetScript("OnClick",function()
+  dialog.cancel=button(dialog,self:L("FPS_TEST_CANCEL"),0,0,190,function()
     local result=STBS:CancelFPSTest();shade:Hide();STBS.flashMessage=result.code=="cancelled-restore-queued" and STBS:L("FPS_TEST_CANCELLED_QUEUED") or result.code=="cancelled-restore-failed" and STBS:L("FPS_TEST_CANCELLED_FAILED") or STBS:L("FPS_TEST_CANCELLED");STBS.flashKind=result.ok and (result.code=="cancelled" and "warning" or "error") or "error";if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS:ShowFPSTest() end
-  end)
+  end);dialog.cancel:ClearAllPoints();dialog.cancel:SetSize(190,30);dialog.cancel:SetPoint("BOTTOM",0,23)
   shade.dialog=dialog;self.fpsTestModal=shade;return shade
 end
 
