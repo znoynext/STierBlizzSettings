@@ -90,6 +90,7 @@ check("base Graphics has no duplicate lighter-raid checkbox",not mainWindowSourc
 check("FPS modal warning is concise and forbids minimizing or Alt-Tab",ns:L("FPS_TEST_MODAL_HELP"):find("Alt+Tab",1,true)~=nil and #ns:L("FPS_TEST_MODAL_HELP")<110)
 check("header always refreshes the detected current preset",mainWindowSource:find("f.currentPreset",1,true)~=nil and mainWindowSource:find("RefreshCurrentPresetLabel",1,true)~=nil)
 check("current preset is a prominent standard-font header element",mainWindowSource:find('f.currentPreset=top:CreateFontString(nil,"OVERLAY","GameFontNormalLarge")',1,true)~=nil and mainWindowSource:find('f.currentPreset:SetPoint("LEFT",top,"LEFT",300,-14)',1,true)~=nil)
+check("UI Tweaks recommendation states its expected FPS cost with units",ns.Locale.enUS.UI_TWEAKS_RECOMMENDED_NOTE:find("about 0 FPS",1,true)~=nil and ns.Locale.ruRU.UI_TWEAKS_RECOMMENDED_NOTE:find("0 FPS",1,true)~=nil)
 local selectedMode,pages=nil,{}
 ns.CreateUI=function()end;ns.SetPage=function(_,title,text,actions,status,options)pages={title=title,text=text,actions=actions,status=status,options=options}end;ns.RegisterBlizzardSettings=function()return true end
 for i=1,3 do local profile=ns:NewProfile("ui_profile_"..i,"personal","UI Profile "..i);profile.sections.graphics={mode=ns.GRAPHICS_MODE_UNIFIED,base={},raid={}};profile.capturedModules={graphics=true};_G.STierBlizzSettingsDB.profiles[profile.id]=profile end;ns:ShowProfiles();check("combined profile page exposes profiles and backups",#pages.actions>=10 and pages.options.pageKey=="profiles")

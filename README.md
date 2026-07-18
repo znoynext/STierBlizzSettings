@@ -8,7 +8,7 @@ A lightweight WoW Retail addon that applies a curated balance of FPS, image qual
 
 ## Install
 
-1. Download [STierBlizzSettings-v0.4.19-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.4.19-alpha.zip).
+1. Download [STierBlizzSettings-v0.4.20-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.4.20-alpha.zip).
 2. Extract it into `World of Warcraft/_retail_/Interface/AddOns/`.
 3. Verify the final path is `.../AddOns/STierBlizzSettings/STierBlizzSettings.toc`.
 4. Enable the addon and open it with `/stier` or the minimap button.
@@ -46,6 +46,6 @@ While Graphics is open, the addon displays Retail `GetFramerate()` live and auto
 
 No telemetry, network access, ads, premium features, donation prompts or gameplay automation are included. Every supported setting is curated and validated against current Blizzard Retail UI sources; unavailable values fail closed.
 
-Current version: **0.4.19-alpha**. Baseline: Retail 12.0.7, Interface 120007, Blizzard UI build 68453. Live-client visual testing and controlled hardware benchmarks are still required before declaring v1.0 production-ready.
+Current version: **0.4.20-alpha**. Baseline: Retail 12.0.7, Interface 120007, Blizzard UI build 68453. Live-client visual testing and controlled hardware benchmarks are still required before declaring v1.0 production-ready.
 
 See the [current project state](docs/PROJECT_STATE.md), [Russian README](README.ru.md), [preset research](docs/RECOMMENDED_PROFILE_RESEARCH.md), [architecture](docs/ARCHITECTURE.md), [UI/UX notes](docs/UI_UX_RESEARCH.md) and [test plan](docs/TEST_PLAN.md).

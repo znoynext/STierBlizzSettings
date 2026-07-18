@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.20-alpha
+
+- Clarified the recommended UI Tweaks note so its expected performance cost is explicitly shown as **about 0 FPS**.
+
 ## 0.4.19-alpha
 
 - Replaced every addon `StaticPopup` with one reusable S-Tier modal: dark native surface, gold frame, addon icon, larger standard WoW text, scalable primary/cancel buttons, destructive red actions and styled text fields.

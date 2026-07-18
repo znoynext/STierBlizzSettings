@@ -1,6 +1,6 @@
 # Project state
 
-Last updated: 2026-07-18. Current release: **0.4.19-alpha**. Target: WoW Retail 12.0.7, Interface 120007, Blizzard UI build 68453.
+Last updated: 2026-07-18. Current release: **0.4.20-alpha**. Target: WoW Retail 12.0.7, Interface 120007, Blizzard UI build 68453.
 
 This is the short handoff for continuing work in a new Codex task. Read it before changing behavior or UI. Use `CHANGELOG.md` for version history and the linked specialist documents for implementation details.
 
