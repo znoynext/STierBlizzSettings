@@ -70,6 +70,7 @@ local deletable=ns:CreateBackup({graphics=true},"delete-test");local beforeDelet
 _G.STierBlizzSettingsDB.profiles.corrupt="bad";local safeList=ns:ListPersonalProfiles();check("corrupted personal profile entry is ignored",type(safeList)=="table")
 assert(loadfile("STierBlizzSettings/UI/MainWindow.lua"))(addon,ns)
 local mainWindowSourceFile=assert(io.open("STierBlizzSettings/UI/MainWindow.lua","rb"));local mainWindowSource=mainWindowSourceFile:read("*a");mainWindowSourceFile:close();check("main addon window can move beyond screen edges",mainWindowSource:find("f:SetClampedToScreen(false)",1,true)~=nil)
+check("main addon window opens at the exact screen center",mainWindowSource:find('f:SetPoint("CENTER",UIParent,"CENTER",0,0)',1,true)~=nil)
 check("redundant view-in-game action is absent",not mainWindowSource:find("ViewInGame",1,true) and ns.Locale.enUS.VIEW_IN_GAME==nil)
 check("multiline import and export sheet has no single-line input template",not mainWindowSource:find("InputBoxTemplate",1,true))
 local selectedMode,pages=nil,{}

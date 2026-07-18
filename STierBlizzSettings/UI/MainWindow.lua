@@ -127,7 +127,7 @@ function STBS:CreateUI()
   local f=CreateFrame("Frame","STierBlizzSettingsFrame",UIParent,"BackdropTemplate")
   local screenWidth,screenHeight=UIParent:GetWidth(),UIParent:GetHeight();local maxWidth=math.max(760,math.min(1280,screenWidth-24));local maxHeight=math.max(560,math.min(900,screenHeight-24));local minWidth=math.min(MIN_WINDOW_WIDTH,maxWidth);local minHeight=math.min(MIN_WINDOW_HEIGHT,maxHeight)
   local preferences=self:InitializeDatabase().preferences;local width=clamp(preferences.windowWidth or DEFAULT_WINDOW_WIDTH,minWidth,maxWidth);local height=clamp(preferences.windowHeight or DEFAULT_WINDOW_HEIGHT,minHeight,maxHeight)
-  f:SetSize(width,height);f:SetPoint("CENTER",UIParent,"CENTER",0,(height-650)/2);f:SetMovable(true);f:SetResizable(true);f:SetResizeBounds(minWidth,minHeight,maxWidth,maxHeight);f:SetClampedToScreen(false);f:EnableMouse(true);f:Hide()
+  f:SetSize(width,height);f:SetPoint("CENTER",UIParent,"CENTER",0,0);f:SetMovable(true);f:SetResizable(true);f:SetResizeBounds(minWidth,minHeight,maxWidth,maxHeight);f:SetClampedToScreen(false);f:EnableMouse(true);f:Hide()
   f:SetBackdrop({bgFile="Interface\\FrameGeneral\\UI-Background-Rock",edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border",tile=true,tileSize=256,edgeSize=32,insets={left=11,right=12,top=12,bottom=11}});f:SetBackdropColor(0.42,0.42,0.42,1);f:SetBackdropBorderColor(1,1,1,1)
   local fade=f:CreateAnimationGroup();fade:SetToFinalAlpha(true);local alpha=fade:CreateAnimation("Alpha");alpha:SetFromAlpha(0);alpha:SetToAlpha(1);alpha:SetDuration(0.18);alpha:SetSmoothing("OUT");f.fade=fade
   f:SetScript("OnShow",function(self)self:SetAlpha(1);self.fade:Stop();self.fade:Play()end)

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.9-alpha
+
+- Removed the height-dependent upward offset so the main addon window now opens at the exact center of the screen.
+
 ## 0.4.8-alpha
 
 - Removed the single-line input artwork from the shared multiline import/export sheet so text now fills the page cleanly at every window size.
