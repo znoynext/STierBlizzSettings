@@ -9,7 +9,7 @@ function STBS:BuildDetailedDiffModel(plan,summary)
     if setting and detailedStatuses[entry.status] then
       table.insert(model[entry.status],{
         status=entry.status,technicalKey=setting.key,labelKey=setting.labelKey,blizzardLabel=setting.blizzardLabel,
-        explanationKey=setting.diffExplanationKey or "DIFF_EXPLAIN_GENERIC",valueType=setting.valueType,
+        explanationKey=setting.explanationKey,impact=setting.impact,impactLevel=setting.impactLevel,valueType=setting.valueType,
         category=setting.category,current=entry.current,target=entry.value,reason=entry.reason,setting=setting,
       })
     end
@@ -18,17 +18,7 @@ function STBS:BuildDetailedDiffModel(plan,summary)
 end
 
 function STBS:FormatDetailedDiffValue(item,value)
-  if value==nil then return self:L("DIFF_VALUE_UNAVAILABLE") end
-  value=tostring(value);local setting=item and item.setting or nil
-  if setting and (setting.key=="graphicsSpellDensity" or setting.key=="raidGraphicsSpellDensity") then
-    local labels={['0']="DIFF_VALUE_ESSENTIAL",['1']="DIFF_VALUE_REDUCED",['2']="DIFF_VALUE_EVERYTHING"};return self:L(labels[value] or "DIFF_VALUE_UNKNOWN")
-  end
-  if setting and setting.key=="RAIDsettingsEnabled" then return self:L(value=="1" and "DIFF_VALUE_SEPARATE" or value=="0" and "DIFF_VALUE_UNIFIED" or "DIFF_VALUE_UNKNOWN") end
-  if item and item.valueType=="booleanString" then return self:L(value=="1" and "DIFF_VALUE_ENABLED" or value=="0" and "DIFF_VALUE_DISABLED" or "DIFF_VALUE_UNKNOWN") end
-  if setting and setting.key=="cameraDistanceMaxZoomFactor" then return string.format(self:L("DIFF_VALUE_FACTOR"),tonumber(value) or 0) end
-  if setting and setting.numericTolerance then return value end
-  if tonumber(value) then return string.format(self:L("DIFF_VALUE_LEVEL"),value) end
-  return self:L("DIFF_VALUE_UNKNOWN")
+  return self:GetSettingDisplayValue(item and item.setting,value)
 end
 
 function STBS:GetDetailedDiffReason(item)
@@ -49,7 +39,8 @@ function STBS:FormatDetailedDiff(model)
       table.insert(lines,"\n|cffffd36b"..label.."|r")
       if item.status=="changed" then
         table.insert(lines,string.format(self:L("DIFF_CURRENT_TO_TARGET"),self:FormatDetailedDiffValue(item,item.current),self:FormatDetailedDiffValue(item,item.target)))
-        table.insert(lines,"|cff9aa7b8"..self:L(item.explanationKey).."|r")
+        table.insert(lines,"|cff9aa7b8"..self:GetSettingExplanation(item.setting).."|r")
+        local impact=self:GetSettingImpactDescription(item.setting);if impact then table.insert(lines,"|cff65cfff"..impact.."|r") end
       else table.insert(lines,"|cff9aa7b8"..self:GetDetailedDiffReason(item).."|r") end
     end
   end

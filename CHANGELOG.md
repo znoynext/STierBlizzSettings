@@ -25,6 +25,7 @@ Entries below are version-scoped historical records, not a description of the cu
 - Made Save Graphics derive unified/split mode from the actual captured Blizzard `RAIDsettingsEnabled` value instead of persisted applied state. External Blizzard/addon CVar changes are reflected correctly, unavailable or unexpected values fail before persistence, and profile capture performs no CVar writes.
 - Centralized diff/result statistics around one five-field summary contract. Graphics, profiles, Zone Graphics, UI Tweaks, imports, FPS candidate apply and Backup Restore now share compatible changed/identical/skipped/unavailable/failed semantics, and previews show the three non-applicable/error states separately.
 - Added an optional human-readable **Show changes** view for Graphics, UI Tweaks, FPS recommendations, profiles and imports. It reuses the canonical diff, hides identical settings, separates unavailable/skipped/failed items, and shows localized labels, current/target values and short explanations without making raw CVar names primary text.
+- Added validated registry product metadata for explainable previews: localized enum values, setting explanations, and qualitative performance/visual/readability/usability impact levels now share safe helpers and generic fallbacks. Preset values remain unchanged.
 
 ## 0.4.19-alpha
 
