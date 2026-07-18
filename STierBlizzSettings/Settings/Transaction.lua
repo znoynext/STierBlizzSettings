@@ -46,6 +46,21 @@ function STBS:CancelPendingOperation(expectedKind)
   self.pendingOperation=nil;return self:Result(true,"cancelled",self:Copy(operation))
 end
 
+function STBS:BuildTransactionSnapshot(plan,modules)
+  local snapshot={previous={},targets={},changed=0}
+  for _,entry in ipairs(type(plan)=="table" and plan or {}) do
+    local setting=entry.setting
+    if type(setting)=="table" and modules[setting.module] and entry.status=="changed" then
+      local previous,readWhy=self:ReadSetting(setting)
+      if previous==nil then return self:Result(false,"snapshot-failed",{key=setting.key,reason=readWhy or "unavailable"}) end
+      local validPrevious,previousWhy=self:ValidateValue(setting,previous)
+      if not validPrevious then return self:Result(false,"snapshot-failed",{key=setting.key,reason=previousWhy or "value"}) end
+      snapshot.previous[setting.key]=previous;snapshot.targets[setting.key]=entry.value;snapshot.changed=snapshot.changed+1
+    end
+  end
+  return self:Result(true,"snapshotted",snapshot)
+end
+
 function STBS:ApplySettings(settings, modules, trigger, options, pending)
   options = options == true and { skipBackup = true } or options or {}
   local _,databaseFailure=self:RequireWritableDatabase();if databaseFailure then return databaseFailure end
@@ -59,25 +74,27 @@ function STBS:ApplySettings(settings, modules, trigger, options, pending)
     pending=type(pending)=="table" and pending or {};local kind=pending.kind or self:InferPendingOperationKind(trigger,modules);local queued=self:QueuePendingOperation(kind,settings,modules,trigger,options,type(pending.context)=="table" and pending.context or {})
     return self:Result(false,queued.ok and "queued" or queued.code,queued.data)
   end
-  local plan=self:BuildDiff(settings);local backup = options.skipBackup and self:Result(true,"skipped") or self:CreateBackup(modules,trigger,options.backupSource or "legacy",options.deferBackupTrim==true,options.backupSessionId);if not backup.ok then return backup end
-  local result={backup=backup.data}
+  local plan=self:BuildDiff(settings);local snapshotResult=self:BuildTransactionSnapshot(plan,modules);if not snapshotResult.ok then return snapshotResult end;local snapshot=snapshotResult.data
+  local backup = options.skipBackup and self:Result(true,"skipped") or self:CreateBackup(modules,trigger,options.backupSource or "legacy",options.deferBackupTrim==true,options.backupSessionId);if not backup.ok then return backup end
+  if backup.data then for key,previous in pairs(snapshot.previous) do backup.data.values[key]=previous;backup.data.readFailures[key]=nil end end
+  local result={backup=backup.data,snapshot=self:Copy(snapshot)}
   for module,selected in pairs(modules) do if selected then result[module]={changed=0,identical=0,skipped=0,failed=0,unavailable=0,categories={}} end end
   local attempted={}
   for _,entry in ipairs(plan) do local target=entry.setting.module;if modules[target] then
     local category = result[target].categories[entry.setting.category] or {changed=0,identical=0,skipped=0,failed=0,unavailable=0}; result[target].categories[entry.setting.category]=category
     local status=entry.status;if status=="changed" then
-      table.insert(attempted,entry)
-      local ok,writeStatus=self:WriteSetting(entry.setting,entry.value);status=ok and writeStatus or "failed"
+      table.insert(attempted,entry.setting)
+      local ok,writeStatus=self:WriteSetting(entry.setting,snapshot.targets[entry.setting.key],snapshot.previous[entry.setting.key]);status=ok and writeStatus or "failed"
     end
     result[target][status]=(result[target][status]or 0)+1;category[status]=(category[status]or 0)+1
     if status=="failed" then
       local rollback={attempted=#attempted,restored=0,failed=0}
       for index=#attempted,1,-1 do
-        local applied=attempted[index]
-        local current=self:ReadSetting(applied.setting)
-        if self:SettingValuesEqual(applied.setting,current,applied.current) then rollback.restored=rollback.restored+1
+        local setting=attempted[index];local previous=snapshot.previous[setting.key]
+        local current=self:ReadSetting(setting)
+        if self:SettingValuesEqual(setting,current,previous) then rollback.restored=rollback.restored+1
         else
-          local restored=self:WriteSetting(applied.setting,applied.current)
+          local restored=self:WriteSetting(setting,previous,current)
           if restored then rollback.restored=rollback.restored+1 else rollback.failed=rollback.failed+1 end
         end
       end
