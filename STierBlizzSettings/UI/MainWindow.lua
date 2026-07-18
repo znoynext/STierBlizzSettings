@@ -347,7 +347,7 @@ function STBS:ShowGraphics()
   local preset=self:GetSelectedPreset()
   local metric=self:GetLastFPSMetric();local measuring=self.fpsAfterMeasurement or self.fpsAccurateMeasurement or self.fpsTestMeasurement;local dashboard=self:BuildGraphicsFPSDashboard(metric,self:ReadFramerate(),measuring)
   local text="|cffffd36b"..self:L("QUICK_START").."|r\n"..self:L("QUICK_START_TEXT").."\n\n|cffffd36b"..self:L("SAVE_OWN_TITLE").."|r\n"..self:L("SAVE_OWN_TEXT").."\n\n|cff9aa7b8"..self:L("GRAPHICS_SELECTION_SUMMARY").."|r"
-  local latest=self:GetLatestBackupIndex("graphics")
+  local latest=self:GetLatestBackupId("graphics")
   local actions={
     {label=self:L("PRESET_PRO"),third=true,fn=function()STBS:SetSelectedPreset(STBS.GRAPHICS_PRESET_PRO);STBS.flashMessage=STBS:L("PRESET_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=preset==self.GRAPHICS_PRESET_PRO},
     {label=self:L("PRESET_OPTIMIZED"),third=true,fn=function()STBS:SetSelectedPreset(STBS.GRAPHICS_PRESET_OPTIMIZED);STBS.flashMessage=STBS:L("PRESET_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=preset==self.GRAPHICS_PRESET_OPTIMIZED},
@@ -391,7 +391,7 @@ function STBS:ShowUITweaks()
     {kind="check",label=self:L("UI_TWEAK_NETHER"),checked=draft.ffxNether=="1",disabled=not enabled("ffxNether"),tooltip=self:L("UI_TWEAK_NETHER_TIP"),fn=function(value)choose("ffxNether",value and "1" or "0")end},
     {kind="check",label=self:L("UI_TWEAK_CAMERA_DISTANCE"),checked=draft.cameraDistanceMaxZoomFactor=="2.6",disabled=not enabled("cameraDistanceMaxZoomFactor"),tooltip=self:L("UI_TWEAK_CAMERA_DISTANCE_TIP"),fn=function(value)choose("cameraDistanceMaxZoomFactor",value and "2.6" or "1.9")end},
     {label=self:L("UI_TWEAK_APPLY"),style="primary",wide=true,fn=function()STBS:ConfirmApplyUITweaks()end},
-    {label=self:L("UI_TWEAK_UNDO"),wide=true,disabled=not self:GetLatestBackupIndex("uiTweaks"),fn=function()STBS:ConfirmUndoUITweaks()end},
+    {label=self:L("UI_TWEAK_UNDO"),wide=true,disabled=not self:GetLatestBackupId("uiTweaks"),fn=function()STBS:ConfirmUndoUITweaks()end},
   }
   local text="|cff35e6ad"..self:L("UI_TWEAKS_TRUST").."|r\n\n|cffffd36b"..self:L("UI_TWEAKS_RECOMMENDED").."|r\n"..self:L("UI_TWEAKS_RECOMMENDED_NOTE").."\n\n|cffffd36b"..self:L("UI_TWEAKS_OPTIONAL").."|r\n"..self:L("UI_TWEAKS_OPTIONAL_NOTE").."\n\n|cff9aa7b8"..self:L("UI_TWEAK_TOOLTIP_HINT").."|r"
   local status=self.flashMessage or (unavailable>0 and self:L("UI_TWEAK_UNAVAILABLE") or self:L("UI_TWEAKS_STATUS"));local kind=self.flashKind or (unavailable>0 and "warning" or nil);self.flashMessage=nil;self.flashKind=nil
@@ -412,9 +412,9 @@ function STBS:ConfirmApplyUITweaks()
 end
 
 function STBS:ConfirmUndoUITweaks()
-  local index=self:GetLatestBackupIndex("uiTweaks");if not index then self.flashMessage=self:L("UI_TWEAK_ALREADY");self.flashKind="warning";self:ShowUITweaks();return end
+  local backupId=self:GetLatestBackupId("uiTweaks");if not backupId then self.flashMessage=self:L("UI_TWEAK_ALREADY");self.flashKind="warning";self:ShowUITweaks();return end
   self:ShowAddonDialog({title=self:L("UI_TWEAK_UNDO_CONFIRM"),message=self:L("UI_TWEAK_UNDO_CONFIRM_TEXT"),onAccept=function()
-    local result=STBS:RestoreBackup(index,{uiTweaks=true});if result.ok then STBS.uiTweaksDraft=nil end;STBS.flashMessage=result.ok and STBS:L("UI_TWEAK_RESTORED") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowUITweaks()
+    local result=STBS:RestoreBackupById(backupId,{uiTweaks=true});if result.ok then STBS.uiTweaksDraft=nil end;STBS.flashMessage=result.ok and STBS:L("UI_TWEAK_RESTORED") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowUITweaks()
   end})
 end
 
@@ -548,8 +548,8 @@ function STBS:ConfirmReloadUI()
 end
 
 function STBS:ConfirmUndoGraphics()
-  local index=self:GetLatestBackupIndex("graphics");if not index then self.flashMessage=self:L("UNDO_UNAVAILABLE");self.flashKind="warning";self:ShowGraphics();return end
-  self:ShowAddonDialog({title=self:L("UNDO_CONFIRM"),message=self:L("UNDO_CONFIRM_TEXT"),onAccept=function()local result=STBS:RestoreBackup(index,{graphics=true});STBS.flashMessage=result.ok and STBS:L("RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end})
+  local backupId=self:GetLatestBackupId("graphics");if not backupId then self.flashMessage=self:L("UNDO_UNAVAILABLE");self.flashKind="warning";self:ShowGraphics();return end
+  self:ShowAddonDialog({title=self:L("UNDO_CONFIRM"),message=self:L("UNDO_CONFIRM_TEXT"),onAccept=function()local result=STBS:RestoreBackupById(backupId,{graphics=true});STBS.flashMessage=result.ok and STBS:L("RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end})
 end
 
 function STBS:OpenSaveDialog()
@@ -564,12 +564,12 @@ function STBS:ConfirmDeleteProfile(profile)
   self:ShowAddonDialog({title=self:L("DELETE").."?",message=self:SafeText(profile.displayName),acceptText=self:L("DELETE"),danger=true,onAccept=function()local result=STBS:DeleteProfile(profile.id);STBS.selectedProfileId=nil;STBS.selectedItemType=nil;STBS.flashMessage=result.ok and STBS:L("PROFILE_DELETED") or STBS:L("ACTION_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowProfiles()end})
 end
 
-function STBS:ConfirmDeleteBackup(index)
-  self:ShowAddonDialog({title=self:L("DELETE_BACKUP"),message=self:L("DELETE_BACKUP_CONFIRM"),acceptText=self:L("DELETE"),danger=true,onAccept=function()local result=STBS:DeleteBackup(index);STBS.selectedBackupIndex=nil;STBS.selectedItemType=nil;STBS.flashMessage=result.ok and STBS:L("BACKUP_DELETED") or STBS:L("ACTION_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowProfiles()end})
+function STBS:ConfirmDeleteBackup(backupId)
+  self:ShowAddonDialog({title=self:L("DELETE_BACKUP"),message=self:L("DELETE_BACKUP_CONFIRM"),acceptText=self:L("DELETE"),danger=true,onAccept=function()local result=STBS:DeleteBackupById(backupId);STBS.selectedBackupId=nil;STBS.selectedItemType=nil;STBS.flashMessage=result.ok and STBS:L("BACKUP_DELETED") or STBS:L("ACTION_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowProfiles()end})
 end
 
-function STBS:ConfirmRestoreBackup(index)
-  self:ShowAddonDialog({title=self:L("RESTORE_SELECTED"),onAccept=function()local result=STBS:RestoreBackup(index,{graphics=true});STBS.flashMessage=result.ok and STBS:L("RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end})
+function STBS:ConfirmRestoreBackup(backupId)
+  self:ShowAddonDialog({title=self:L("RESTORE_SELECTED"),onAccept=function()local result=STBS:RestoreBackupById(backupId,{graphics=true});STBS.flashMessage=result.ok and STBS:L("RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end})
 end
 
 function STBS:GetGraphicsProfiles()
@@ -586,9 +586,9 @@ function STBS:ShowProfiles(section)
   local profiles=self:GetGraphicsProfiles();local backups=self:InitializeDatabase().backups
   section=section or self.profileSection or "profiles";if section~="profiles" and section~="backups" and section~="transfer" then section="profiles" end;self.profileSection=section
   local selectedProfile;for _,profile in ipairs(profiles) do if profile.id==self.selectedProfileId then selectedProfile=profile end end
-  local selectedBackup=backups[self.selectedBackupIndex or 0];if selectedBackup and not self:BackupHasModule(selectedBackup,"graphics") then selectedBackup=nil end
+  local selectedBackup,selectedBackupPosition=self:GetBackupById(self.selectedBackupId);if selectedBackup and not self:BackupHasModule(selectedBackup,"graphics") then selectedBackup=nil;selectedBackupPosition=nil end
   if section=="profiles" and not selectedProfile and profiles[1] then selectedProfile=profiles[1];self.selectedProfileId=selectedProfile.id end
-  if section=="backups" and not selectedBackup then local index=self:GetLatestBackupIndex("graphics");if index then self.selectedBackupIndex=index;selectedBackup=backups[index] end end
+  if section=="backups" and not selectedBackup then local backupId=self:GetLatestBackupId("graphics");if backupId then self.selectedBackupId=backupId;selectedBackup,selectedBackupPosition=self:GetBackupById(backupId) end end
   local actions={
     {label=self:L("PROFILES_TAB"),third=true,active=section=="profiles",fn=function()STBS:ShowProfiles("profiles")end},
     {label=self:L("BACKUPS_TAB"),third=true,active=section=="backups",fn=function()STBS:ShowProfiles("backups")end},
@@ -607,10 +607,10 @@ function STBS:ShowProfiles(section)
   elseif section=="backups" then
     local count=0;for _,backup in ipairs(backups) do if self:BackupHasModule(backup,"graphics") then count=count+1 end end
     text="|cffffd36b"..self:L("BACKUP_HISTORY").."|r\n"..(count==0 and self:L("NO_BACKUPS") or string.format(self:L("BACKUP_COUNT"),count))
-    if selectedBackup then text=text.."\n\n|cff65cfff"..self:L("SELECTED")..":|r #"..self.selectedBackupIndex.." · "..self:SafeText(selectedBackup.trigger or "backup").." · "..date("%Y-%m-%d %H:%M",selectedBackup.timestamp) end
-    if selectedBackup then table.insert(actions,{label=self:L("RESTORE_SELECTED"),fn=function()STBS:ConfirmRestoreBackup(STBS.selectedBackupIndex)end,style="primary"});table.insert(actions,{label=self:L("DELETE_BACKUP"),fn=function()STBS:ConfirmDeleteBackup(STBS.selectedBackupIndex)end,style="danger"}) end
-    table.insert(actions,{label=self:L("CREATE_GRAPHICS_BACKUP"),wide=true,fn=function()local result=STBS:CreateBackup({graphics=true},"manual");if result.ok then STBS.selectedBackupIndex=1;STBS.flashMessage=STBS:L("BACKUP_CREATED");STBS.flashKind="success" else STBS.flashMessage=STBS:L("BACKUP_CREATE_FAILED");STBS.flashKind="error" end;STBS:ShowProfiles("backups")end})
-    for i,backup in ipairs(backups) do if self:BackupHasModule(backup,"graphics") then local index=i;table.insert(actions,{label=self:L("BACKUP_LABEL").." #"..index.." · "..date("%m-%d %H:%M",backup.timestamp),active=index==self.selectedBackupIndex,fn=function()STBS.selectedBackupIndex=index;STBS.flashMessage=string.format(STBS:L("ITEM_SELECTED"),STBS:L("BACKUP_LABEL").." #"..index);STBS.flashKind="success";STBS:ShowProfiles("backups")end}) end end
+    if selectedBackup then text=text.."\n\n|cff65cfff"..self:L("SELECTED")..":|r #"..selectedBackupPosition.." · "..self:SafeText(selectedBackup.trigger or "backup").." · "..date("%Y-%m-%d %H:%M",selectedBackup.timestamp) end
+    if selectedBackup then local backupId=selectedBackup.id;table.insert(actions,{label=self:L("RESTORE_SELECTED"),fn=function()STBS:ConfirmRestoreBackup(backupId)end,style="primary"});table.insert(actions,{label=self:L("DELETE_BACKUP"),fn=function()STBS:ConfirmDeleteBackup(backupId)end,style="danger"}) end
+    table.insert(actions,{label=self:L("CREATE_GRAPHICS_BACKUP"),wide=true,fn=function()local result=STBS:CreateBackup({graphics=true},"manual");if result.ok then STBS.selectedBackupId=result.data.id;STBS.flashMessage=STBS:L("BACKUP_CREATED");STBS.flashKind="success" else STBS.flashMessage=STBS:L("BACKUP_CREATE_FAILED");STBS.flashKind="error" end;STBS:ShowProfiles("backups")end})
+    for i,backup in ipairs(backups) do if self:BackupHasModule(backup,"graphics") then local index,backupId=i,backup.id;table.insert(actions,{label=self:L("BACKUP_LABEL").." #"..index.." · "..date("%m-%d %H:%M",backup.timestamp),active=backupId==self.selectedBackupId,fn=function()STBS.selectedBackupId=backupId;STBS.flashMessage=string.format(STBS:L("ITEM_SELECTED"),STBS:L("BACKUP_LABEL").." #"..index);STBS.flashKind="success";STBS:ShowProfiles("backups")end}) end end
   else
     text="|cffffd36b"..self:L("TRANSFER_TITLE").."|r\n"..self:L("TRANSFER_HELP").."\n\n|cff9aa7b8"..self:L("TRANSFER_EXCLUDES").."|r"
     table.insert(actions,{label=self:L("EXPORT_ALL"),wide=true,style="primary",fn=function()STBS:ShowAddonExport()end})

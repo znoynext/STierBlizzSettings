@@ -75,7 +75,7 @@ function STBS:ApplyAddonBundle(payload)
   }
   db.profiles=self:Copy(payload.profiles);local sequence=db.profileSequence
   for id in pairs(db.profiles) do local value=tonumber(id:match("_(%d+)$"));if value then sequence=math.max(sequence,value) end end
-  db.profileSequence=sequence;self.selectedProfileId=nil;self.selectedItemType=nil;self.selectedBackupIndex=nil;self.activeZoneCategory=nil;self.activeZonePreset=nil;self.uiTweaksDraft=nil;self.graphicsPresetSelection=nil;self.graphicsModeSelection=nil;self:SyncAppliedGraphicsState()
+  db.profileSequence=sequence;self.selectedProfileId=nil;self.selectedItemType=nil;self.selectedBackupId=nil;self.activeZoneCategory=nil;self.activeZonePreset=nil;self.uiTweaksDraft=nil;self.graphicsPresetSelection=nil;self.graphicsModeSelection=nil;self:SyncAppliedGraphicsState()
   self:SetPerformanceWidgetEnabled(db.preferences.performanceWidgetEnabled)
   return self:Result(true,"bundle-imported",result.data)
 end

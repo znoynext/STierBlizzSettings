@@ -3,7 +3,7 @@ function STBS:CreateBackup(modules, trigger, deferTrim)
   local db,databaseFailure=self:RequireWritableDatabase();if not db then return databaseFailure end
   local validModules, modulesWhy = self:ValidateModules(modules); if not validModules then return self:Result(false,modulesWhy) end
   local values, failures = self:CaptureModules(modules)
-  local build = self:GetBuild(); local backup = { timestamp=time(), addonVersion=self.VERSION, clientBuild=build, trigger=trigger, affectedModules=self:Copy(modules), values=values, readFailures=failures }
+  local build = self:GetBuild(); local backup = { id=self:AllocateBackupId(db),timestamp=time(), addonVersion=self.VERSION, clientBuild=build, trigger=trigger, affectedModules=self:Copy(modules), values=values, readFailures=failures }
   table.insert(db.backups, 1, backup); if not deferTrim then while #db.backups > db.preferences.backupLimit do table.remove(db.backups) end end
   return self:Result(true,"created",backup)
 end
@@ -11,9 +11,14 @@ function STBS:FinalizeBackupLimit()
   local db,databaseFailure=self:RequireWritableDatabase();if not db then return databaseFailure end
   while #db.backups>db.preferences.backupLimit do table.remove(db.backups) end;return self:Result(true,"finalized")
 end
-function STBS:RestoreBackup(index, modules)
+function STBS:GetBackupById(id)
+  if not self:IsBackupId(id) then return nil,nil end
+  for index,backup in ipairs(self:InitializeDatabase().backups) do if backup.id==id then return backup,index end end
+  return nil,nil
+end
+function STBS:RestoreBackupById(id, modules)
   local db,databaseFailure=self:RequireWritableDatabase();if not db then return databaseFailure end
-  local backup = db.backups[index]; if not backup then return self:Result(false,"missing") end
+  local backup;for _,candidate in ipairs(db.backups) do if candidate.id==id then backup=candidate;break end end;if not backup then return self:Result(false,"missing") end
   modules = modules or backup.affectedModules
   local validModules, modulesWhy = self:ValidateModules(modules); if not validModules then return self:Result(false,modulesWhy) end
   local settings = {}
@@ -25,9 +30,12 @@ function STBS:RestoreBackup(index, modules)
   local validSettings, settingsWhy = self:ValidateSettings(settings, false); if not validSettings then return self:Result(false,settingsWhy) end
   local safety = self:CreateBackup(modules, "restore-safety")
   if not safety.ok then return safety end
-  local result = self:ApplySettings(settings, modules, "restore", { skipBackup = true }, { kind="recovery",context={reason="backup-restore",backupIndex=index} })
+  local result = self:ApplySettings(settings, modules, "restore", { skipBackup = true }, { kind="recovery",context={reason="backup-restore",backupId=id,safetyBackupId=safety.data.id} })
   if result.ok then result.data.safetyBackup = safety.data;if modules.graphics then self:SyncAppliedGraphicsState() end end
   return result
+end
+function STBS:RestoreBackup(id, modules)
+  return self:RestoreBackupById(id,modules)
 end
 function STBS:BackupHasModule(backup, module)
   if type(backup) ~= "table" or type(backup.values) ~= "table" then return false end
@@ -35,16 +43,19 @@ function STBS:BackupHasModule(backup, module)
   return false
 end
 
-function STBS:GetLatestBackupIndex(module)
-  for index, backup in ipairs(self:InitializeDatabase().backups) do
-    if not module or self:BackupHasModule(backup, module) then return index end
+function STBS:GetLatestBackupId(module)
+  for _, backup in ipairs(self:InitializeDatabase().backups) do
+    if not module or self:BackupHasModule(backup, module) then return backup.id end
   end
   return nil
 end
 
-function STBS:DeleteBackup(index)
+function STBS:DeleteBackupById(id)
   local db,databaseFailure=self:RequireWritableDatabase();if not db then return databaseFailure end
-  index = tonumber(index)
-  if not index or index ~= math.floor(index) or index < 1 or index > #db.backups then return self:Result(false,"missing") end
-  return self:Result(true,"deleted",table.remove(db.backups,index))
+  if not self:IsBackupId(id) then return self:Result(false,"missing") end
+  for index,backup in ipairs(db.backups) do if backup.id==id then return self:Result(true,"deleted",table.remove(db.backups,index)) end end
+  return self:Result(false,"missing")
+end
+function STBS:DeleteBackup(id)
+  return self:DeleteBackupById(id)
 end

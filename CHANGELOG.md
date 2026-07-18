@@ -10,6 +10,7 @@ Entries below are version-scoped historical records, not a description of the cu
 - Separated runtime Graphics selection from persisted applied state. Preset/mode now commit only after a verified successful immediate or queued transaction; failures, cancellation and rollback preserve the previous state, while schema 2 migrates explicitly to schema 3 and re-detects the real client graphics.
 - Replaced ad-hoc SavedVariables initialization with an ordered migration pipeline. Schema 2 now advances through the explicit `2 -> 3` step once, while future unsupported schemas are preserved unchanged and block managed settings transactions instead of being rewritten as schema 3.
 - Made the future-schema fallback genuinely read-only for account persistence. Backup, profile, import, Zone Graphics, applied-state and local-preference APIs now share one writable-database guard and return `database-schema-unsupported` instead of reporting session-only success.
+- Added stable persistent backup IDs through the explicit schema `3 -> 4` migration. Restore, delete, Undo confirmations, queued recovery and temporary FPS cleanup now keep exact backup identity even when newer history entries shift presentation indexes.
 
 ## 0.4.19-alpha
 

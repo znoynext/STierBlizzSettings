@@ -1,6 +1,34 @@
 local _, STBS = ...
 
 local migrations={}
+local MAX_BACKUP_SEQUENCE=9007199254740990
+
+local function validBackupId(value)
+  return type(value)=="string" and value~="" and #value<=128 and not value:find("[%c]")
+end
+
+local function normalizedBackupSequence(value)
+  value=tonumber(value)
+  if not value or value~=value or value<0 or value>MAX_BACKUP_SEQUENCE then return 0 end
+  return math.floor(value)
+end
+
+function STBS:IsBackupId(value)
+  return validBackupId(value)
+end
+
+function STBS:AllocateBackupId(db)
+  db=db or self:InitializeDatabase();local seen={};local sequence=normalizedBackupSequence(db.backupSequence)
+  for _,backup in ipairs(type(db.backups)=="table" and db.backups or {}) do
+    if type(backup)=="table" and validBackupId(backup.id) then
+      seen[backup.id]=true;local numeric=tonumber(backup.id:match("^backup%-(%d+)$"));if numeric and numeric<=MAX_BACKUP_SEQUENCE then sequence=math.max(sequence,math.floor(numeric)) end
+    end
+  end
+  if sequence>=MAX_BACKUP_SEQUENCE then sequence=0 end
+  local candidate
+  repeat sequence=sequence+1;candidate="backup-"..tostring(sequence) until not seen[candidate]
+  db.backupSequence=sequence;return candidate
+end
 
 local function validPresets(self)
   return { [self.GRAPHICS_PRESET_PRO]=true,[self.GRAPHICS_PRESET_OPTIMIZED]=true,[self.GRAPHICS_PRESET_QUALITY]=true }
@@ -21,9 +49,22 @@ local function separateLegacyGraphicsState(self,db)
   return true
 end
 
--- Schema 2 is the only known historical account database schema. Future
--- migrations are added by source version and must advance exactly one step.
+local function addStableBackupIds(self,db)
+  if type(db.backups)~="table" then db.backups={} end
+  local seen={}
+  for _,backup in ipairs(db.backups) do
+    if type(backup)=="table" then
+      if validBackupId(backup.id) and not seen[backup.id] then seen[backup.id]=true else backup.id=nil end
+    end
+  end
+  db.backupSequence=normalizedBackupSequence(db.backupSequence)
+  for _,backup in ipairs(db.backups) do if type(backup)=="table" and not backup.id then backup.id=self:AllocateBackupId(db) end end
+  return true
+end
+
+-- Migrations are keyed by their real source schema and advance exactly one step.
 migrations[2]=separateLegacyGraphicsState
+migrations[3]=addStableBackupIds
 
 function STBS:MigrateDatabase(db)
   if type(db)~="table" then db={} end
@@ -32,11 +73,11 @@ function STBS:MigrateDatabase(db)
     return self:Result(false,"future-schema",{schemaVersion=rawVersion})
   end
   if rawVersion==nil and next(db)==nil then
-    separateLegacyGraphicsState(self,db);db.schemaVersion=self.DB_SCHEMA
+    separateLegacyGraphicsState(self,db);addStableBackupIds(self,db);db.schemaVersion=self.DB_SCHEMA
     return self:Result(true,"fresh",db)
   end
   if type(rawVersion)~="number" or rawVersion~=rawVersion or rawVersion~=math.floor(rawVersion) or rawVersion<2 then
-    separateLegacyGraphicsState(self,db);db.schemaVersion=self.DB_SCHEMA
+    separateLegacyGraphicsState(self,db);addStableBackupIds(self,db);db.schemaVersion=self.DB_SCHEMA
     return self:Result(true,"recovered-unversioned",db)
   end
   local version=rawVersion
@@ -72,8 +113,9 @@ local function normalizeDatabase(self,db)
   for category,preset in pairs(defaults) do if not presets[zone.assignments[category]] then zone.assignments[category]=preset end end
   if type(db.profiles)~="table" then db.profiles={} end
   if type(db.backups)~="table" then db.backups={} end
-  for index=#db.backups,1,-1 do local backup=db.backups[index];if type(backup)~="table" or type(backup.timestamp)~="number" or type(backup.values)~="table" or type(backup.affectedModules)~="table" then table.remove(db.backups,index) end end
+  local backupIds={};for index=#db.backups,1,-1 do local backup=db.backups[index];if type(backup)~="table" or not validBackupId(backup.id) or backupIds[backup.id] or type(backup.timestamp)~="number" or type(backup.values)~="table" or type(backup.affectedModules)~="table" then table.remove(db.backups,index) else backupIds[backup.id]=true end end
   while #db.backups>db.preferences.backupLimit do table.remove(db.backups) end
+  db.backupSequence=normalizedBackupSequence(db.backupSequence)
   if type(db.log)~="table" then db.log={} end
   if type(db.transactions)~="table" then db.transactions={} end
   db.profileSequence=math.max(0,math.floor(tonumber(db.profileSequence) or 0))
