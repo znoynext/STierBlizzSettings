@@ -14,7 +14,7 @@ function STBS:ExportProfile(profile, modules)
 end
 
 function STBS:ExportAddonBundle()
-  local db=self:InitializeDatabase();local graphics=self:CaptureModules({graphics=true});local uiTweaks=self:CaptureModules({uiTweaks=true})
+  self:SyncAppliedGraphicsState();local db=self:InitializeDatabase();local graphics=self:CaptureModules({graphics=true});local uiTweaks=self:CaptureModules({uiTweaks=true})
   if type(graphics)~="table" or not next(graphics) then return nil,"graphics" end
   local profiles={};local count=0
   for _,profile in ipairs(self:ListPersonalProfiles()) do

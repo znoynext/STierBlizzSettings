@@ -532,8 +532,7 @@ function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode,selectedPreset)
   end
   local delayed=type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown();local before=not delayed and self:TakeFPSBaseline() or nil;local result=applyNow()
   if result.ok then
-    if selectedMode then self:SetSelectedMode(selectedMode) end
-    if selectedPreset then self:SetSelectedPreset(selectedPreset) end
+    if selectedMode then self:CommitAppliedGraphicsState(selectedMode,selectedPreset) end
     local measuring=self:StartVisibleGraphicsFPSPostMeasurement(before)
     self.flashMessage=measuring and self:L("SETTINGS_APPLIED") or self:L("SETTINGS_APPLIED_NO_MEASURE");self.flashKind="success"
     self:ShowGraphics()
@@ -623,6 +622,7 @@ end
 function STBS:GetPresetLabel(preset)
   if preset==self.GRAPHICS_PRESET_PRO then return self:L("PRESET_PRO") end
   if preset==self.GRAPHICS_PRESET_QUALITY then return self:L("PRESET_QUALITY") end
+  if preset==self.GRAPHICS_PRESET_CUSTOM then return self:L("PRESET_CUSTOM") end
   return self:L("PRESET_OPTIMIZED")
 end
 

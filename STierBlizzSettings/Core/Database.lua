@@ -2,11 +2,19 @@ local _, STBS = ...
 function STBS:InitializeDatabase()
   local db = _G.STierBlizzSettingsDB
   if type(db) ~= "table" then db = {} end
-  db.schemaVersion = self.DB_SCHEMA
+  local previousSchema=math.max(0,math.floor(tonumber(db.schemaVersion) or 0))
   if type(db.preferences) ~= "table" then db.preferences = {} end
   db.preferences.backupLimit = math.max(1, math.min(50, math.floor(tonumber(db.preferences.backupLimit) or self.DEFAULT_BACKUP_LIMIT)))
   local validPreset={ [self.GRAPHICS_PRESET_PRO]=true,[self.GRAPHICS_PRESET_OPTIMIZED]=true,[self.GRAPHICS_PRESET_QUALITY]=true }
-  if not validPreset[db.preferences.graphicsPreset] then db.preferences.graphicsPreset=self.GRAPHICS_PRESET_OPTIMIZED end
+  local validMode={ [self.GRAPHICS_MODE_UNIFIED]=true,[self.GRAPHICS_MODE_SPLIT]=true }
+  if previousSchema<3 then
+    if validPreset[db.preferences.graphicsPreset] then self.graphicsPresetSelection=db.preferences.graphicsPreset end
+    if validMode[db.preferences.graphicsMode] then self.graphicsModeSelection=db.preferences.graphicsMode end
+    db.preferences.graphicsPreset=self.GRAPHICS_PRESET_CUSTOM
+    db.preferences.graphicsMode=validMode[db.preferences.graphicsMode] and db.preferences.graphicsMode or self.GRAPHICS_MODE_UNIFIED
+    db.graphicsStateNeedsSync=true
+  end
+  if not validPreset[db.preferences.graphicsPreset] and db.preferences.graphicsPreset~=self.GRAPHICS_PRESET_CUSTOM then db.preferences.graphicsPreset=self.GRAPHICS_PRESET_CUSTOM end
   if db.preferences.graphicsMode~=self.GRAPHICS_MODE_UNIFIED and db.preferences.graphicsMode~=self.GRAPHICS_MODE_SPLIT then db.preferences.graphicsMode=self.GRAPHICS_MODE_SPLIT end
   if db.preferences.benchmarkMode~=self.BENCHMARK_QUICK and db.preferences.benchmarkMode~=self.BENCHMARK_ACCURATE then db.preferences.benchmarkMode=self.BENCHMARK_QUICK end
   db.preferences.performanceWidgetEnabled=db.preferences.performanceWidgetEnabled==true
@@ -27,6 +35,7 @@ function STBS:InitializeDatabase()
   if type(db.log) ~= "table" then db.log = {} end
   if type(db.transactions) ~= "table" then db.transactions = {} end
   db.profileSequence = math.max(0, math.floor(tonumber(db.profileSequence) or 0))
+  db.schemaVersion = self.DB_SCHEMA
   _G.STierBlizzSettingsDB = db; if type(_G.STierBlizzSettingsCharDB) ~= "table" then _G.STierBlizzSettingsCharDB = {} end
   return db
 end

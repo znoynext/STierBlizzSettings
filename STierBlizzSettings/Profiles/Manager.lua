@@ -1,6 +1,26 @@
 local _, STBS = ...
-function STBS:GetSelectedMode() return self:InitializeDatabase().preferences.graphicsMode end
-function STBS:SetSelectedMode(mode) if mode~=self.GRAPHICS_MODE_UNIFIED and mode~=self.GRAPHICS_MODE_SPLIT then return false end; self:InitializeDatabase().preferences.graphicsMode=mode; return true end
+function STBS:GetAppliedGraphicsPreset() return self:InitializeDatabase().preferences.graphicsPreset end
+function STBS:GetAppliedGraphicsMode() return self:InitializeDatabase().preferences.graphicsMode end
+function STBS:GetSelectedPreset() local applied=self:GetAppliedGraphicsPreset();return self.graphicsPresetSelection or (self:IsGraphicsPreset(applied) and applied or self.GRAPHICS_PRESET_OPTIMIZED) end
+function STBS:SetSelectedPreset(preset) if not self:IsGraphicsPreset(preset) then return false end;self.graphicsPresetSelection=preset;return true end
+function STBS:GetSelectedMode() return self.graphicsModeSelection or self:GetAppliedGraphicsMode() end
+function STBS:SetSelectedMode(mode) if mode~=self.GRAPHICS_MODE_UNIFIED and mode~=self.GRAPHICS_MODE_SPLIT then return false end;self.graphicsModeSelection=mode;return true end
+function STBS:GetCurrentGraphicsMode()
+  local current=self:ReadSetting(self.RegistryByKey.RAIDsettingsEnabled)
+  return current=="1" and self.GRAPHICS_MODE_SPLIT or current=="0" and self.GRAPHICS_MODE_UNIFIED or nil
+end
+function STBS:CommitAppliedGraphicsState(mode,preset)
+  mode=mode or self:GetCurrentGraphicsMode();if mode~=self.GRAPHICS_MODE_UNIFIED and mode~=self.GRAPHICS_MODE_SPLIT then return false end
+  if preset==nil then preset=self:GetCurrentGraphicsPreset() or self.GRAPHICS_PRESET_CUSTOM end
+  if not self:IsGraphicsPreset(preset) and preset~=self.GRAPHICS_PRESET_CUSTOM then return false end
+  local preferences=self:InitializeDatabase().preferences;preferences.graphicsMode=mode;preferences.graphicsPreset=preset;return true
+end
+function STBS:SyncAppliedGraphicsState()
+  local mode=self:GetCurrentGraphicsMode();if not mode then return false end
+  local committed=self:CommitAppliedGraphicsState(mode,self:GetCurrentGraphicsPreset() or self.GRAPHICS_PRESET_CUSTOM)
+  if committed then self:InitializeDatabase().graphicsStateNeedsSync=nil end
+  return committed
+end
 function STBS:FlattenProfile(profile, modules, keepMode)
   local out={}; local sections=profile.sections or {}; if modules.graphics then local g=sections.graphics or {}; for k,v in pairs(g.base or {}) do out[k]=v end; if (not keepMode and g.mode==self.GRAPHICS_MODE_SPLIT) or (keepMode==self.GRAPHICS_MODE_SPLIT) then for k,v in pairs(g.raid or {}) do out[k]=v end end; if not keepMode then out.RAIDsettingsEnabled=g.mode==self.GRAPHICS_MODE_SPLIT and "1" or "0" end end
   if modules.interfaceGameplay then for _,n in ipairs({"interface","camera","gameplay","controls","combat","nameplates","chat"}) do for k,v in pairs(sections[n] or {}) do out[k]=v end end end; return out
@@ -24,17 +44,14 @@ function STBS:PlanImport(payload, modules, graphicsMode)
 end
 function STBS:SaveCurrent(name, modules)
   local validModules = self:ValidateModules(modules); if not validModules then return nil,"modules" end
-  if modules.graphics and not self:GetSelectedMode() then
-    local currentRaid=self:ReadSetting(self.RegistryByKey.RAIDsettingsEnabled)
-    self:SetSelectedMode(currentRaid=="1" and self.GRAPHICS_MODE_SPLIT or self.GRAPHICS_MODE_UNIFIED)
-  end
+  local capturedMode=modules.graphics and self:GetCurrentGraphicsMode() or nil;if modules.graphics and not capturedMode then return nil,"mode" end
   name = name or (self:L("PERSONAL").." "..date("%Y-%m-%d %H:%M"))
   if type(name) == "string" then name = name:match("^%s*(.-)%s*$") end
   if type(name) ~= "string" or name == "" or #name > self.MAX_PROFILE_NAME_BYTES or name:find("[%c]") then return nil,"name" end
   local db=self:InitializeDatabase();db.profileSequence=db.profileSequence+1
   local p=self:NewProfile("personal_"..tostring(time()).."_"..tostring(db.profileSequence),"personal",name)
   local values,failures=self:CaptureModules(modules);p.capturedModules=self:Copy(modules);p.captureFailures=failures
-  p.sections.graphics={mode=self:GetSelectedMode(),base={},raid={},storedInactiveRaidSettings={}}
+  p.sections.graphics={mode=capturedMode,base={},raid={},storedInactiveRaidSettings={}}
   for k,v in pairs(values) do local s=self.RegistryByKey[k]; if s.module=="graphics" then if s.category=="raidGraphics" then p.sections.graphics.raid[k]=v else p.sections.graphics.base[k]=v end elseif s.category=="camera" then p.sections.camera[k]=v else p.sections[s.category][k]=v end end
   db.profiles[p.id]=p;return p
 end

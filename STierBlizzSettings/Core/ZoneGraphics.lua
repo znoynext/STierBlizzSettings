@@ -55,7 +55,7 @@ function STBS:ApplyZoneGraphics(trigger)
   for _,entry in ipairs(plan) do if entry.status=="changed" then changed=changed+1 end end
   if changed==0 then
     local pending=self:GetPendingOperation();if pending and pending.kind=="zone-auto" then self:CancelPendingOperation("zone-auto") end
-    self:CommitActiveZoneGraphicsState(category,preset);self:SetSelectedMode(mode);self:SetSelectedPreset(preset)
+    self:CommitActiveZoneGraphicsState(category,preset);self:CommitAppliedGraphicsState(mode,preset)
     self.zoneStatus={ok=true,code="unchanged",category=category,preset=preset,changed=0}
     if self.ui and self.ui:IsShown() and self.ui.currentPageKey=="graphics" and self.ui.currentGraphicsSection=="zones" then self:ShowZoneGraphics() end
     return self:Result(true,"unchanged",self.zoneStatus)
@@ -63,7 +63,7 @@ function STBS:ApplyZoneGraphics(trigger)
   local pendingKind=trigger=="zone-change" and "zone-auto" or "zone-manual"
   local result=self:ApplySettings(settings,{graphics=true},trigger,nil,{kind=pendingKind,context={category=category,preset=preset,mode=mode}})
   self.zoneStatus={ok=result.ok,code=result.code,category=category,preset=preset,changed=changed}
-  if result.ok then self:CommitActiveZoneGraphicsState(category,preset);self:SetSelectedMode(mode);self:SetSelectedPreset(preset) else self:ClearActiveZoneGraphicsState() end
+  if result.ok then self:CommitActiveZoneGraphicsState(category,preset);self:CommitAppliedGraphicsState(mode,preset) else self:ClearActiveZoneGraphicsState() end
   if self.ui and self.ui:IsShown() and self.ui.currentPageKey=="graphics" and self.ui.currentGraphicsSection=="zones" then self:ShowZoneGraphics() end
   return result
 end

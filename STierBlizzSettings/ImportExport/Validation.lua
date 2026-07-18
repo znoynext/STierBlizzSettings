@@ -35,7 +35,8 @@ function STBS:ImportAddonBundle(text)
   local preferences=payload.preferences
   if not onlyKeys(preferences,{graphicsPreset=true,graphicsMode=true,benchmarkMode=true,performanceWidgetEnabled=true,zoneGraphics=true}) then return nil,"preferences" end
   local validPreset={ [self.GRAPHICS_PRESET_PRO]=true,[self.GRAPHICS_PRESET_OPTIMIZED]=true,[self.GRAPHICS_PRESET_QUALITY]=true }
-  if not validPreset[preferences.graphicsPreset] or (preferences.graphicsMode~=self.GRAPHICS_MODE_UNIFIED and preferences.graphicsMode~=self.GRAPHICS_MODE_SPLIT) or (preferences.benchmarkMode~=self.BENCHMARK_QUICK and preferences.benchmarkMode~=self.BENCHMARK_ACCURATE) or type(preferences.performanceWidgetEnabled)~="boolean" then return nil,"preferences" end
+  local validAppliedPreset=self:Copy(validPreset);validAppliedPreset[self.GRAPHICS_PRESET_CUSTOM]=true
+  if not validAppliedPreset[preferences.graphicsPreset] or (preferences.graphicsMode~=self.GRAPHICS_MODE_UNIFIED and preferences.graphicsMode~=self.GRAPHICS_MODE_SPLIT) or (preferences.benchmarkMode~=self.BENCHMARK_QUICK and preferences.benchmarkMode~=self.BENCHMARK_ACCURATE) or type(preferences.performanceWidgetEnabled)~="boolean" then return nil,"preferences" end
   local zone=preferences.zoneGraphics
   if not onlyKeys(zone,{enabled=true,assignments=true}) or type(zone.enabled)~="boolean" or not onlyKeys(zone.assignments,{world=true,party=true,raid=true,pvp=true,scenario=true}) then return nil,"zone" end
   for _,category in ipairs({"world","party","raid","pvp","scenario"}) do if not validPreset[zone.assignments[category]] then return nil,"zone" end end
@@ -68,12 +69,12 @@ function STBS:ApplyAddonBundle(payload)
   local db=self:InitializeDatabase();local old=db.preferences
   db.preferences={
     backupLimit=old.backupLimit,windowWidth=old.windowWidth,windowHeight=old.windowHeight,performanceWidgetPosition=old.performanceWidgetPosition,
-    graphicsPreset=payload.preferences.graphicsPreset,graphicsMode=payload.preferences.graphicsMode,benchmarkMode=payload.preferences.benchmarkMode,
+    graphicsPreset=old.graphicsPreset,graphicsMode=old.graphicsMode,benchmarkMode=payload.preferences.benchmarkMode,
     performanceWidgetEnabled=payload.preferences.performanceWidgetEnabled,zoneGraphics=self:Copy(payload.preferences.zoneGraphics),
   }
   db.profiles=self:Copy(payload.profiles);local sequence=db.profileSequence
   for id in pairs(db.profiles) do local value=tonumber(id:match("_(%d+)$"));if value then sequence=math.max(sequence,value) end end
-  db.profileSequence=sequence;self.selectedProfileId=nil;self.selectedItemType=nil;self.selectedBackupIndex=nil;self.activeZoneCategory=nil;self.activeZonePreset=nil;self.uiTweaksDraft=nil
+  db.profileSequence=sequence;self.selectedProfileId=nil;self.selectedItemType=nil;self.selectedBackupIndex=nil;self.activeZoneCategory=nil;self.activeZonePreset=nil;self.uiTweaksDraft=nil;self.graphicsPresetSelection=nil;self.graphicsModeSelection=nil;self:SyncAppliedGraphicsState()
   self:SetPerformanceWidgetEnabled(db.preferences.performanceWidgetEnabled)
   return self:Result(true,"bundle-imported",result.data)
 end

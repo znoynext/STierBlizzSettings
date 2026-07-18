@@ -93,9 +93,11 @@ function STBS:CompletePendingOperation()
 end
 
 function STBS:ApplyOfficial(kind, options)
-  local modules=kind=="graphics" and {graphics=true} or kind=="interface" and {interfaceGameplay=true} or {graphics=true,interfaceGameplay=true};local settings={}
-  if modules.graphics then local mode=self:GetSelectedMode();if not mode then return self:Result(false,"mode") end;settings=self:FlattenProfile(self:GetOfficialGraphics(mode),{graphics=true}) end
+  local modules=kind=="graphics" and {graphics=true} or kind=="interface" and {interfaceGameplay=true} or {graphics=true,interfaceGameplay=true};local settings={};local mode,preset
+  if modules.graphics then mode=self:GetSelectedMode();preset=self:GetSelectedPreset();if not mode then return self:Result(false,"mode") end;settings=self:FlattenProfile(self:GetOfficialGraphics(mode,preset),{graphics=true}) end
   if modules.interfaceGameplay then local interface=self:FlattenProfile(self:GetOfficialInterface(),{interfaceGameplay=true});for k,v in pairs(interface) do settings[k]=v end end
   local officialValid, officialWhy=self:ValidateSettings(settings,true);if not officialValid then return self:Result(false,officialWhy) end
-  return self:ApplySettings(settings,modules,"official-"..kind,options,{kind="graphics-user",context={source="official-"..kind}})
+  local result=self:ApplySettings(settings,modules,"official-"..kind,options,{kind="graphics-user",context={source="official-"..kind,mode=mode,preset=preset}})
+  if result.ok and modules.graphics then self:CommitAppliedGraphicsState(mode,preset) end
+  return result
 end

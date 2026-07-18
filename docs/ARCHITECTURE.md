@@ -31,9 +31,7 @@ The production pipeline in `Settings/Transaction.lua` is:
 6. If a write or read-back fails, restore attempted entries in reverse order from the values captured by the diff and record `rolled-back` or `rollback-failed` in the transaction log.
 7. If writes complete, record an `applied` transaction result. Immediate callers update their own persistent selection/applied-state fields; combat-delayed work delegates that commit to the typed completion handler after the transaction result is known.
 
-This approximates the desired `Validate -> Diff -> Snapshot/Backup -> Write -> Read-back Verify -> Rollback on Failure -> Commit Applied State` invariant, with current gaps:
-
-- Commit of immediate applied state is not centralized across every caller. Queued operations are centralized and do not commit their selection/applied state until their completion handler receives a successful result.
+This implements the desired `Validate -> Diff -> Snapshot/Backup -> Write -> Read-back Verify -> Rollback on Failure -> Commit Applied State` invariant. Graphics callers pass desired mode/preset as transaction context and use `CommitAppliedGraphicsState` only after `result.ok`; the UI selection setters update a separate runtime draft and never write the applied SavedVariables. Remaining transaction gaps are:
 - A backup is created before the transaction knows whether the plan contains any actual writes, so identical, skipped, or unavailable-only operations can create no-op history entries.
 - Snapshot read failures are stored in the backup but do not abort the transaction. Rollback uses the diff's per-setting current values for attempted writes, not the backup record.
 - Unsupported, unreadable, and non-writable entries do not fail the whole transaction; they are reported and the remaining changed entries may still apply.
@@ -63,7 +61,7 @@ Replacement is deliberately priority-based rather than FIFO: recovery/restore wo
 
 On `PLAYER_REGEN_ENABLED`, `Events.lua` makes one call to `CompletePendingAfterCombat`. That workflow re-resolves the live category and assignment for `zone-auto`, completes every other operation through the normal validated transaction path, and passes the operation plus result to `HandlePendingOperationCompletion`. Kind handlers for `graphics-user`, `zone-auto`, `zone-manual`, `ui-tweaks`, and `recovery` own final UI feedback and state cleanup for `applied`, `unchanged`, `failed`, `rolled-back`, and `rollback-failed`. Trigger inspection is confined to recovery subtypes such as FPS comparison restore; event routing does not branch on triggers.
 
-Queued Graphics operations never retain or consume a pre-combat FPS baseline. A successful delayed apply reports that automatic comparison was skipped, commits the requested built-in mode/preset when present, refreshes the rolling baseline, and offers Reload UI. A failed delayed apply reports a final error, preserves the previously applied selection, and never starts FPS measurement.
+Queued Graphics operations never retain or consume a pre-combat FPS baseline. A successful delayed apply reports that automatic comparison was skipped, commits desired mode/preset from operation context, refreshes the rolling baseline, and offers Reload UI. Failed, cancelled, rolled-back, and rollback-failed operations preserve the previous applied state and never start FPS measurement; their runtime UI draft remains distinct.
 
 ## Backup architecture
 
@@ -77,7 +75,7 @@ Backups have no stable ID and no structured source/provenance type. Identity is 
 
 Account-wide `STierBlizzSettingsDB` stores schema version, preferences, personal profiles, backups, transaction log, and profile sequencing. Initialization creates missing containers, normalizes known preferences and Zone Graphics data, removes structurally invalid backup records, and applies retention. Character-local `STierBlizzSettingsCharDB` stores measured FPS results and has no independent schema version.
 
-The account schema constant is currently 2, but initialization assigns that value directly. There is no ordered, idempotent database migration pipeline and no fail-closed rejection of a future SavedVariables schema. Existing normalization provides compatibility for known shapes but is not a substitute for explicit migrations. This is technical debt. Device-local preferences must be preserved by shared-data import; the current full-addon import preserves window/widget fields but omits `minimapAngle` when replacing preferences.
+The account schema constant is currently 3. The explicit schema-2 migration moves legacy preset/mode intent into a runtime draft, initializes persisted applied preset as Custom, and sets a one-time flag so `ADDON_LOADED` can inspect real graphics CVars before committing applied preset/mode. Initialization remains idempotent, but there is no general ordered migration pipeline or fail-closed rejection of a future SavedVariables schema. Device-local preferences must be preserved by shared-data import; the current full-addon import preserves window/widget fields but omits `minimapAngle` when replacing preferences.
 
 ## Profiles
 

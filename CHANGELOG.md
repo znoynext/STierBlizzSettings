@@ -7,6 +7,7 @@ Entries below are version-scoped historical records, not a description of the cu
 - Clarified the recommended UI Tweaks note so its expected performance cost is explicitly shown as **about 0 FPS**.
 - Stopped combat-queued Graphics applies from comparing a stale pre-combat FPS baseline with a later scene. Delayed success now skips automatic comparison with clear feedback, keeps Test FPS available and still offers Reload UI; immediate applies retain the five-second workflow.
 - Centralized post-combat completion for Graphics, automatic/manual Zone Graphics, UI Tweaks and recovery. Every final transaction outcome now clears Pending state through a typed handler; failed Graphics keeps the previous applied preset, reports an actionable error and never starts FPS measurement.
+- Separated runtime Graphics selection from persisted applied state. Preset/mode now commit only after a verified successful immediate or queued transaction; failures, cancellation and rollback preserve the previous state, while schema 2 migrates explicitly to schema 3 and re-detects the real client graphics.
 
 ## 0.4.19-alpha
 

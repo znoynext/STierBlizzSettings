@@ -2,7 +2,7 @@ local _, STBS = ...
 local frame=CreateFrame("Frame");frame:RegisterEvent("ADDON_LOADED");frame:RegisterEvent("PLAYER_REGEN_ENABLED");frame:RegisterEvent("PLAYER_ENTERING_WORLD");frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 frame:SetScript("OnEvent",function(_,event,arg)
   if event=="ADDON_LOADED" and arg==STBS.ADDON then
-    STBS:InitializeDatabase();STBS:CreateMinimapButton();STBS:InitializePerformanceWidget();STBS:Print("WELCOME")
+    local db=STBS:InitializeDatabase();if db.graphicsStateNeedsSync then STBS:SyncAppliedGraphicsState() end;STBS:CreateMinimapButton();STBS:InitializePerformanceWidget();STBS:Print("WELCOME")
     SLASH_STIERBLIZZSETTINGS1="/stier";SLASH_STIERBLIZZSETTINGS2="/stbs"
     SlashCmdList.STIERBLIZZSETTINGS=function(msg)
       msg=(msg or ""):lower()

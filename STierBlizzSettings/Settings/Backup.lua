@@ -23,7 +23,7 @@ function STBS:RestoreBackup(index, modules)
   local safety = self:CreateBackup(modules, "restore-safety")
   if not safety.ok then return safety end
   local result = self:ApplySettings(settings, modules, "restore", { skipBackup = true }, { kind="recovery",context={reason="backup-restore",backupIndex=index} })
-  if result.ok then result.data.safetyBackup = safety.data end
+  if result.ok then result.data.safetyBackup = safety.data;if modules.graphics then self:SyncAppliedGraphicsState() end end
   return result
 end
 function STBS:BackupHasModule(backup, module)

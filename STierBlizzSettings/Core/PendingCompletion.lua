@@ -20,8 +20,7 @@ handlers["graphics-user"]=function(self,operation,result)
   local context=type(operation.context)=="table" and operation.context or {}
   if context.automaticFPS then self:ResetFPSBaselineSampling() end
   if result.ok then
-    if context.mode then self:SetSelectedMode(context.mode) end
-    if context.preset then self:SetSelectedPreset(context.preset) end
+    if context.mode then self:CommitAppliedGraphicsState(context.mode,context.preset) end
     self.flashMessage=context.automaticFPS and self:L("SETTINGS_APPLIED_DELAYED_NO_MEASURE") or self:L("SETTINGS_APPLIED_NO_MEASURE");self.flashKind="success"
   else
     self.flashMessage=failedMessage(self,"PENDING_GRAPHICS_FAILED",result);self.flashKind="error"
@@ -35,7 +34,7 @@ local function handleZone(self,operation,result)
   local category=context.category or previous.category or self:GetZoneCategory();local preset=context.preset or previous.preset
   local changed=result.code=="unchanged" and 0 or resultChanged(result,"graphics")
   self.zoneStatus={ok=result.ok==true,code=result.code,category=category,preset=preset,changed=changed}
-  if result.ok then self:CommitActiveZoneGraphicsState(category,preset);if context.mode then self:SetSelectedMode(context.mode) end;if preset then self:SetSelectedPreset(preset) end else self:ClearActiveZoneGraphicsState() end
+  if result.ok then self:CommitActiveZoneGraphicsState(category,preset);if context.mode then self:CommitAppliedGraphicsState(context.mode,preset) end else self:ClearActiveZoneGraphicsState() end
   if visible(self,"graphics","zones") then self:ShowZoneGraphics() end
 end
 
@@ -53,6 +52,7 @@ handlers.recovery=function(self,operation,result)
   local fpsRestore=reason=="fps-compare-restore" or reason=="fps-compare-cancel-restore"
   if fpsRestore then
     if result.ok then self:DiscardTemporaryFPSRestoreBackup(reason) else self:FinalizeBackupLimit() end
+    if result.ok and operation.modules and operation.modules.graphics then self:SyncAppliedGraphicsState() end
     if reason=="fps-compare-restore" then local comparison=self:GetLastPresetFPSComparison();if comparison then comparison.restoreQueued=false;comparison.restoreFailed=not result.ok;self:StorePresetFPSComparison(comparison) end end
     self.fpsPresetRestorePending=nil;self.flashMessage=result.ok and self:L("FPS_COMPARE_RESTORED") or self:L("FPS_COMPARE_RESTORE_FAILED");self.flashKind=result.ok and "success" or "error"
     if visible(self,"fpsTest") then self:ShowFPSTest() end
@@ -60,6 +60,7 @@ handlers.recovery=function(self,operation,result)
   end
   if result.ok then
     if operation.modules and operation.modules.uiTweaks then self.uiTweaksDraft=nil end
+    if operation.modules and operation.modules.graphics then self:SyncAppliedGraphicsState() end
     self.flashMessage=self:L("RESTORE_COMPLETE");self.flashKind="success"
   else self.flashMessage=failedMessage(self,"PENDING_RECOVERY_FAILED",result);self.flashKind="error" end
   if operation.modules and operation.modules.uiTweaks and not operation.modules.graphics then

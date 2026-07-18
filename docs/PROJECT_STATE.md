@@ -26,6 +26,7 @@ Graphics has two sub-tabs: **Graphics Settings** and **Zone Graphics Switcher**.
 ## Current Graphics workflow
 
 - Built-in presets are **PRO**, **Optimized**, and **Quality**. The header detects the actually active preset and otherwise shows Custom.
+- Preset/mode selection in Graphics is a runtime draft. Account-wide `graphicsPreset` and `graphicsMode` describe only the last verified applied state and change after a successful immediate or queued transaction; failed, cancelled, and rolled-back work leaves them unchanged.
 - The primary UI selects a preset, shows a diff preview, asks for confirmation, and applies it through the graphics transaction. An immediate successful apply then runs the five-second post-apply measurement. A combat-queued apply skips that comparison because its pre-combat baseline is no longer statistically comparable, reports the reason, and leaves the standalone FPS Test available. Built-in UI applies always use **unified** graphics (`RAIDsettingsEnabled=0`).
 - Zone Graphics and preset FPS comparisons also use unified graphics. The old **split** mode is still accepted by SavedVariables, profile schema, import, flattening, restore, and personal-profile application, but there is no current split-mode selector in Graphics.
 - The graphics registry intentionally does not manage monitor/display choice, resolution, render scale, refresh rate, V-Sync, graphics API, FPS caps, or latency controls. Anti-aliasing is selected only when the client reports support.
@@ -101,9 +102,9 @@ The registry is the source for exact CVar names and value ranges; this snapshot 
 
 ## Current known limitations and technical debt
 
-- Pending work remains one non-persistent in-memory slot with typed provenance and priority replacement instead of FIFO. Replaced lower-priority work is not deferred, and equal-priority work is rejected except for latest-state `zone-auto` coalescing. Queued graphics/profile flows outside Zone Graphics still record the selected preset/mode before the transaction succeeds.
+- Pending work remains one non-persistent in-memory slot with typed provenance and priority replacement instead of FIFO. Replaced lower-priority work is not deferred, and equal-priority work is rejected except for latest-state `zone-auto` coalescing.
 - Backups have no stable unique ID or structured provenance; UI and delayed cleanup rely on mutable list indices plus timestamp/trigger. General `ApplySettings` can also create a backup when its whole diff is identical, although Zone Graphics and UI Tweaks pre-check their no-op paths.
-- Core DB schema `2` is assigned during normalization without an explicit versioned DB migration or future-schema rejection. Profile migration is separate and currently only normalizes legacy schema-1 data.
+- Core DB schema `3` has an explicit schema-2 migration that preserves the old preset/mode as the current runtime draft, marks persisted applied state as Custom, then synchronizes it from readable graphics CVars after addon load. There is still no general ordered migration pipeline or future-schema rejection. Profile migration is separate and currently only normalizes legacy schema-1 data.
 - `benchmarkMode` and the two-phase 10+10-second `StartAccurateFPSComparison` path remain stored code but are not used by the current UI. Recommendation thresholds use rounded metrics, and stored FPS results do not identify the scene in which they were measured.
 - Zone Graphics blocks standalone/preset tests and pending preset restoration, but it does not block the five-second post-apply sampler or the unused legacy accurate sampler.
 - Individual `STBS1` profile import is implemented but is not reachable from the current Profiles navigation; only full-addon import is exposed there.
