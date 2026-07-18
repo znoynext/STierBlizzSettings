@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.11-alpha
+
+- Added an always-visible header label that detects the actual active PRO, Optimized or Quality graphics preset and falls back to Custom after manual differences.
+- Shortened the FPS-test instruction and explicitly warns against minimizing WoW or using Alt+Tab during measurement.
+- Replaced the hard progress fill with a softer Blizzard raid-bar texture and a subtle moving edge glow without changing its gold color.
+- Added a compact legend below comparison cards that identifies the left values as the user's graphics and the right values as the tested preset.
+
 ## 0.4.10-alpha
 
 - Added smooth interpolation and subtle native highlight/shadow layers to the FPS test progress bar while preserving its existing gold color.

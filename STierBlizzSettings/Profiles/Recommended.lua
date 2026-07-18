@@ -11,6 +11,16 @@ function STBS:GetOfficialGraphics(mode,preset)
   preset=self:IsGraphicsPreset(preset) and preset or self:GetSelectedPreset();if not self:IsGraphicsPreset(preset) then preset=self.GRAPHICS_PRESET_OPTIMIZED end;local source=presets[preset]
   local p=self:NewProfile("official_"..preset,"recommended",source.name);p.description="A verified built-in WoW graphics baseline that preserves combat readability and hardware-dependent settings.";p.research={status="expert_baseline_unbenchmarked",lastReviewedAt=0,benchmarkRevision=2};local b=self:Copy(source.base);local aa=self:GetPreferredAntiAliasing();if aa then for k,v in pairs(aa) do b[k]=v end end;p.sections.graphics={mode=mode,base=b,raid=mode==self.GRAPHICS_MODE_SPLIT and self:Copy(source.raid) or nil};return p
 end
+function STBS:GetCurrentGraphicsPreset()
+  local current=self:CaptureModules({graphics=true});local mode=current.RAIDsettingsEnabled=="1" and self.GRAPHICS_MODE_SPLIT or current.RAIDsettingsEnabled=="0" and self.GRAPHICS_MODE_UNIFIED
+  if not mode then return nil end
+  for _,preset in ipairs({self.GRAPHICS_PRESET_PRO,self.GRAPHICS_PRESET_OPTIMIZED,self.GRAPHICS_PRESET_QUALITY}) do
+    local expected=self:FlattenProfile(self:GetOfficialGraphics(mode,preset),{graphics=true});local matches,compared=true,0
+    for key,value in pairs(expected) do local setting=self.RegistryByKey[key];local valid=setting and self:ValidateValue(setting,value);local writable=setting and self:CanUseCVar(setting.key);if valid and writable and current[key]~=nil then compared=compared+1;if current[key]~=value then matches=false;break end end end
+    if matches and compared>=8 then return preset end
+  end
+  return nil
+end
 function STBS:GetOfficialInterface()
   local p=self:NewProfile("official_interface_gameplay","recommended","S-Tier Interface & Gameplay")
   p.description="Recommended built-in Blizzard settings for combat readability without replacing the default interface."
