@@ -2,7 +2,7 @@
 ## Title: S-Tier Blizz Settings
 ## Notes: Three WoW graphics presets, verified UI tweaks, safe zone switching, profiles/backups, FPS comparisons, and a live FPS/ping meter.
 ## Author: S-Tier Blizz Settings Team
-## Version: 0.4.15-alpha
+## Version: 0.4.16-alpha
 ## SavedVariables: STierBlizzSettingsDB
 ## SavedVariablesPerCharacter: STierBlizzSettingsCharDB
 ## X-Category: Interface Enhancements

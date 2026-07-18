@@ -8,7 +8,7 @@ The Graphics tab owns the three official presets, unified/split toggle, concise 
 
 The main frame is resizable within screen-derived bounds. Content width, action columns, scroll viewport and copy box dimensions are recalculated from the current frame size. The chosen size and normalized FPS/ping position are stored locally; device-specific positions are deliberately excluded from shared exports.
 
-UI Tweaks is a separate `uiTweaks` transaction module. It exposes boolean controls through Blizzard checkboxes and `ResampleSharpness` through the current `MinimalSliderWithSteppersTemplate`. Hidden engine CVars remain unavailable unless `C_CVar.GetCVarInfo` confirms they exist and are writable; every write is read back, and floating-point values use a narrow tolerance for client normalization. The draft is never written until the user confirms Apply.
+UI Tweaks is a separate `uiTweaks` transaction module. It exposes boolean controls through the addon's shared scalable Retail-style checkbox and `ResampleSharpness` through the current `MinimalSliderWithSteppersTemplate`. Hidden engine CVars remain unavailable unless `C_CVar.GetCVarInfo` confirms they exist and are writable; every write is read back, and floating-point values use a narrow tolerance for client normalization. The draft is never written until the user confirms Apply.
 
 Profiles has three focused views. Full `STBSA1` exports use the existing deterministic serializer, checksum and data-only parser. Validation rejects unknown fields, future bundle versions, invalid presets/zones, settings outside the graphics/UI Tweaks allowlist and malformed personal profiles. Import applies shared CVars through one normal backup-first transaction before replacing addon preferences and profiles.
 

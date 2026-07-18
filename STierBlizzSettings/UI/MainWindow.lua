@@ -24,15 +24,14 @@ end
 
 local function checkBox(parent,text,callback,checked)
   local row=CreateFrame("Button",nil,parent);row:SetSize(200,34);row:SetPoint("TOPLEFT",0,0);row:RegisterForClicks("LeftButtonUp");row.isCheckBox=true
-  row.check=CreateFrame("CheckButton",nil,row,"UICheckButtonTemplate");row.check:SetSize(24,24);row.check:SetPoint("RIGHT",-2,0);row.check:SetChecked(checked==true)
+  row.check=STBS:CreateModernCheckBox(row,checked,callback);row.check:SetPoint("RIGHT",-2,0)
   row.label=row:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");row.label:SetPoint("LEFT",4,0);row.label:SetPoint("RIGHT",row.check,"LEFT",-10,0);row.label:SetJustifyH("LEFT");row.label:SetText(text);row.label:SetTextColor(1,0.82,0)
-  row.check:SetScript("OnClick",function(self)callback(self:GetChecked()==true)end)
   row:SetScript("OnClick",function(self)local value=not self.check:GetChecked();self.check:SetChecked(value);callback(value)end)
   row:SetScript("OnEnter",function(self)self.label:SetTextColor(1,0.9,0.35)end);row:SetScript("OnLeave",function(self)self.label:SetTextColor(1,0.82,0)end)
   function row:SetChecked(value)self.check:SetChecked(value==true)end
   function row:GetChecked()return self.check:GetChecked()end
   function row:SetActive()end
-  function row:SetDisabled(disabled)self.disabled=disabled;self:SetEnabled(not disabled);self.check:SetEnabled(not disabled);self:SetAlpha(disabled and 0.42 or 1)end
+  function row:SetDisabled(disabled)self.disabled=disabled;self:SetEnabled(not disabled);self.check:SetDisabled(disabled);self:SetAlpha(disabled and 0.42 or 1)end
   return row
 end
 

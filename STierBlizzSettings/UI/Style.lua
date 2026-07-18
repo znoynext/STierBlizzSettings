@@ -41,3 +41,32 @@ function STBS:CreateModernButton(parent,text,width,height,callback,style)
   button:SetScript("OnMouseUp",function(self)self.pressed:Hide()end)
   button:RefreshVisual(false);return button
 end
+
+function STBS:CreateModernCheckBox(parent,checked,callback)
+  local checkbox=CreateFrame("CheckButton",nil,parent,"BackdropTemplate");checkbox:SetSize(24,24);checkbox:RegisterForClicks("LeftButtonUp")
+  checkbox:SetBackdrop({bgFile=WHITE,edgeFile=WHITE,edgeSize=1,insets={left=1,right=1,top=1,bottom=1}})
+  checkbox.checkedFill=checkbox:CreateTexture(nil,"ARTWORK");checkbox.checkedFill:SetPoint("TOPLEFT",3,-3);checkbox.checkedFill:SetPoint("BOTTOMRIGHT",-3,3);checkbox.checkedFill:SetColorTexture(0.34,0.24,0.055,0.9)
+  checkbox.hover=checkbox:CreateTexture(nil,"ARTWORK");checkbox.hover:SetPoint("TOPLEFT",1,-1);checkbox.hover:SetPoint("BOTTOMRIGHT",-1,1);checkbox.hover:SetColorTexture(1,0.76,0.2,0.12);checkbox.hover:SetAlpha(0)
+  checkbox.mark=checkbox:CreateTexture(nil,"OVERLAY");checkbox.mark:SetTexture("Interface\\Buttons\\UI-CheckBox-Check");checkbox.mark:SetPoint("CENTER",0,0);checkbox.mark:SetSize(22,22);checkbox.mark:SetVertexColor(1,0.82,0.18,1)
+  checkbox.pressed=checkbox:CreateTexture(nil,"OVERLAY");checkbox.pressed:SetPoint("TOPLEFT",1,-1);checkbox.pressed:SetPoint("BOTTOMRIGHT",-1,1);checkbox.pressed:SetColorTexture(0,0,0,0.22);checkbox.pressed:Hide()
+  local hoverIn=checkbox.hover:CreateAnimationGroup();hoverIn:SetToFinalAlpha(true);local hoverInAlpha=hoverIn:CreateAnimation("Alpha");hoverInAlpha:SetFromAlpha(0);hoverInAlpha:SetToAlpha(1);hoverInAlpha:SetDuration(0.12);hoverInAlpha:SetSmoothing("OUT")
+  local hoverOut=checkbox.hover:CreateAnimationGroup();hoverOut:SetToFinalAlpha(true);local hoverOutAlpha=hoverOut:CreateAnimation("Alpha");hoverOutAlpha:SetFromAlpha(1);hoverOutAlpha:SetToAlpha(0);hoverOutAlpha:SetDuration(0.12);hoverOutAlpha:SetSmoothing("OUT")
+  local nativeSetChecked=checkbox.SetChecked
+  function checkbox:RefreshVisual(hovered)
+    local active=self:GetChecked()==true
+    setColor(self,"SetBackdropColor",active and ACTIVE_BACKGROUND or PALETTES.default.background)
+    setColor(self,"SetBackdropBorderColor",active and ACTIVE_BORDER or PALETTES.default.border)
+    if active then self.checkedFill:Show();self.mark:Show() else self.checkedFill:Hide();self.mark:Hide() end
+    if hovered and not self.disabled then self:SetBackdropBorderColor(0.82,0.59,0.16,1) end
+  end
+  function checkbox:SetChecked(value)nativeSetChecked(self,value==true);self:RefreshVisual(self.hovered)end
+  function checkbox:SetDisabled(disabled)
+    self.disabled=disabled==true;self.hovered=false;hoverIn:Stop();hoverOut:Stop();self.hover:SetAlpha(0);self:SetEnabled(not self.disabled);self.pressed:Hide();self:RefreshVisual(false)
+  end
+  checkbox:SetScript("OnClick",function(self)self:RefreshVisual(self.hovered);if callback then callback(self:GetChecked()==true)end end)
+  checkbox:SetScript("OnEnter",function(self)if self.disabled then return end;self.hovered=true;hoverOut:Stop();hoverIn:Stop();hoverIn:Play();self:RefreshVisual(true)end)
+  checkbox:SetScript("OnLeave",function(self)self.hovered=false;hoverIn:Stop();hoverOut:Stop();hoverOut:Play();self.pressed:Hide();self:RefreshVisual(false)end)
+  checkbox:SetScript("OnMouseDown",function(self,mouseButton)if mouseButton=="LeftButton" and not self.disabled then self.pressed:Show()end end)
+  checkbox:SetScript("OnMouseUp",function(self)self.pressed:Hide()end)
+  checkbox:SetChecked(checked==true);return checkbox
+end

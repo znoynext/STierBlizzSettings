@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.16-alpha
+
+- Replaced the remaining legacy checkbox frame with a scalable flat control that matches the shared Retail-style buttons.
+- Added dark surfaces, thin bronze borders, gold checked states and smooth hover/press feedback to every checkbox without changing its behavior.
+
 ## 0.4.15-alpha
 
 - Added a dedicated **UI Tweaks** navigation page with verified universal sharpening/glow recommendations and optional death/ghost-world effects.

@@ -1,6 +1,6 @@
 # Project state
 
-Last updated: 2026-07-18. Current release: **0.4.15-alpha**. Target: WoW Retail 12.0.7, Interface 120007, Blizzard UI build 68453.
+Last updated: 2026-07-18. Current release: **0.4.16-alpha**. Target: WoW Retail 12.0.7, Interface 120007, Blizzard UI build 68453.
 
 This is the short handoff for continuing work in a new Codex task. Read it before changing behavior or UI. Use `CHANGELOG.md` for version history and the linked specialist documents for implementation details.
 
@@ -23,7 +23,7 @@ Five top-level pages are currently exposed: **Graphics**, **UI Tweaks**, **Test 
 ## Current UX decisions
 
 - Use standard WoW fonts, dark native panels, restrained gold accents and readable text sizes. Avoid unrelated modern web styling.
-- The shared button system is in `UI/Style.lua`: flat dark Retail surfaces, thin scalable borders, a gold selected indicator, smooth hover/press feedback and red fills only for destructive actions.
+- The shared control system is in `UI/Style.lua`: buttons and checkboxes use flat dark Retail surfaces, thin scalable borders, gold active states and smooth hover/press feedback; red fills remain exclusive to destructive buttons.
 - Graphics sub-tabs live in a dedicated responsive bar at the top of the page, above its title and status text.
 - The main window is resizable, opens centered and is not clamped to screen edges. Layout must remain responsive at supported sizes.
 - Every user action must produce visible success, warning or error feedback.
