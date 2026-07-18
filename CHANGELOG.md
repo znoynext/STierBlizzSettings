@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.4-alpha
+
+- Added a centered, mouse-blocking FPS measurement dialog with live progress, fixed-scene guidance and a safe Cancel action.
+- Added backup-first comparisons between the player's current graphics and PRO, Optimized or Quality using two real 20-second frame-time captures; original graphics are restored automatically.
+- Expanded Test FPS results with a plain-language stability definition, scene-specific guidance, honest diagnostic limits and concise average/1% Low preset deltas.
+- Renamed the optional control to **Show FPS & Ping overlay** and prevented Zone Graphics from changing settings during a benchmark or pending restoration.
+
 ## 0.4.3-alpha
 
 - Nested the complete Zone Graphics Switcher under Graphics using native Blizzard panel tabs and removed its duplicate left-navigation entry.

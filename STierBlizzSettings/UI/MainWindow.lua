@@ -173,6 +173,34 @@ function STBS:CreateUI()
   f:SetScript("OnSizeChanged",function()STBS:LayoutUI()end);self:LayoutUI()
 end
 
+function STBS:CreateFPSTestModal()
+  if self.fpsTestModal then return self.fpsTestModal end
+  local shade=CreateFrame("Frame","STierBlizzSettingsFPSTestModal",UIParent,"BackdropTemplate");shade:SetAllPoints(UIParent);shade:SetFrameStrata("FULLSCREEN_DIALOG");shade:SetFrameLevel(90);shade:EnableMouse(true);shade:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8"});shade:SetBackdropColor(0,0,0,0.58);shade:Hide()
+  local dialog=CreateFrame("Frame",nil,shade,"BackdropTemplate");dialog:SetSize(520,238);dialog:SetPoint("CENTER");dialog:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border",edgeSize=32,insets={left=11,right=11,top=12,bottom=11}});dialog:SetBackdropColor(0.035,0.028,0.018,0.99)
+  dialog.title=dialog:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");dialog.title:SetPoint("TOP",0,-28);dialog.title:SetTextColor(1,0.82,0)
+  dialog.message=dialog:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge");dialog.message:SetPoint("TOPLEFT",34,-67);dialog.message:SetPoint("TOPRIGHT",-34,-67);dialog.message:SetJustifyH("CENTER");dialog.message:SetJustifyV("TOP");dialog.message:SetSpacing(5)
+  dialog.phase=dialog:CreateFontString(nil,"OVERLAY","GameFontNormal");dialog.phase:SetPoint("TOP",dialog.message,"BOTTOM",0,-15);dialog.phase:SetTextColor(0.4,0.82,1)
+  dialog.progress=CreateFrame("StatusBar",nil,dialog,"BackdropTemplate");dialog.progress:SetPoint("TOPLEFT",44,-145);dialog.progress:SetPoint("TOPRIGHT",-44,-145);dialog.progress:SetHeight(19);dialog.progress:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar");dialog.progress:SetStatusBarColor(0.78,0.52,0.08);dialog.progress:SetMinMaxValues(0,1);dialog.progress:SetValue(0);dialog.progress:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=9,insets={left=2,right=2,top=2,bottom=2}});dialog.progress:SetBackdropColor(0.025,0.02,0.015,1)
+  dialog.progressText=dialog.progress:CreateFontString(nil,"OVERLAY","GameFontHighlight");dialog.progressText:SetPoint("CENTER")
+  dialog.cancel=CreateFrame("Button",nil,dialog,"UIPanelButtonTemplate");dialog.cancel:SetSize(190,30);dialog.cancel:SetPoint("BOTTOM",0,23);dialog.cancel:SetText(self:L("FPS_TEST_CANCEL"));dialog.cancel:GetFontString():SetFontObject(GameFontNormalLarge);dialog.cancel:SetScript("OnClick",function()
+    local result=STBS:CancelFPSTest();shade:Hide();STBS.flashMessage=result.code=="cancelled-restore-queued" and STBS:L("FPS_TEST_CANCELLED_QUEUED") or result.code=="cancelled-restore-failed" and STBS:L("FPS_TEST_CANCELLED_FAILED") or STBS:L("FPS_TEST_CANCELLED");STBS.flashKind=result.ok and (result.code=="cancelled" and "warning" or "error") or "error";if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS:ShowFPSTest() end
+  end)
+  shade.dialog=dialog;self.fpsTestModal=shade;return shade
+end
+
+function STBS:ShowFPSTestModal(kind,preset)
+  local modal=self:CreateFPSTestModal();local dialog=modal.dialog;dialog.title:SetText(kind=="comparison" and string.format(self:L("FPS_COMPARE_MODAL_TITLE"),self:GetPresetLabel(preset)) or self:L("FPS_TEST_MODAL_TITLE"));dialog.message:SetText(self:L("FPS_TEST_MODAL_HELP"));dialog.preset=preset;modal:Show();self:UpdateFPSTestModal(kind=="comparison" and "comparison-current" or "standalone",0,20,preset)
+end
+
+function STBS:UpdateFPSTestModal(phase,elapsed,duration,preset)
+  local modal=self.fpsTestModal;if not modal or not modal:IsShown() then return end
+  local dialog=modal.dialog;local key=phase=="comparison-current" and "FPS_COMPARE_CURRENT" or phase=="comparison-switch" and "FPS_COMPARE_SWITCH" or phase=="comparison-preset" and "FPS_COMPARE_PRESET" or phase=="comparison-restore" and "FPS_COMPARE_RESTORE" or "FPS_TEST_MODAL_PHASE"
+  dialog.phase:SetText(string.format(self:L(key),self:GetPresetLabel(preset)))
+  local maximum=(phase=="comparison-current" or phase=="comparison-preset") and 20 or (duration or 20);maximum=tonumber(maximum) or 20;local value=math.max(0,math.min(maximum,tonumber(elapsed) or 0));dialog.progress:SetMinMaxValues(0,maximum);dialog.progress:SetValue(value);dialog.progressText:SetText(string.format(self:L("FPS_TEST_MODAL_PROGRESS"),math.floor(value+0.5),math.floor(maximum+0.5)))
+end
+
+function STBS:HideFPSTestModal() if self.fpsTestModal then self.fpsTestModal:Hide() end end
+
 function STBS:SetPage(title,text,actions,status,options)
   self:CreateUI();local f=self.ui;options=options or {};f.currentPageKey=options.pageKey
   f.pageFade:Stop();f.content:SetAlpha(1);f.pageFade:Play()
@@ -248,15 +276,42 @@ end
 
 function STBS:FormatStandaloneFPSTest(result)
   if type(result)~="table" then return self:L("FPS_TEST_NO_RESULT") end
-  local worst=math.floor((result.worstFrameMs or 0)+0.5)
-  return string.format(self:L("FPS_TEST_SPIKES"),result.spikes or 0).."\n"..string.format(self:L("FPS_TEST_WORST"),worst)
+  local average=math.floor((result.average or 0)+0.5);local stability=math.floor((result.stability or 0)+0.5);local spikes=result.spikes or 0;local worst=math.floor((result.worstFrameMs or 0)+0.5)
+  local diagnosis
+  if average<45 then diagnosis=self:L("FPS_DIAG_LOW")
+  elseif stability<70 or spikes>=3 then diagnosis=self:L("FPS_DIAG_UNEVEN")
+  elseif worst>=50 then diagnosis=self:L("FPS_DIAG_HITCH")
+  else diagnosis=self:L("FPS_DIAG_HEALTHY") end
+  return string.format(self:L("FPS_TEST_STABILITY_EXPLAIN"),stability).."\n"..string.format(self:L("FPS_TEST_SPIKES"),spikes).." · "..string.format(self:L("FPS_TEST_WORST"),worst).."\n\n|cffffd36b"..self:L("FPS_TEST_ADVICE").."|r\n"..diagnosis.."\n|cff9aa7b8"..self:L("FPS_DIAG_LIMIT").."|r"
+end
+
+function STBS:FormatPresetFPSComparison(comparison)
+  if type(comparison)~="table" or type(comparison.beforeStats)~="table" or type(comparison.afterStats)~="table" then return nil end
+  local beforeAverage=math.floor(comparison.beforeStats.average+0.5);local afterAverage=math.floor(comparison.afterStats.average+0.5);local beforeLow=math.floor(comparison.beforeStats.onePercentLow+0.5);local afterLow=math.floor(comparison.afterStats.onePercentLow+0.5)
+  local averagePercent=beforeAverage>0 and math.floor((afterAverage-beforeAverage)/beforeAverage*100+0.5) or 0;local lowPercent=beforeLow>0 and math.floor((afterLow-beforeLow)/beforeLow*100+0.5) or 0
+  local verdict=averagePercent>=5 and self:L("FPS_COMPARE_BETTER") or averagePercent<=-5 and self:L("FPS_COMPARE_WORSE") or self:L("FPS_COMPARE_SIMILAR")
+  local restore=comparison.restoreQueued and self:L("FPS_COMPARE_RESTORE_QUEUED") or comparison.restoreFailed and self:L("FPS_COMPARE_RESTORE_FAILED") or self:L("FPS_COMPARE_RESTORED")
+  return "|cffffd36b"..string.format(self:L("FPS_COMPARE_RESULT_TITLE"),self:GetPresetLabel(comparison.preset)).."|r\n"..string.format(self:L("FPS_COMPARE_AVERAGE"),beforeAverage,afterAverage,averagePercent).."\n"..string.format(self:L("FPS_COMPARE_LOW"),beforeLow,afterLow,lowPercent).."\n|cff35e6ad"..verdict.."|r\n|cff9aa7b8"..restore.."|r"
 end
 
 function STBS:ShowFPSTest()
   self:StartFPSBaselineSampling();local result=self:GetLastStandaloneFPSTest();local measuring=self.fpsTestMeasurement==true;local preferences=self:InitializeDatabase().preferences
-  local resultText=self:FormatStandaloneFPSTest(result);local text=self:L("FPS_TEST_HELP").."\n\n|cffffd36b"..self:L("FPS_TEST_DETAILS").."|r\n"..resultText
+  local resultText=self:FormatStandaloneFPSTest(result);local comparisonText=self:FormatPresetFPSComparison(self:GetLastPresetFPSComparison());local text=self:L("FPS_TEST_HELP").."\n\n|cffffd36b"..self:L("FPS_TEST_DETAILS").."|r\n"..resultText..(comparisonText and "\n\n"..comparisonText or "")
+  local function startStandalone()
+    local started,why=STBS:StartStandaloneFPSTest(function()STBS:HideFPSTestModal();if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS.flashMessage=STBS:L("FPS_TEST_COMPLETE");STBS.flashKind="success";STBS:ShowFPSTest()end end)
+    if started then STBS:ShowFPSTestModal("standalone") else STBS.flashMessage=why=="busy" and STBS:L("FPS_TEST_BUSY") or STBS:L("FPS_TEST_UNAVAILABLE");STBS.flashKind="error";STBS:ShowFPSTest() end
+  end
+  local function comparePreset(preset)
+    local started,why=STBS:StartPresetFPSComparison(preset,function(comparison,restored,errorResult)
+      STBS:HideFPSTestModal();if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS.flashMessage=comparison and (restored and restored.code=="queued" and STBS:L("FPS_COMPARE_COMPLETE_QUEUED") or restored and not restored.ok and STBS:L("FPS_COMPARE_COMPLETE_RESTORE_FAILED") or STBS:L("FPS_COMPARE_COMPLETE")) or STBS:L("FPS_COMPARE_FAILED").." ("..tostring(errorResult and errorResult.code or "unknown")..")";STBS.flashKind=comparison and restored and restored.ok and "success" or comparison and "warning" or "error";STBS:ShowFPSTest()end
+    end)
+    if started then STBS:ShowFPSTestModal("comparison",preset) else local key=why=="combat" and "FPS_COMPARE_COMBAT" or why=="pending" and "FPS_COMPARE_PENDING" or why=="busy" and "FPS_TEST_BUSY" or "FPS_TEST_UNAVAILABLE";STBS.flashMessage=STBS:L(key);STBS.flashKind="error";STBS:ShowFPSTest() end
+  end
   local actions={
-    {label=self:L("FPS_TEST_START"),style="primary",wide=true,disabled=measuring,fn=function()local started=STBS:StartStandaloneFPSTest(function()if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS.flashMessage=STBS:L("FPS_TEST_COMPLETE");STBS.flashKind="success";STBS:ShowFPSTest()end end);STBS.flashMessage=started and STBS:L("FPS_TEST_RUNNING") or STBS:L("FPS_TEST_BUSY");STBS.flashKind=started and "warning" or "error";STBS:ShowFPSTest()end},
+    {label=self:L("FPS_TEST_START"),style="primary",wide=true,disabled=measuring,fn=startStandalone},
+    {label=string.format(self:L("FPS_COMPARE_BUTTON"),self:L("PRESET_PRO")),third=true,disabled=measuring,fn=function()comparePreset(STBS.GRAPHICS_PRESET_PRO)end},
+    {label=string.format(self:L("FPS_COMPARE_BUTTON"),self:L("PRESET_OPTIMIZED")),third=true,disabled=measuring,fn=function()comparePreset(STBS.GRAPHICS_PRESET_OPTIMIZED)end},
+    {label=string.format(self:L("FPS_COMPARE_BUTTON"),self:L("PRESET_QUALITY")),third=true,disabled=measuring,fn=function()comparePreset(STBS.GRAPHICS_PRESET_QUALITY)end},
     {kind="check",label=self:L("WIDGET_CHECK"),checked=preferences.performanceWidgetEnabled,wide=true,fn=function(checked)STBS:SetPerformanceWidgetEnabled(checked);STBS.flashMessage=checked and STBS:L("WIDGET_ENABLED") or STBS:L("WIDGET_DISABLED");STBS.flashKind="success";STBS:ShowFPSTest()end},
   }
   local live=self:ReadFramerate();local average=result and math.floor(result.average+0.5);local low=result and math.floor(result.onePercentLow+0.5);local stability=result and math.floor(result.stability+0.5);local stabilityColor=stability and (stability>=85 and {0.35,1,0.62} or stability>=70 and {1,0.82,0.2} or {1,0.38,0.3}) or {0.65,0.65,0.6}

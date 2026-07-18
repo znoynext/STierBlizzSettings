@@ -1,10 +1,13 @@
 local _, STBS = ...
-function STBS:CreateBackup(modules, trigger)
+function STBS:CreateBackup(modules, trigger, deferTrim)
   local validModules, modulesWhy = self:ValidateModules(modules); if not validModules then return self:Result(false,modulesWhy) end
   local db = self:InitializeDatabase(); local values, failures = self:CaptureModules(modules)
   local build = self:GetBuild(); local backup = { timestamp=time(), addonVersion=self.VERSION, clientBuild=build, trigger=trigger, affectedModules=self:Copy(modules), values=values, readFailures=failures }
-  table.insert(db.backups, 1, backup); while #db.backups > db.preferences.backupLimit do table.remove(db.backups) end
+  table.insert(db.backups, 1, backup); if not deferTrim then while #db.backups > db.preferences.backupLimit do table.remove(db.backups) end end
   return self:Result(true,"created",backup)
+end
+function STBS:FinalizeBackupLimit()
+  local db=self:InitializeDatabase();while #db.backups>db.preferences.backupLimit do table.remove(db.backups) end
 end
 function STBS:RestoreBackup(index, modules)
   local backup = self:InitializeDatabase().backups[index]; if not backup then return self:Result(false,"missing") end

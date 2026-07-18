@@ -8,7 +8,7 @@ function STBS:ApplySettings(settings, modules, trigger, options)
     if self.pending then return self:Result(false,"pending-exists") end
     self.pending={settings=self:Copy(settings),modules=self:Copy(modules),trigger=trigger,options=self:Copy(options)}; return self:Result(false,"queued")
   end
-  local plan=self:BuildDiff(settings);local backup = options.skipBackup and self:Result(true,"skipped") or self:CreateBackup(modules,trigger);if not backup.ok then return backup end
+  local plan=self:BuildDiff(settings);local backup = options.skipBackup and self:Result(true,"skipped") or self:CreateBackup(modules,trigger,options.deferBackupTrim==true);if not backup.ok then return backup end
   local result={graphics={changed=0,identical=0,skipped=0,failed=0,unavailable=0,categories={}},interfaceGameplay={changed=0,identical=0,skipped=0,failed=0,unavailable=0,categories={}},backup=backup.data}
   local attempted={}
   for _,entry in ipairs(plan) do local target=entry.setting.module;if modules[target] then

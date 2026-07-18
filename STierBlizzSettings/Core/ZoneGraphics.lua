@@ -34,6 +34,7 @@ function STBS:CycleZonePreset(category)
 end
 
 function STBS:ApplyZoneGraphics(trigger)
+  if self.fpsTestMeasurement or self.fpsPresetRestorePending then return self:Result(false,"fps-test") end
   local config=self:GetZoneGraphicsConfig();if not config.enabled then return self:Result(false,"disabled") end
   local category=self:GetZoneCategory();local preset=config.assignments[category]
   if not self:IsGraphicsPreset(preset) then return self:Result(false,"preset") end
@@ -45,12 +46,12 @@ function STBS:ApplyZoneGraphics(trigger)
   self.activeZoneCategory=category;self.activeZonePreset=preset
   if changed==0 then
     self.zoneStatus={ok=true,code="unchanged",category=category,preset=preset,changed=0}
-    if self.ui and self.ui:IsShown() and self.ui.currentPageKey=="zone" then self:ShowZoneGraphics() end
+    if self.ui and self.ui:IsShown() and self.ui.currentPageKey=="graphics" and self.ui.currentGraphicsSection=="zones" then self:ShowZoneGraphics() end
     return self:Result(true,"unchanged",self.zoneStatus)
   end
   local result=self:ApplySettings(settings,{graphics=true},trigger or "zone-graphics")
   self.zoneStatus={ok=result.ok,code=result.code,category=category,preset=preset,changed=changed}
   if result.ok then self:SetSelectedPreset(preset);self.reloadRecommended=true end
-  if self.ui and self.ui:IsShown() and self.ui.currentPageKey=="zone" then self:ShowZoneGraphics() end
+  if self.ui and self.ui:IsShown() and self.ui.currentPageKey=="graphics" and self.ui.currentGraphicsSection=="zones" then self:ShowZoneGraphics() end
   return result
 end

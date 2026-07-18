@@ -8,7 +8,7 @@ A lightweight WoW Retail addon that applies a curated balance of FPS, image qual
 
 ## Install
 
-1. Download [STierBlizzSettings-v0.4.3-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.4.3-alpha.zip).
+1. Download [STierBlizzSettings-v0.4.4-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.4.4-alpha.zip).
 2. Extract it into `World of Warcraft/_retail_/Interface/AddOns/`.
 3. Verify the final path is `.../AddOns/STierBlizzSettings/STierBlizzSettings.toc`.
 4. Enable the addon and open it with `/stier` or the minimap button.
@@ -25,7 +25,7 @@ A lightweight WoW Retail addon that applies a curated balance of FPS, image qual
 - No misleading embedded screenshot: after apply, **View result in game** hides the window so the player judges the real scene and can use Undo.
 - Transactional writes with automatic backup and read-back verification.
 - One-click **Undo graphics changes**.
-- Large live current FPS, an automatic 5-second comparison after applying graphics, and a dedicated 20-second FPS test with average FPS, frame-time-based 1% Low, stability, noticeable spikes and worst-frame time.
+- Large live current FPS, an automatic 5-second comparison after applying graphics, and a dedicated Test FPS dashboard with a cancellable 20-second test, explained stability, actionable hints and real current-vs-PRO/Optimized/Quality comparisons.
 - Optional compact bottom-screen FPS and real Home/World ping indicator with red-to-green status colors.
 - Personal graphics profiles plus backup history in one screen.
 - Apply, rename, export and delete profiles; restore or delete backups.
@@ -39,12 +39,12 @@ The addon optimizes every independent **Graphics Quality** control, including th
 
 ## FPS measurement
 
-While Graphics is open, the addon displays Retail `GetFramerate()` live and automatically compares the rolling current scene with five seconds after apply. The separate **Test FPS** page records every frame for 20 seconds. It reports average FPS, 1% Low from the average slowest 1% of frame times, the 1% Low-to-average stability ratio, adaptive frame spikes and the worst frame time. These are local estimates, so keep the same view and activity.
+While Graphics is open, the addon displays Retail `GetFramerate()` live and automatically compares the rolling current scene with five seconds after apply. The separate **Test FPS** page records every frame for 20 seconds. It reports average FPS, 1% Low from the average slowest 1% of frame times, the 1% Low-to-average stability ratio, adaptive frame spikes and the worst frame time. Optional preset comparison measures the current graphics for 20 seconds, temporarily applies one selected preset through a backup-first transaction, measures another 20 seconds and restores the original graphics. Results are local estimates, so keep the same view and activity.
 
 ## Safety and status
 
 No telemetry, network access, ads, premium features, donation prompts or gameplay automation are included. Every supported setting is curated and validated against current Blizzard Retail UI sources; unavailable values fail closed.
 
-Current version: **0.4.3-alpha**. Baseline: Retail 12.0.7, Interface 120007, Blizzard UI build 68453. Live-client visual testing and controlled hardware benchmarks are still required before declaring v1.0 production-ready.
+Current version: **0.4.4-alpha**. Baseline: Retail 12.0.7, Interface 120007, Blizzard UI build 68453. Live-client visual testing and controlled hardware benchmarks are still required before declaring v1.0 production-ready.
 
 See the [Russian README](README.ru.md), [preset research](docs/RECOMMENDED_PROFILE_RESEARCH.md), [architecture](docs/ARCHITECTURE.md), [UI/UX notes](docs/UI_UX_RESEARCH.md) and [test plan](docs/TEST_PLAN.md).

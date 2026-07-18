@@ -26,6 +26,12 @@ frame:SetScript("OnEvent",function(_,event,arg)
       if result.ok then STBS.reloadRecommended=true end
       if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="graphics" and STBS.ui.currentGraphicsSection=="zones" then STBS:ShowZoneGraphics() end
     end
+    if pending.trigger=="fps-compare-restore" or pending.trigger=="fps-compare-cancel-restore" then
+      if result.ok then STBS:DiscardTemporaryFPSRestoreBackup(pending.trigger) else STBS:FinalizeBackupLimit() end
+      if pending.trigger=="fps-compare-restore" then local comparison=STBS:GetLastPresetFPSComparison();if comparison then comparison.restoreQueued=false;comparison.restoreFailed=not result.ok;STBS:StorePresetFPSComparison(comparison) end end
+      STBS.fpsPresetRestorePending=nil;STBS.flashMessage=result.ok and STBS:L("FPS_COMPARE_RESTORED") or STBS:L("FPS_COMPARE_RESTORE_FAILED");STBS.flashKind=result.ok and "success" or "error"
+      if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS:ShowFPSTest() end
+    end
     if result.ok and pending.options and pending.options.fpsBefore then
       STBS.reloadRecommended=true;STBS.flashMessage=STBS:L("SETTINGS_APPLIED");STBS.flashKind="success"
       STBS:StartFPSPostMeasurement(pending.options.fpsBefore,function()if STBS.ui and STBS.ui:IsShown() then STBS:ShowGraphics() end end)
