@@ -144,7 +144,8 @@ end
 
 function STBS:SaveWindowSize()
   if not self.ui then return end
-  local db=self:InitializeDatabase();db.preferences.windowWidth=math.floor(self.ui:GetWidth()+0.5);db.preferences.windowHeight=math.floor(self.ui:GetHeight()+0.5)
+  local db,databaseFailure=self:RequireWritableDatabase();if not db then return false,databaseFailure.code end
+  db.preferences.windowWidth=math.floor(self.ui:GetWidth()+0.5);db.preferences.windowHeight=math.floor(self.ui:GetHeight()+0.5);return true
 end
 
 function STBS:CreateUI()
@@ -195,7 +196,7 @@ function STBS:CreateUI()
   table.insert(f.navButtons,navButton(side,self:L("PROFILES"),"Interface\\Icons\\INV_Misc_Book_09",-172,"profiles",function()STBS:ShowProfiles()end))
   table.insert(f.navButtons,navButton(side,self:L("ABOUT"),"Interface\\Icons\\INV_Misc_Note_05",-224,"about",function()STBS:ShowAbout()end))
   local resize=CreateFrame("Button",nil,f);resize:SetSize(22,22);resize:SetPoint("BOTTOMRIGHT",-13,12);resize:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up");resize:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight");resize:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
-  resize:SetScript("OnMouseDown",function(_,mouseButton)if mouseButton=="LeftButton" then f:StartSizing("BOTTOMRIGHT",true)end end);resize:SetScript("OnMouseUp",function()f:StopMovingOrSizing();STBS:SaveWindowSize();STBS:LayoutUI()end)
+  resize:SetScript("OnMouseDown",function(_,mouseButton)if mouseButton=="LeftButton" and STBS:RequireWritableDatabase() then f:StartSizing("BOTTOMRIGHT",true)end end);resize:SetScript("OnMouseUp",function()f:StopMovingOrSizing();STBS:SaveWindowSize();STBS:LayoutUI()end)
   resize:SetScript("OnEnter",function(self)GameTooltip:SetOwner(self,"ANCHOR_TOPLEFT");GameTooltip:SetText(STBS:L("RESIZE_WINDOW"));GameTooltip:Show()end);resize:SetScript("OnLeave",function()GameTooltip:Hide()end);f.resize=resize
   f:SetScript("OnSizeChanged",function()STBS:LayoutUI()end);self:LayoutUI()
 end
@@ -490,7 +491,7 @@ function STBS:ShowFPSTest()
     {label=string.format(self:L("FPS_COMPARE_BUTTON"),self:L("PRESET_PRO")),third=true,disabled=measuring,fn=function()comparePreset(STBS.GRAPHICS_PRESET_PRO)end},
     {label=string.format(self:L("FPS_COMPARE_BUTTON"),self:L("PRESET_OPTIMIZED")),third=true,disabled=measuring,fn=function()comparePreset(STBS.GRAPHICS_PRESET_OPTIMIZED)end},
     {label=string.format(self:L("FPS_COMPARE_BUTTON"),self:L("PRESET_QUALITY")),third=true,disabled=measuring,fn=function()comparePreset(STBS.GRAPHICS_PRESET_QUALITY)end},
-    {kind="check",label=self:L("WIDGET_CHECK"),checked=preferences.performanceWidgetEnabled,wide=true,fn=function(checked)STBS:SetPerformanceWidgetEnabled(checked);STBS.flashMessage=checked and STBS:L("WIDGET_ENABLED") or STBS:L("WIDGET_DISABLED");STBS.flashKind="success";STBS:ShowFPSTest()end},
+    {kind="check",label=self:L("WIDGET_CHECK"),checked=preferences.performanceWidgetEnabled,wide=true,fn=function(checked)local ok,why=STBS:SetPerformanceWidgetEnabled(checked);STBS.flashMessage=ok and (checked and STBS:L("WIDGET_ENABLED") or STBS:L("WIDGET_DISABLED")) or STBS:L("APPLY_FAILED").." ("..tostring(why)..")";STBS.flashKind=ok and "success" or "error";STBS:ShowFPSTest()end},
   }
   for _,action in ipairs(comparisonActions) do table.insert(actions,action) end
   local live=self:ReadFramerate();local average=result and math.floor(result.average+0.5);local low=result and math.floor(result.onePercentLow+0.5);local stability=result and math.floor(result.stability+0.5);local stabilityColor=stability and (stability>=85 and {0.35,1,0.62} or stability>=70 and {1,0.82,0.2} or {1,0.38,0.3}) or {0.65,0.65,0.6}
@@ -631,8 +632,8 @@ function STBS:ShowZoneGraphics()
   local config=self:GetZoneGraphicsConfig();local category=self:GetZoneCategory()
   local categoryKeys={world="ZONE_WORLD",party="ZONE_PARTY",raid="ZONE_RAID",pvp="ZONE_PVP",scenario="ZONE_SCENARIO"}
   local text="|cffffd36b"..self:L("ZONE_CURRENT").."|r\n"..self:L(categoryKeys[category]).." · "..self:GetPresetLabel(config.assignments[category]).."\n\n"..self:L("ZONE_GRAPHICS_HELP").."\n\n|cff9aa7b8"..self:L("ZONE_SAFE_NOTE").."|r"
-  local actions={{kind="check",label=self:L("ZONE_CHECK"),checked=config.enabled,wide=true,fn=function(enabled)STBS:SetZoneGraphicsEnabled(enabled);if enabled then STBS:ApplyZoneGraphics("zone-enabled")else STBS.zoneStatus={ok=true,code="disabled"}end;STBS:ShowZoneGraphics()end}}
-  for _,key in ipairs({"world","party","raid","pvp","scenario"}) do local item=key;table.insert(actions,{label=self:L(categoryKeys[item])..": "..self:GetPresetLabel(config.assignments[item]),active=item==category,fn=function()STBS:CycleZonePreset(item);STBS.zoneStatus={ok=true,code="mapping",category=item,preset=STBS:GetZoneGraphicsConfig().assignments[item]};STBS:ShowZoneGraphics()end}) end
+  local actions={{kind="check",label=self:L("ZONE_CHECK"),checked=config.enabled,wide=true,fn=function(enabled)local ok,why=STBS:SetZoneGraphicsEnabled(enabled);if not ok then STBS.zoneStatus={ok=false,code=why}elseif enabled then STBS:ApplyZoneGraphics("zone-enabled")else STBS.zoneStatus={ok=true,code="disabled"}end;STBS:ShowZoneGraphics()end}}
+  for _,key in ipairs({"world","party","raid","pvp","scenario"}) do local item=key;table.insert(actions,{label=self:L(categoryKeys[item])..": "..self:GetPresetLabel(config.assignments[item]),active=item==category,fn=function()local preset,why=STBS:CycleZonePreset(item);STBS.zoneStatus=preset and {ok=true,code="mapping",category=item,preset=preset} or {ok=false,code=why};STBS:ShowZoneGraphics()end}) end
   table.insert(actions,{label=self:L("ZONE_APPLY_NOW"),style="primary",wide=true,disabled=not config.enabled,fn=function()STBS:ApplyZoneGraphics("zone-manual");STBS:ShowZoneGraphics()end})
   local zoneStatus=self.zoneStatus;local status=config.enabled and self:L("ZONE_ENABLED") or self:L("ZONE_DISABLED");local kind=config.enabled and "success" or nil
   if zoneStatus then

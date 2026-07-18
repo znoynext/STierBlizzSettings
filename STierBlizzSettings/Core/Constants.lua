@@ -37,10 +37,9 @@ function STBS:Copy(value, seen)
   return result
 end
 function STBS:Log(level, code, detail)
-  if self.databaseMigrationStatus and self.databaseMigrationStatus.supported==false then return end
-  local db = _G.STierBlizzSettingsDB
-  if not db then return end
+  local db,failure=self:RequireWritableDatabase();if not db then return false,failure.code end
   db.log = db.log or {}
   table.insert(db.log, { time = time and time() or 0, level = level, code = code, detail = tostring(detail or "") })
   while #db.log > self.MAX_LOG_ENTRIES do table.remove(db.log, 1) end
+  return true
 end

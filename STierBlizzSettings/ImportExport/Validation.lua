@@ -61,6 +61,7 @@ end
 
 function STBS:ApplyAddonBundle(payload)
   if type(payload)~="table" then return self:Result(false,"payload") end
+  local _,databaseFailure=self:RequireWritableDatabase();if databaseFailure then return databaseFailure end
   if type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown() then return self:Result(false,"combat") end
   local settings=self:Copy(payload.graphicsSettings);local modules={graphics=true}
   for key,value in pairs(payload.uiTweaksSettings or {}) do settings[key]=value;modules.uiTweaks=true end

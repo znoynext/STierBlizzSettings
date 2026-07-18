@@ -24,10 +24,10 @@ function STBS:CreatePerformanceWidget()
   f.fps=f:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.fps:SetPoint("LEFT",10,0);f.fps:SetPoint("RIGHT",f,"CENTER",-8,0);f.fps:SetJustifyH("LEFT");f.fps:SetWordWrap(false)
   f.divider=f:CreateTexture(nil,"ARTWORK");f.divider:SetColorTexture(0.55,0.42,0.22,0.7);f.divider:SetSize(1,16);f.divider:SetPoint("CENTER",0,0)
   f.ping=f:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.ping:SetPoint("LEFT",f,"CENTER",9,0);f.ping:SetPoint("RIGHT",-10,0);f.ping:SetJustifyH("LEFT");f.ping:SetWordWrap(false)
-  f:SetScript("OnDragStart",function(self)if type(_G.IsControlKeyDown)=="function" and _G.IsControlKeyDown() then self:StartMoving() end end)
+  f:SetScript("OnDragStart",function(self)if type(_G.IsControlKeyDown)=="function" and _G.IsControlKeyDown() and STBS:RequireWritableDatabase() then self:StartMoving() end end)
   f:SetScript("OnDragStop",function(self)
     self:StopMovingOrSizing();local x,y=self:GetCenter();local width,height=UIParent:GetWidth(),UIParent:GetHeight()
-    if x and y and width>0 and height>0 then STBS:InitializeDatabase().preferences.performanceWidgetPosition={x=math.max(0,math.min(1,x/width)),y=math.max(0,math.min(1,y/height))} end
+    local db=STBS:RequireWritableDatabase();if db and x and y and width>0 and height>0 then db.preferences.performanceWidgetPosition={x=math.max(0,math.min(1,x/width)),y=math.max(0,math.min(1,y/height))} end
   end)
   f:SetScript("OnEnter",function(self)GameTooltip:SetOwner(self,"ANCHOR_TOP");GameTooltip:SetText(STBS:L("PERFORMANCE_WIDGET"));GameTooltip:AddLine(STBS:L("PERFORMANCE_WIDGET_HELP"),0.85,0.82,0.72,true);GameTooltip:Show()end)
   f:SetScript("OnLeave",function()GameTooltip:Hide()end);f:Hide();self.performanceWidget=f;return f
@@ -48,14 +48,15 @@ function STBS:GetPerformanceSnapshot()
 end
 
 function STBS:SetPerformanceWidgetEnabled(enabled)
-  local value=enabled==true;self:InitializeDatabase().preferences.performanceWidgetEnabled=value
+  local db,databaseFailure=self:RequireWritableDatabase();if not db then return false,databaseFailure.code end
+  local value=enabled==true;db.preferences.performanceWidgetEnabled=value
   local f=self:CreatePerformanceWidget()
   if self.performanceWidgetTicker and self.performanceWidgetTicker.Cancel then self.performanceWidgetTicker:Cancel() end;self.performanceWidgetTicker=nil
   if value then
     f:SetAlpha(0);f:Show();if type(_G.UIFrameFadeIn)=="function" then UIFrameFadeIn(f,0.18,0,1)else f:SetAlpha(1)end;self:UpdatePerformanceWidget()
     if C_Timer and type(C_Timer.NewTicker)=="function" then self.performanceWidgetTicker=C_Timer.NewTicker(0.5,function()STBS:UpdatePerformanceWidget()end) end
   else if type(_G.UIFrameFadeOut)=="function" then UIFrameFadeOut(f,0.14,f:GetAlpha(),0)end;if C_Timer and type(C_Timer.After)=="function" then C_Timer.After(0.15,function()if not STBS:InitializeDatabase().preferences.performanceWidgetEnabled then f:Hide() end end)else f:Hide()end end
-  return value
+  return true,nil,value
 end
 
 function STBS:InitializePerformanceWidget()

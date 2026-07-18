@@ -9,6 +9,7 @@ Entries below are version-scoped historical records, not a description of the cu
 - Centralized post-combat completion for Graphics, automatic/manual Zone Graphics, UI Tweaks and recovery. Every final transaction outcome now clears Pending state through a typed handler; failed Graphics keeps the previous applied preset, reports an actionable error and never starts FPS measurement.
 - Separated runtime Graphics selection from persisted applied state. Preset/mode now commit only after a verified successful immediate or queued transaction; failures, cancellation and rollback preserve the previous state, while schema 2 migrates explicitly to schema 3 and re-detects the real client graphics.
 - Replaced ad-hoc SavedVariables initialization with an ordered migration pipeline. Schema 2 now advances through the explicit `2 -> 3` step once, while future unsupported schemas are preserved unchanged and block managed settings transactions instead of being rewritten as schema 3.
+- Made the future-schema fallback genuinely read-only for account persistence. Backup, profile, import, Zone Graphics, applied-state and local-preference APIs now share one writable-database guard and return `database-schema-unsupported` instead of reporting session-only success.
 
 ## 0.4.19-alpha
 

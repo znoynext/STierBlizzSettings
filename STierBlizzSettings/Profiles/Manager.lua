@@ -13,7 +13,8 @@ function STBS:CommitAppliedGraphicsState(mode,preset)
   mode=mode or self:GetCurrentGraphicsMode();if mode~=self.GRAPHICS_MODE_UNIFIED and mode~=self.GRAPHICS_MODE_SPLIT then return false end
   if preset==nil then preset=self:GetCurrentGraphicsPreset() or self.GRAPHICS_PRESET_CUSTOM end
   if not self:IsGraphicsPreset(preset) and preset~=self.GRAPHICS_PRESET_CUSTOM then return false end
-  local preferences=self:InitializeDatabase().preferences;if not self:IsDatabaseSchemaSupported() then return false end;preferences.graphicsMode=mode;preferences.graphicsPreset=preset;return true
+  local db,databaseFailure=self:RequireWritableDatabase();if not db then return false,databaseFailure.code end
+  local preferences=db.preferences;preferences.graphicsMode=mode;preferences.graphicsPreset=preset;return true
 end
 function STBS:SyncAppliedGraphicsState()
   local mode=self:GetCurrentGraphicsMode();if not mode then return false end
@@ -43,12 +44,13 @@ function STBS:PlanImport(payload, modules, graphicsMode)
   return self:BuildDiff(settings), settings
 end
 function STBS:SaveCurrent(name, modules)
+  local db,databaseFailure=self:RequireWritableDatabase();if not db then return nil,databaseFailure.code end
   local validModules = self:ValidateModules(modules); if not validModules then return nil,"modules" end
   local capturedMode=modules.graphics and self:GetCurrentGraphicsMode() or nil;if modules.graphics and not capturedMode then return nil,"mode" end
   name = name or (self:L("PERSONAL").." "..date("%Y-%m-%d %H:%M"))
   if type(name) == "string" then name = name:match("^%s*(.-)%s*$") end
   if type(name) ~= "string" or name == "" or #name > self.MAX_PROFILE_NAME_BYTES or name:find("[%c]") then return nil,"name" end
-  local db=self:InitializeDatabase();db.profileSequence=db.profileSequence+1
+  db.profileSequence=db.profileSequence+1
   local p=self:NewProfile("personal_"..tostring(time()).."_"..tostring(db.profileSequence),"personal",name)
   local values,failures=self:CaptureModules(modules);p.capturedModules=self:Copy(modules);p.captureFailures=failures
   p.sections.graphics={mode=capturedMode,base={},raid={},storedInactiveRaidSettings={}}
@@ -62,9 +64,11 @@ end
 function STBS:RenameProfile(id, name)
   if type(name) == "string" then name = name:match("^%s*(.-)%s*$") end
   if type(name) ~= "string" or name == "" or #name > self.MAX_PROFILE_NAME_BYTES or name:find("[%c]") then return self:Result(false,"name") end
-  local profile = self:InitializeDatabase().profiles[id]; if type(profile)~="table" then return self:Result(false,"missing") end
+  local db,databaseFailure=self:RequireWritableDatabase();if not db then return databaseFailure end
+  local profile = db.profiles[id]; if type(profile)~="table" then return self:Result(false,"missing") end
   profile.displayName=name; profile.updatedAt=time(); return self:Result(true,"renamed",profile)
 end
 function STBS:DeleteProfile(id)
-  local profiles=self:InitializeDatabase().profiles; if not profiles[id] then return self:Result(false,"missing") end; profiles[id]=nil; return self:Result(true,"deleted")
+  local db,databaseFailure=self:RequireWritableDatabase();if not db then return databaseFailure end
+  local profiles=db.profiles;if not profiles[id] then return self:Result(false,"missing") end;profiles[id]=nil;return self:Result(true,"deleted")
 end

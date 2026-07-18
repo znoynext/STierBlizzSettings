@@ -24,7 +24,8 @@ function STBS:CreateMinimapButton()
       if not GetCursorPosition or not UIParent or not Minimap.GetCenter then return end
       local cursorX,cursorY=GetCursorPosition();local scale=UIParent:GetEffectiveScale();cursorX,cursorY=cursorX/scale,cursorY/scale
       local centerX,centerY=Minimap:GetCenter();if not centerX or not centerY then return end
-      local angle=math.atan2(cursorY-centerY,cursorX-centerX);STBS:InitializeDatabase().preferences.minimapAngle=angle;place(current,angle)
+      local db=STBS:RequireWritableDatabase();if not db then return end
+      local angle=math.atan2(cursorY-centerY,cursorX-centerX);db.preferences.minimapAngle=angle;place(current,angle)
     end)
   end)
   button:SetScript("OnDragStop",function(self)self:SetScript("OnUpdate",nil)end)

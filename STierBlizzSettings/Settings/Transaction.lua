@@ -48,7 +48,7 @@ end
 
 function STBS:ApplySettings(settings, modules, trigger, options, pending)
   options = options == true and { skipBackup = true } or options or {}
-  self:InitializeDatabase();if not self:IsDatabaseSchemaSupported() then return self:Result(false,"database-schema-unsupported",self:GetDatabaseMigrationStatus()) end
+  local _,databaseFailure=self:RequireWritableDatabase();if databaseFailure then return databaseFailure end
   local validModules, modulesWhy=self:ValidateModules(modules);if not validModules then return self:Result(false,modulesWhy) end
   local valid, why=self:ValidateSettings(settings,false);if not valid then return self:Result(false,why) end
   local selectedSettings=0;for key in pairs(settings)do local setting=self.RegistryByKey[key];if setting and modules[setting.module]then selectedSettings=selectedSettings+1 end end;if selectedSettings==0 then return self:Result(false,"no-settings") end

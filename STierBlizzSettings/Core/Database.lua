@@ -88,6 +88,12 @@ function STBS:GetDatabaseMigrationStatus()
   return self.databaseMigrationStatus and self:Copy(self.databaseMigrationStatus) or {supported=true,code="uninitialized"}
 end
 
+function STBS:RequireWritableDatabase()
+  local db=self:InitializeDatabase()
+  if not self:IsDatabaseSchemaSupported() then return nil,self:Result(false,"database-schema-unsupported",self:GetDatabaseMigrationStatus()) end
+  return db
+end
+
 function STBS:InitializeDatabase()
   local source=_G.STierBlizzSettingsDB;if type(source)~="table" then source={} end
   local migration=self:MigrateDatabase(source)

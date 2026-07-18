@@ -11,7 +11,8 @@ function STBS:CommitActiveZoneGraphicsState(category,preset)
 end
 
 function STBS:GetZoneGraphicsConfig()
-  return self:InitializeDatabase().preferences.zoneGraphics
+  local config=self:InitializeDatabase().preferences.zoneGraphics
+  return self:IsDatabaseSchemaSupported() and config or self:Copy(config)
 end
 
 function STBS:GetZoneCategory()
@@ -27,7 +28,8 @@ function STBS:GetZoneCategory()
 end
 
 function STBS:SetZoneGraphicsEnabled(enabled)
-  enabled=enabled==true;self:GetZoneGraphicsConfig().enabled=enabled
+  local db,databaseFailure=self:RequireWritableDatabase();if not db then return false,databaseFailure.code end
+  enabled=enabled==true;db.preferences.zoneGraphics.enabled=enabled
   if not enabled then local pending=self:GetPendingOperation();if pending and pending.kind=="zone-auto" then self:CancelPendingOperation("zone-auto") end;self:ClearActiveZoneGraphicsState() end
   return true
 end
@@ -35,7 +37,8 @@ end
 function STBS:CycleZonePreset(category)
   local known=false;for _,value in ipairs(categories) do if value==category then known=true break end end
   if not known then return false end
-  local config=self:GetZoneGraphicsConfig();local current=config.assignments[category]
+  local db,databaseFailure=self:RequireWritableDatabase();if not db then return nil,databaseFailure.code end
+  local config=db.preferences.zoneGraphics;local current=config.assignments[category]
   if current==self.GRAPHICS_PRESET_PRO then current=self.GRAPHICS_PRESET_OPTIMIZED
   elseif current==self.GRAPHICS_PRESET_OPTIMIZED then current=self.GRAPHICS_PRESET_QUALITY
   else current=self.GRAPHICS_PRESET_PRO end
