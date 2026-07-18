@@ -13,28 +13,43 @@ end
 
 local function checkBox(parent,text,callback,checked)
   local row=CreateFrame("Button",nil,parent);row:SetSize(200,34);row:SetPoint("TOPLEFT",0,0);row:RegisterForClicks("LeftButtonUp");row.isCheckBox=true
-  row.check=STBS:CreateModernCheckBox(row,checked,callback);row.check:SetPoint("RIGHT",-2,0)
+  local function dispatch(value)if row.callback then row.callback(value)end end
+  row.check=STBS:CreateModernCheckBox(row,checked,nil);row.check:SetPoint("RIGHT",-2,0)
   row.label=row:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");row.label:SetPoint("LEFT",4,0);row.label:SetPoint("RIGHT",row.check,"LEFT",-10,0);row.label:SetJustifyH("LEFT");row.label:SetText(text);row.label:SetTextColor(1,0.82,0)
-  row:SetScript("OnClick",function(self)local value=not self.check:GetChecked();self.check:SetChecked(value);callback(value)end)
+  row:SetScript("OnClick",function(self)local value=not self.check:GetChecked();self.check:SetChecked(value);if self.callback then self.callback(value)end end)
   row:SetScript("OnEnter",function(self)self.label:SetTextColor(1,0.9,0.35)end);row:SetScript("OnLeave",function(self)self.label:SetTextColor(1,0.82,0)end)
   function row:SetChecked(value)self.check:SetChecked(value==true)end
   function row:GetChecked()return self.check:GetChecked()end
+  function row:Configure(label,value,fn)self.label:SetText(label or "");self:SetChecked(value==true);self.callback=type(fn)=="function" and fn or nil;self.check:SetCallback(dispatch)end
+  function row:ResetForReuse()self.callback=nil;self.check:SetCallback(nil);self.label:SetText("");self:SetChecked(false)end
   function row:SetActive()end
   function row:SetDisabled(disabled)self.disabled=disabled;self:SetEnabled(not disabled);self.check:SetDisabled(disabled);self:SetAlpha(disabled and 0.42 or 1)end
+  row:Configure(text,checked,callback)
   return row
+end
+
+local function clearTooltip(frame)
+  if not frame then return end
+  frame.stbsTooltipTitle=nil;frame.stbsTooltipDescription=nil
 end
 
 local function addTooltip(frame,title,description)
   if not frame or not description then return end
+  frame.stbsTooltipTitle=title;frame.stbsTooltipDescription=description
+  if frame.stbsTooltipHooked then return end
+  frame.stbsTooltipHooked=true
   frame:HookScript("OnEnter",function(self)
-    GameTooltip:SetOwner(self,"ANCHOR_RIGHT");GameTooltip:SetText(title,1,0.82,0);GameTooltip:AddLine(description,1,1,1,true);GameTooltip:Show()
+    if not self.stbsTooltipDescription then return end
+    GameTooltip:SetOwner(self,"ANCHOR_RIGHT");GameTooltip:SetText(self.stbsTooltipTitle or "",1,0.82,0);GameTooltip:AddLine(self.stbsTooltipDescription,1,1,1,true);GameTooltip:Show()
   end)
-  frame:HookScript("OnLeave",function()GameTooltip:Hide()end)
+  frame:HookScript("OnLeave",function(self)if self.stbsTooltipDescription then GameTooltip:Hide()end end)
 end
 
 local function sectionLabel(parent,text)
   local row=CreateFrame("Frame",nil,parent);row:SetSize(200,28)
   row.label=row:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");row.label:SetPoint("LEFT",3,0);row.label:SetPoint("RIGHT",-3,0);row.label:SetJustifyH("LEFT");row.label:SetText(text);row.label:SetTextColor(0.4,0.82,1)
+  function row:Configure(label)self.label:SetText(label or "")end
+  function row:ResetForReuse()self.label:SetText("")end
   function row:SetDisabled()end
   function row:SetActive()end
   return row
@@ -45,14 +60,47 @@ local function sliderRow(parent,text,minimum,maximum,step,value,callback,formatt
   row.label=row:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");row.label:SetPoint("TOPLEFT",4,-2);row.label:SetPoint("TOPRIGHT",-68,-2);row.label:SetJustifyH("LEFT");row.label:SetText(text);row.label:SetTextColor(1,0.82,0)
   row.value=row:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge");row.value:SetPoint("TOPRIGHT",-5,-2);row.value:SetJustifyH("RIGHT")
   row.slider=CreateFrame("Frame",nil,row,"MinimalSliderWithSteppersTemplate");row.slider:SetPoint("BOTTOMLEFT",4,0);row.slider:SetPoint("BOTTOMRIGHT",-4,0);row.slider:SetHeight(34)
-  local function format(number)return formatter and formatter(number) or tostring(number)end
-  row.slider:Init(value,minimum,maximum,(maximum-minimum)/step,nil);row.value:SetText(format(value))
+  local function format(number)return row.formatter and row.formatter(number) or tostring(number)end
+  row.slider:Init(0,0,1,1,nil)
   row.slider:RegisterCallback(MinimalSliderWithSteppersMixin.Event.OnValueChanged,function(_,number)
-    local rounded=math.floor((number/step)+0.5)*step;row.value:SetText(format(rounded));callback(rounded)
+    if row.suppressCallback or not row.step then return end
+    local rounded=math.floor((number/row.step)+0.5)*row.step;row.value:SetText(format(rounded));if row.callback then row.callback(rounded)end
   end,row)
+  function row:Configure(label,minValue,maxValue,stepValue,currentValue,fn,valueFormatter)
+    self.callback=nil;self.label:SetText(label or "");self.step=stepValue;self.formatter=valueFormatter;self.suppressCallback=true
+    self.slider:Init(currentValue,minValue,maxValue,(maxValue-minValue)/stepValue,nil);self.value:SetText(format(currentValue));self.suppressCallback=false;self.callback=type(fn)=="function" and fn or nil
+  end
+  function row:ResetForReuse()self.callback=nil;self.formatter=nil;self.step=nil;self.suppressCallback=true;self.label:SetText("");self.value:SetText("")end
   function row:SetDisabled(disabled)self.disabled=disabled;self.slider:SetEnabled(not disabled);self:SetAlpha(disabled and 0.42 or 1)end
   function row:SetActive()end
+  row:Configure(text,minimum,maximum,step,value,callback,formatter)
   return row
+end
+
+local function clearControlTooltips(control)
+  clearTooltip(control);clearTooltip(control.check);clearTooltip(control.slider)
+  if control.slider then clearTooltip(control.slider.Slider);clearTooltip(control.slider.Back);clearTooltip(control.slider.Forward)end
+end
+
+local function resetPageControl(control)
+  if control.ResetForReuse then control:ResetForReuse()end
+  control.action=nil;clearControlTooltips(control);control:ClearAllPoints();control:SetDisabled(false);control:SetActive(false);control:Hide()
+end
+
+function STBS:AcquirePageControl(frame,poolKey,factory)
+  frame.pageControlPool=frame.pageControlPool or {};local pool=frame.pageControlPool[poolKey]
+  if not pool then pool={};frame.pageControlPool[poolKey]=pool end
+  local control=table.remove(pool)
+  if not control then control=factory();control.pagePoolKey=poolKey end
+  resetPageControl(control);return control
+end
+
+function STBS:ReleasePageControls(frame)
+  frame.pageControlPool=frame.pageControlPool or {}
+  for _,control in ipairs(frame.pageButtons or {}) do
+    resetPageControl(control);local pool=frame.pageControlPool[control.pagePoolKey] or {};frame.pageControlPool[control.pagePoolKey]=pool;table.insert(pool,control)
+  end
+  frame.pageButtons={}
 end
 
 local function navButton(parent,text,icon,y,pageKey,callback)
@@ -189,7 +237,7 @@ function STBS:CreateUI()
   local rule=panel:CreateTexture(nil,"ARTWORK");rule:SetColorTexture(0.55,0.4,0.18,0.75);rule:SetHeight(1);f.rule=rule
   local actionScroll=CreateFrame("ScrollFrame",nil,panel,"UIPanelScrollFrameTemplate")
   local actionContent=CreateFrame("Frame",nil,actionScroll);actionContent:SetHeight(82);actionScroll:SetScrollChild(actionContent);f.actionScroll,f.actionContent=actionScroll,actionContent
-  f.pageButtons={};f.navButtons={};self.ui=f
+  f.pageButtons={};f.pageControlPool={};f.navButtons={};self.ui=f
   table.insert(f.navButtons,navButton(side,self:L("GRAPHICS"),"Interface\\Icons\\INV_Misc_EngGizmos_30",-16,"graphics",function()STBS:ShowGraphics()end))
   table.insert(f.navButtons,navButton(side,self:L("UI_TWEAKS"),"Interface\\Icons\\INV_Gizmo_02",-68,"uiTweaks",function()STBS:ShowUITweaks()end))
   table.insert(f.navButtons,navButton(side,self:L("FPS_TEST"),"Interface\\Icons\\INV_Misc_PocketWatch_01",-120,"fpsTest",function()STBS:ShowFPSTest()end))
@@ -304,14 +352,14 @@ function STBS:SetPage(title,text,actions,status,options)
   end
   f.bodyY=bodyY;f.body:ClearAllPoints();f.body:SetPoint("TOPLEFT",7,bodyY);f.body:SetText(text or "")
   for _,nav in ipairs(f.navButtons) do nav:SetActive(nav.pageKey==options.pageKey) end
-  for _,old in ipairs(f.pageButtons) do old:Hide() end;f.pageButtons={}
+  self:ReleasePageControls(f)
   for _,action in ipairs(actions or {}) do
-    local created
-    if action.kind=="check" then created=checkBox(f.actionContent,action.label,action.fn,action.checked)
-    elseif action.kind=="slider" then created=sliderRow(f.actionContent,action.label,action.minimum,action.maximum,action.step,action.value,action.fn,action.formatter)
-    elseif action.kind=="section" then created=sectionLabel(f.actionContent,action.label)
-    else created=button(f.actionContent,action.label,0,0,200,action.fn,action.style) end
-    created.action=action;created:SetDisabled(action.disabled);created:SetActive(action.active);if action.tooltip then addTooltip(created,action.label,action.tooltip);if created.check then addTooltip(created.check,action.label,action.tooltip)end;if created.slider then addTooltip(created.slider,action.label,action.tooltip);if created.slider.Slider then addTooltip(created.slider.Slider,action.label,action.tooltip)end;if created.slider.Back then addTooltip(created.slider.Back,action.label,action.tooltip)end;if created.slider.Forward then addTooltip(created.slider.Forward,action.label,action.tooltip)end end end;table.insert(f.pageButtons,created)
+    local created,poolKey
+    if action.kind=="check" then poolKey="check";created=self:AcquirePageControl(f,poolKey,function()return checkBox(f.actionContent,"",nil,false)end);created:Configure(action.label,action.checked,action.fn)
+    elseif action.kind=="slider" then poolKey="slider";created=self:AcquirePageControl(f,poolKey,function()return sliderRow(f.actionContent,"",0,1,1,0,nil,nil)end);created:Configure(action.label,action.minimum,action.maximum,action.step,action.value,action.fn,action.formatter)
+    elseif action.kind=="section" then poolKey="section";created=self:AcquirePageControl(f,poolKey,function()return sectionLabel(f.actionContent,"")end);created:Configure(action.label)
+    else poolKey="button:"..(action.style or "default");created=self:AcquirePageControl(f,poolKey,function()local pooled=button(f.actionContent,"",0,0,200,nil,action.style);function pooled:ResetForReuse()self:SetCallback(nil);self:SetText("")end;return pooled end);created:SetText(action.label);created:SetCallback(action.fn) end
+    created.action=action;created:SetDisabled(action.disabled);created:SetActive(action.active);if action.tooltip then addTooltip(created,action.label,action.tooltip);if created.check then addTooltip(created.check,action.label,action.tooltip)end;if created.slider then addTooltip(created.slider,action.label,action.tooltip);if created.slider.Slider then addTooltip(created.slider.Slider,action.label,action.tooltip)end;if created.slider.Back then addTooltip(created.slider.Back,action.label,action.tooltip)end;if created.slider.Forward then addTooltip(created.slider.Forward,action.label,action.tooltip)end end end;created:Show();table.insert(f.pageButtons,created)
   end
   f.hasActions=#f.pageButtons>0;f:Show();self:LayoutUI()
 end

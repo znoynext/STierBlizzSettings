@@ -32,9 +32,10 @@ function STBS:CreateModernButton(parent,text,width,height,callback,style)
   function button:SetText(value)self.label:SetText(value or "")end
   function button:GetText()return self.label:GetText()end
   function button:GetFontString()return self.label end
+  function button:SetCallback(value)self.callback=type(value)=="function" and value or nil end
   function button:SetActive(active)self.active=active==true;self:RefreshVisual(self.hovered)end
   function button:SetDisabled(disabled)self.disabled=disabled==true;self.hovered=false;hoverIn:Stop();hoverOut:Stop();self.hover:SetAlpha(0);self:SetEnabled(not self.disabled);self:SetAlpha(self.disabled and 0.42 or 1);self.pressed:Hide();self:RefreshVisual(false)end
-  button:SetScript("OnClick",callback or function()end)
+  button:SetCallback(callback);button:SetScript("OnClick",function(self,...)if self.callback then return self.callback(self,...)end end)
   button:SetScript("OnEnter",function(self)if self.disabled then return end;self.hovered=true;hoverOut:Stop();hoverIn:Stop();hoverIn:Play();self:RefreshVisual(true)end)
   button:SetScript("OnLeave",function(self)self.hovered=false;hoverIn:Stop();hoverOut:Stop();hoverOut:Play();self.pressed:Hide();self:RefreshVisual(false)end)
   button:SetScript("OnMouseDown",function(self,mouseButton)if mouseButton=="LeftButton" and not self.disabled then self.pressed:Show()end end)
@@ -63,7 +64,8 @@ function STBS:CreateModernCheckBox(parent,checked,callback)
   function checkbox:SetDisabled(disabled)
     self.disabled=disabled==true;self.hovered=false;hoverIn:Stop();hoverOut:Stop();self.hover:SetAlpha(0);self:SetEnabled(not self.disabled);self.pressed:Hide();self:RefreshVisual(false)
   end
-  checkbox:SetScript("OnClick",function(self)self:RefreshVisual(self.hovered);if callback then callback(self:GetChecked()==true)end end)
+  function checkbox:SetCallback(value)self.callback=type(value)=="function" and value or nil end
+  checkbox:SetCallback(callback);checkbox:SetScript("OnClick",function(self)self:RefreshVisual(self.hovered);if self.callback then self.callback(self:GetChecked()==true)end end)
   checkbox:SetScript("OnEnter",function(self)if self.disabled then return end;self.hovered=true;hoverOut:Stop();hoverIn:Stop();hoverIn:Play();self:RefreshVisual(true)end)
   checkbox:SetScript("OnLeave",function(self)self.hovered=false;hoverIn:Stop();hoverOut:Stop();hoverOut:Play();self.pressed:Hide();self:RefreshVisual(false)end)
   checkbox:SetScript("OnMouseDown",function(self,mouseButton)if mouseButton=="LeftButton" and not self.disabled then self.pressed:Show()end end)

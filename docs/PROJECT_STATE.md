@@ -89,7 +89,7 @@ The registry is the source for exact CVar names and value ranges; this snapshot 
 
 ## Current UI architecture
 
-- `UI/Style.lua` supplies the shared scalable button and checkbox system. `UI/MainWindow.lua` owns the lazily created page shell, responsive action layout, graphics sub-tabs, FPS dashboards, and the current slider wrapper.
+- `UI/Style.lua` supplies the shared scalable button and checkbox system. `UI/MainWindow.lua` owns the lazily created page shell, responsive action layout, graphics sub-tabs, FPS dashboards, and the current slider wrapper. Dynamic page buttons, checkboxes, sliders, and section rows use typed pools capped by the greatest simultaneously rendered page; release clears callbacks, tooltips, anchors, action references, text, visibility, and interaction state before reuse.
 - `ShowAddonDialog` is the reusable confirmation/text-entry component. FPS tests use a separate reusable progress modal.
 - The main window opens centered, is resizable within screen-derived bounds, saves its size, and is deliberately not clamped to screen edges.
 - The minimap button opens Graphics on left click and Profiles on right click; Ctrl is not required to drag it around the minimap.
