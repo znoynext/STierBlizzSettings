@@ -20,16 +20,18 @@ frame:SetScript("OnEvent",function(_,event,arg)
     elseif STBS:GetZoneGraphicsConfig().enabled then STBS:ApplyZoneGraphics("zone-change") end
   end
   if event=="PLAYER_REGEN_ENABLED" and STBS:GetPendingOperation() then
+    local current=STBS:GetPendingOperation()
+    if current.kind=="zone-auto" then STBS:CancelPendingOperation("zone-auto");STBS:ApplyZoneGraphics("zone-change");return end
     local completed=STBS:CompletePendingOperation();local completedData=type(completed.data)=="table" and completed.data or {};local pending=completedData.operation;local result=completedData.result or completed
     if result.code=="queued" or type(pending)~="table" then return end
     local context=type(pending.context)=="table" and pending.context or {}
-    if pending.kind=="zone-auto" or pending.kind=="zone-manual" then
+    if pending.kind=="zone-manual" then
       local data=type(result.data)=="table" and result.data or nil
       local graphics=data and type(data.graphics)=="table" and data.graphics or nil
       local changed=result.ok and graphics and tonumber(graphics.changed) or 0
       local category=context.category or STBS:GetZoneCategory();local preset=context.preset or STBS.activeZonePreset
       STBS.zoneStatus={ok=result.ok,code=result.code,category=category,preset=preset,changed=changed}
-      if result.ok then STBS:SetSelectedMode(context.mode or STBS.GRAPHICS_MODE_UNIFIED);STBS:SetSelectedPreset(preset) end
+      if result.ok then STBS:CommitActiveZoneGraphicsState(category,preset);STBS:SetSelectedMode(context.mode or STBS.GRAPHICS_MODE_UNIFIED);STBS:SetSelectedPreset(preset) else STBS:ClearActiveZoneGraphicsState() end
       if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="graphics" and STBS.ui.currentGraphicsSection=="zones" then STBS:ShowZoneGraphics() end
     end
     local recovery=context.reason or pending.trigger

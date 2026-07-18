@@ -39,7 +39,8 @@ Graphics has two sub-tabs: **Graphics Settings** and **Zone Graphics Switcher**.
 - `C_PartyInfo.IsDelveInProgress()` maps an active Delve to `scenario`; otherwise `IsInInstance()` maps party, raid, scenario, PvP/arena, and falls back to world.
 - Enabling the feature applies the current assignment immediately. Assignments can be cycled without applying, and **Apply for current zone** is available explicitly.
 - Automatic checks run 0.8 seconds after `PLAYER_ENTERING_WORLD` and `ZONE_CHANGED_NEW_AREA`. Unchanged settings skip the transaction and backup.
-- In combat, a validated zone transaction uses the typed single pending slot (`zone-auto` or `zone-manual`) and runs on `PLAYER_REGEN_ENABLED`.
+- In combat, a validated zone transaction uses the typed single pending slot (`zone-auto` or `zone-manual`). A newer automatic request replaces an older `zone-auto`; on `PLAYER_REGEN_ENABLED`, the addon re-detects the live zone and reads its current assignment before applying. Explicit user and recovery work cannot be replaced by an automatic request.
+- If the final automatic target already matches current graphics, the stale pending request is cleared without creating a backup or transaction. Active zone category/preset state is recorded only after a verified successful apply or verified no-op and is cleared after queued, failed, cancelled, or rolled-back attempts.
 - Zone switching is suspended while the standalone/preset FPS test flag is active and while a preset restore is pending. More limited interactions are listed under current technical debt.
 
 ## Current UI Tweaks
@@ -59,7 +60,7 @@ The registry is the source for exact CVar names and value ranges; this snapshot 
 - Outside combat it builds a diff, captures a backup of every readable setting in each selected module, writes changed values, and verifies every write by reading it back.
 - A write or read-back failure rolls back attempted writes in reverse order. The result and rollback outcome are stored in a transaction history capped at 20 entries.
 - Unsupported values are skipped and unavailable entries are reported; the UI receives changed, identical, skipped, unavailable, and failed counts.
-- Combat work is copied into one typed in-memory pending slot and re-enters the same validation/transaction path on `PLAYER_REGEN_ENABLED`. Recovery can replace explicit or automatic work; explicit work can replace automatic Zone Graphics; equal/lower priority is rejected with `pending-exists`.
+- Combat work is copied into one typed in-memory pending slot and re-enters the same validation/transaction path on `PLAYER_REGEN_ENABLED`. Recovery can replace explicit or automatic work; explicit work can replace automatic Zone Graphics; automatic Zone Graphics can replace only an older `zone-auto`. Other equal/lower priority work is rejected with `pending-exists`.
 - Backups store timestamp, addon/client build, trigger, affected modules, captured values, and read failures. The default history limit is 10 and is normalized to 1–50.
 - Restore filters removed registry keys, creates a safety backup, then applies the selected saved values transactionally.
 
@@ -99,7 +100,7 @@ The registry is the source for exact CVar names and value ranges; this snapshot 
 
 ## Current known limitations and technical debt
 
-- Pending work remains one non-persistent in-memory slot, now with typed provenance and priority replacement instead of FIFO. Replaced lower-priority work is not deferred, equal-priority work is rejected, latest-zone-wins is intentionally not implemented, queued Zone Graphics is not reclassified at combat end, and queued graphics/profile flows still record the selected preset/mode before the transaction succeeds.
+- Pending work remains one non-persistent in-memory slot with typed provenance and priority replacement instead of FIFO. Replaced lower-priority work is not deferred, and equal-priority work is rejected except for latest-state `zone-auto` coalescing. Queued graphics/profile flows outside Zone Graphics still record the selected preset/mode before the transaction succeeds.
 - Backups have no stable unique ID or structured provenance; UI and delayed cleanup rely on mutable list indices plus timestamp/trigger. General `ApplySettings` can also create a backup when its whole diff is identical, although Zone Graphics and UI Tweaks pre-check their no-op paths.
 - Core DB schema `2` is assigned during normalization without an explicit versioned DB migration or future-schema rejection. Profile migration is separate and currently only normalizes legacy schema-1 data.
 - `benchmarkMode` and the two-phase 10+10-second `StartAccurateFPSComparison` path remain stored code but are not used by the current UI. Recommendation thresholds use rounded metrics, and stored FPS results do not identify the scene in which they were measured.

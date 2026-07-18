@@ -2,6 +2,14 @@ local _, STBS = ...
 
 local categories={"world","party","raid","pvp","scenario"}
 
+function STBS:ClearActiveZoneGraphicsState()
+  self.activeZoneCategory=nil;self.activeZonePreset=nil
+end
+
+function STBS:CommitActiveZoneGraphicsState(category,preset)
+  self.activeZoneCategory=category;self.activeZonePreset=preset
+end
+
 function STBS:GetZoneGraphicsConfig()
   return self:InitializeDatabase().preferences.zoneGraphics
 end
@@ -19,7 +27,8 @@ function STBS:GetZoneCategory()
 end
 
 function STBS:SetZoneGraphicsEnabled(enabled)
-  self:GetZoneGraphicsConfig().enabled=enabled==true
+  enabled=enabled==true;self:GetZoneGraphicsConfig().enabled=enabled
+  if not enabled then local pending=self:GetPendingOperation();if pending and pending.kind=="zone-auto" then self:CancelPendingOperation("zone-auto") end;self:ClearActiveZoneGraphicsState() end
   return true
 end
 
@@ -34,25 +43,27 @@ function STBS:CycleZonePreset(category)
 end
 
 function STBS:ApplyZoneGraphics(trigger)
-  if self.fpsTestMeasurement or self.fpsPresetRestorePending then return self:Result(false,"fps-test") end
-  local config=self:GetZoneGraphicsConfig();if not config.enabled then return self:Result(false,"disabled") end
+  trigger=trigger or "zone-graphics"
+  if self.fpsTestMeasurement or self.fpsPresetRestorePending then self:ClearActiveZoneGraphicsState();return self:Result(false,"fps-test") end
+  local config=self:GetZoneGraphicsConfig();if not config.enabled then self:ClearActiveZoneGraphicsState();return self:Result(false,"disabled") end
   local category=self:GetZoneCategory();local preset=config.assignments[category]
-  if not self:IsGraphicsPreset(preset) then return self:Result(false,"preset") end
+  if not self:IsGraphicsPreset(preset) then self:ClearActiveZoneGraphicsState();return self:Result(false,"preset") end
   local mode=self.GRAPHICS_MODE_UNIFIED
   local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,preset),{graphics=true})
-  local valid,why=self:ValidateSettings(settings,true);if not valid then return self:Result(false,why) end
+  local valid,why=self:ValidateSettings(settings,true);if not valid then self:ClearActiveZoneGraphicsState();return self:Result(false,why) end
   local plan=self:BuildDiff(settings);local changed=0
   for _,entry in ipairs(plan) do if entry.status=="changed" then changed=changed+1 end end
-  self.activeZoneCategory=category;self.activeZonePreset=preset
   if changed==0 then
+    local pending=self:GetPendingOperation();if pending and pending.kind=="zone-auto" then self:CancelPendingOperation("zone-auto") end
+    self:CommitActiveZoneGraphicsState(category,preset);self:SetSelectedMode(mode);self:SetSelectedPreset(preset)
     self.zoneStatus={ok=true,code="unchanged",category=category,preset=preset,changed=0}
     if self.ui and self.ui:IsShown() and self.ui.currentPageKey=="graphics" and self.ui.currentGraphicsSection=="zones" then self:ShowZoneGraphics() end
     return self:Result(true,"unchanged",self.zoneStatus)
   end
-  trigger=trigger or "zone-graphics";local pendingKind=trigger=="zone-change" and "zone-auto" or "zone-manual"
+  local pendingKind=trigger=="zone-change" and "zone-auto" or "zone-manual"
   local result=self:ApplySettings(settings,{graphics=true},trigger,nil,{kind=pendingKind,context={category=category,preset=preset,mode=mode}})
   self.zoneStatus={ok=result.ok,code=result.code,category=category,preset=preset,changed=changed}
-  if result.ok then self:SetSelectedMode(mode);self:SetSelectedPreset(preset) end
+  if result.ok then self:CommitActiveZoneGraphicsState(category,preset);self:SetSelectedMode(mode);self:SetSelectedPreset(preset) else self:ClearActiveZoneGraphicsState() end
   if self.ui and self.ui:IsShown() and self.ui.currentPageKey=="graphics" and self.ui.currentGraphicsSection=="zones" then self:ShowZoneGraphics() end
   return result
 end

@@ -26,6 +26,7 @@ function STBS:CanReplacePendingOperation(current,incoming)
   if current==nil then return true,"empty" end
   local currentKind=type(current)=="table" and current.kind or current;local currentPriority=pendingPriorities[currentKind]
   if not currentPriority then return false,"kind" end
+  if currentKind=="zone-auto" and incomingKind=="zone-auto" then return true,"latest-zone-state" end
   if incomingPriority>currentPriority then return true,"higher-priority" end
   return false,incomingPriority==currentPriority and "same-priority" or "lower-priority"
 end
