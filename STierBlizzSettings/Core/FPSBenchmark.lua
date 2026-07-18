@@ -68,6 +68,7 @@ function STBS:StartFPSBaselineSampling()
   sample();if C_Timer and type(C_Timer.NewTicker)=="function" then self.fpsBaselineTicker=C_Timer.NewTicker(QUICK_INTERVAL,sample) end
 end
 function STBS:TakeFPSBaseline() self:StopFPSBaselineSampling();local samples=self.fpsBaselineSamples or {};if #samples==0 then local value=self:ReadFramerate();if value then samples={value} end end;self.fpsBaselineSamples=nil;return samples end
+function STBS:ResetFPSBaselineSampling() self:StopFPSBaselineSampling();self.fpsBaselineSamples=nil;self:StartFPSBaselineSampling() end
 
 function STBS:StartFPSPostMeasurement(beforeSamples,callback,progressCallback)
   if type(beforeSamples)~="table" or #beforeSamples==0 then return false end

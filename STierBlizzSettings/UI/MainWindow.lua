@@ -526,11 +526,11 @@ function STBS:ConfirmApplyGraphics(count)
 end
 
 function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode,selectedPreset)
-  local function applyNow(options)
-    if settings then local source=trigger or "personal-graphics";return self:ApplySettings(settings,{graphics=true},source,options,{kind="graphics-user",context={source=source,mode=selectedMode,preset=selectedPreset}}) end
-    return self:ApplyOfficial("graphics",options)
+  local function applyNow()
+    if settings then local source=trigger or "personal-graphics";return self:ApplySettings(settings,{graphics=true},source,nil,{kind="graphics-user",context={source=source,mode=selectedMode,preset=selectedPreset,automaticFPS=true}}) end
+    return self:ApplyOfficial("graphics")
   end
-  local before=self:TakeFPSBaseline();local result=applyNow({fpsBefore=before})
+  local delayed=type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown();local before=not delayed and self:TakeFPSBaseline() or nil;local result=applyNow()
   if result.ok then
     if selectedMode then self:SetSelectedMode(selectedMode) end
     if selectedPreset then self:SetSelectedPreset(selectedPreset) end
@@ -540,8 +540,8 @@ function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode,selectedPreset)
   elseif result.code=="queued" then
     if selectedMode then self:SetSelectedMode(selectedMode) end
     if selectedPreset then self:SetSelectedPreset(selectedPreset) end
-    self.flashMessage=self:L("PENDING_FPS");self.flashKind="warning";self:ShowGraphics()
-  else self:ShowReport(result) end
+    self:StartFPSBaselineSampling();self.flashMessage=self:L("PENDING_FPS");self.flashKind="warning";self:ShowGraphics()
+  else self:ResetFPSBaselineSampling();self:ShowReport(result) end
   return result
 end
 

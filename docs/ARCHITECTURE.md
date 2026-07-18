@@ -96,7 +96,7 @@ A full-addon bundle applies shared graphics/UI Tweaks through one normal backup-
 FPS functionality has four distinct mechanisms:
 
 - **Live sampling** periodically reads `GetFramerate()` and feeds a bounded baseline window used by the UI.
-- **Post-apply measurement** collects a short five-second sample after a successful graphics apply and compares it with the captured baseline.
+- **Post-apply measurement** compares the rolling baseline with a short five-second sample only when a Graphics apply succeeds immediately. The baseline remains local to the immediate UI call and is never copied into a pending operation. A combat-queued Graphics apply carries only an `automaticFPS` context marker; after completion it resets rolling baseline state, reports that automatic comparison was skipped, and never starts the post sampler. This prevents measurements from different scenes/times being presented as a before/after result.
 - **Standalone measurement** records raw `OnUpdate` frame times for 20 seconds and derives average FPS, 1% Low, stability, spike count, and worst-frame time into character-local results.
 - **Preset comparison** captures a complete original graphics snapshot, measures the current state for 20 seconds, transactionally applies one built-in unified candidate, measures it for 20 seconds, and transactionally restores the exact captured values. Zone Graphics is suspended during this workflow. Cancellation after candidate apply also attempts restoration; combat can defer that restoration through the pending slot. Temporary restore backups are discarded only after verified restoration.
 

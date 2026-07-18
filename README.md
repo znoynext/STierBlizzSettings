@@ -25,7 +25,7 @@ A lightweight WoW Retail addon that applies a curated balance of FPS, image qual
 - Separate Profiles, Backups and Import / Export views. Backup restore/delete actions stay visible, and one `STBSA1` string can transfer current graphics, available UI Tweaks, selected preset/mode, stored benchmark choice, performance-widget enabled state, zone rules and personal profiles through large export and import fields. Backup history and screen positions are not exported.
 - Transactional writes with automatic backup and read-back verification.
 - One-click **Undo graphics changes**.
-- A four-card Graphics dashboard with live FPS and color-coded before, after and change results. Applying a preset opens a smooth 5-second progress dialog and then offers Reload UI automatically. Test FPS adds a cancellable 20-second test, explained stability, actionable hints and visual current-vs-preset comparisons. If both Average FPS and 1% Low improve by at least 5%, the tested preset can be applied directly with confirmation and a fresh backup.
+- A four-card Graphics dashboard with live FPS and color-coded before, after and change results. An immediately applied preset opens a smooth 5-second progress dialog and then offers Reload UI automatically. If combat delays the apply, the stale pre-combat comparison is skipped with a clear message; Test FPS remains available for a fresh measurement. Test FPS also adds a cancellable 20-second test, explained stability, actionable hints and visual current-vs-preset comparisons. If both Average FPS and 1% Low improve by at least 5%, the tested preset can be applied directly with confirmation and a fresh backup.
 - Optional compact bottom-screen FPS and real Home/World ping indicator with red-to-green status colors.
 - Personal graphics profiles plus a separate backup-history view in the Profiles section.
 - Apply, rename, export and delete profiles; restore or delete backups.
@@ -40,7 +40,7 @@ The addon optimizes every independent control in the active **Graphics Quality**
 
 ## FPS measurement
 
-While Graphics is open, the addon displays Retail `GetFramerate()` live and automatically compares the rolling current scene with five seconds after apply. The separate **Test FPS** page records every frame for 20 seconds. It reports average FPS, 1% Low from the average slowest 1% of frame times, the 1% Low-to-average stability ratio, adaptive frame spikes and the worst frame time. Optional preset comparison measures the current graphics for 20 seconds, temporarily applies one selected preset through a backup-first transaction, measures another 20 seconds and restores the original graphics. Results are local estimates, so keep the same view and activity.
+While Graphics is open, the addon displays Retail `GetFramerate()` live and, for an immediate apply, compares the rolling current scene with five seconds after apply. If combat queues the operation, that old baseline is discarded and automatic comparison is skipped instead of comparing different scenes. The separate **Test FPS** page remains available and records every frame for 20 seconds. It reports average FPS, 1% Low from the average slowest 1% of frame times, the 1% Low-to-average stability ratio, adaptive frame spikes and the worst frame time. Optional preset comparison measures the current graphics for 20 seconds, temporarily applies one selected preset through a backup-first transaction, measures another 20 seconds and restores the original graphics. Results are local estimates, so keep the same view and activity.
 
 ## Safety and status
 

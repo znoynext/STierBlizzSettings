@@ -46,9 +46,11 @@ frame:SetScript("OnEvent",function(_,event,arg)
       STBS.flashMessage=result.ok and string.format(STBS:L("UI_TWEAK_APPLIED"),(result.data and result.data.uiTweaks and result.data.uiTweaks.changed) or 0) or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error"
       if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="uiTweaks" then STBS:ShowUITweaks() end
     end
-    if result.ok and pending.options and pending.options.fpsBefore then
-      STBS.flashMessage=STBS:L("SETTINGS_APPLIED");STBS.flashKind="success"
-      STBS:StartVisibleGraphicsFPSPostMeasurement(pending.options.fpsBefore)
+    if pending.kind=="graphics-user" and context.automaticFPS then
+      STBS:ResetFPSBaselineSampling()
+      STBS.flashMessage=result.ok and STBS:L("SETTINGS_APPLIED_DELAYED_NO_MEASURE") or STBS:L("APPLY_FAILED").." ("..tostring(result.code)..")";STBS.flashKind=result.ok and "success" or "error"
+      if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="graphics" then STBS:ShowGraphics() end
+      if result.ok then STBS:ConfirmReloadUI() end
     end
   end
 end)

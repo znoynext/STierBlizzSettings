@@ -26,7 +26,7 @@ Graphics has two sub-tabs: **Graphics Settings** and **Zone Graphics Switcher**.
 ## Current Graphics workflow
 
 - Built-in presets are **PRO**, **Optimized**, and **Quality**. The header detects the actually active preset and otherwise shows Custom.
-- The primary UI selects a preset, shows a diff preview, asks for confirmation, applies it through the graphics transaction, then runs the five-second post-apply measurement. Built-in UI applies always use **unified** graphics (`RAIDsettingsEnabled=0`).
+- The primary UI selects a preset, shows a diff preview, asks for confirmation, and applies it through the graphics transaction. An immediate successful apply then runs the five-second post-apply measurement. A combat-queued apply skips that comparison because its pre-combat baseline is no longer statistically comparable, reports the reason, and leaves the standalone FPS Test available. Built-in UI applies always use **unified** graphics (`RAIDsettingsEnabled=0`).
 - Zone Graphics and preset FPS comparisons also use unified graphics. The old **split** mode is still accepted by SavedVariables, profile schema, import, flattening, restore, and personal-profile application, but there is no current split-mode selector in Graphics.
 - The graphics registry intentionally does not manage monitor/display choice, resolution, render scale, refresh rate, V-Sync, graphics API, FPS caps, or latency controls. Anti-aliasing is selected only when the client reports support.
 - Official presets currently preserve projected textures, usable particles and outlines, and high texture resolution while scaling more expensive quality settings.
@@ -66,7 +66,7 @@ The registry is the source for exact CVar names and value ranges; this snapshot 
 
 ## Current FPS workflows
 
-- **Post-apply:** the Graphics page keeps up to 20 baseline samples at 0.25-second intervals, then captures 20 post-apply samples over **5 seconds**. A non-cancellable progress dialog is shown and Reload UI is offered afterwards.
+- **Post-apply:** for an immediate Graphics apply, the page keeps up to 20 baseline samples at 0.25-second intervals, then captures 20 post-apply samples over **5 seconds**. A non-cancellable progress dialog is shown and Reload UI is offered afterwards. Combat-queued applies never retain or consume the pre-combat baseline and do not start an automatic post measurement; after successful delayed application they report that the comparison was skipped, restart a fresh rolling baseline, keep standalone Test FPS available, and offer Reload UI.
 - **Standalone:** one **20-second** `OnUpdate` frame-time capture reports average FPS, 1% Low, stability, adaptive spikes, and worst frame time.
 - **Preset comparison:** captures current graphics for **20 seconds**, transactionally applies one unified built-in preset, waits 0.75 seconds, captures it for **20 seconds**, and transactionally restores the original graphics. A temporary restore backup is removed only after verified restoration, leaving the candidate-apply backup as the user rollback point.
 - A preset recommendation appears only after restoration when rounded Average FPS and rounded 1% Low both improve by at least 5%. Applying it requires confirmation and uses the normal graphics workflow plus the five-second follow-up.
