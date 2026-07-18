@@ -403,7 +403,7 @@ function STBS:ConfirmApplyUITweaks()
   for _,entry in ipairs(plan) do if entry.status=="changed" then changed=changed+1 end end
   if changed==0 then self.flashMessage=self:L("UI_TWEAK_ALREADY");self.flashKind="success";self:ShowUITweaks();return end
   self:ShowAddonDialog({title=self:L("UI_TWEAK_APPLY_CONFIRM"),message=string.format(self:L("UI_TWEAK_APPLY_CONFIRM_TEXT"),changed),onAccept=function()
-    local result=STBS:ApplySettings(settings,{uiTweaks=true},"ui-tweaks",nil,{kind="ui-tweaks",context={source="ui-tweaks"}})
+    local result=STBS:ApplySettings(settings,{uiTweaks=true},"ui-tweaks",{backupSource="ui-tweaks"},{kind="ui-tweaks",context={source="ui-tweaks"}})
     if result.code=="queued" then STBS.flashMessage=STBS:L("PENDING");STBS.flashKind="warning"
     elseif result.ok then STBS.uiTweaksDraft=nil;STBS.flashMessage=string.format(STBS:L("UI_TWEAK_APPLIED"),(result.data.uiTweaks and result.data.uiTweaks.changed) or changed);STBS.flashKind="success"
     else STBS.flashMessage=STBS:L("APPLY_FAILED").." ("..tostring(result.code)..")";STBS.flashKind="error" end
@@ -509,7 +509,7 @@ end
 function STBS:ConfirmApplyFPSComparisonPreset(comparison)
   local recommendation=self:GetPresetFPSComparisonRecommendation(comparison);if not recommendation then self.flashMessage=self:L("FPS_COMPARE_RECOMMEND_EXPIRED");self.flashKind="warning";self:ShowFPSTest();return end
   local preset=recommendation.preset;local mode=comparison.mode;local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,preset),{graphics=true});local plan=self:BuildDiff(settings);local label=self:GetPresetLabel(preset)
-  self:ShowAddonDialog({title=string.format(self:L("FPS_COMPARE_APPLY_CONFIRM"),label),message=string.format(self:L("FPS_COMPARE_APPLY_CONFIRM_TEXT"),#plan),acceptText=string.format(self:L("FPS_COMPARE_APPLY"),label),onAccept=function()local result=STBS:ApplyGraphicsWithFPS(settings,"fps-comparison-apply",mode,preset);if result.ok or result.code=="queued" then comparison.applied=true;STBS:StorePresetFPSComparison(comparison) end end})
+  self:ShowAddonDialog({title=string.format(self:L("FPS_COMPARE_APPLY_CONFIRM"),label),message=string.format(self:L("FPS_COMPARE_APPLY_CONFIRM_TEXT"),#plan),acceptText=string.format(self:L("FPS_COMPARE_APPLY"),label),onAccept=function()local result=STBS:ApplyGraphicsWithFPS(settings,"fps-comparison-apply",mode,preset,"manual-preset");if result.ok or result.code=="queued" then comparison.applied=true;STBS:StorePresetFPSComparison(comparison) end end})
 end
 
 function STBS:ShowOfficialPreview()
@@ -523,12 +523,12 @@ function STBS:ShowOfficialPreview()
 end
 
 function STBS:ConfirmApplyGraphics(count)
-  self:ShowAddonDialog({title=self:L("APPLY_CONFIRM"),message=string.format(self:L("APPLY_CONFIRM_TEXT"),count or 0),onAccept=function()local preset=STBS:GetSelectedPreset();local mode=STBS.GRAPHICS_MODE_UNIFIED;local settings=STBS:FlattenProfile(STBS:GetOfficialGraphics(mode,preset),{graphics=true});STBS:ApplyGraphicsWithFPS(settings,"official-graphics",mode,preset)end})
+  self:ShowAddonDialog({title=self:L("APPLY_CONFIRM"),message=string.format(self:L("APPLY_CONFIRM_TEXT"),count or 0),onAccept=function()local preset=STBS:GetSelectedPreset();local mode=STBS.GRAPHICS_MODE_UNIFIED;local settings=STBS:FlattenProfile(STBS:GetOfficialGraphics(mode,preset),{graphics=true});STBS:ApplyGraphicsWithFPS(settings,"official-graphics",mode,preset,"manual-preset")end})
 end
 
-function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode,selectedPreset)
+function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode,selectedPreset,backupSource)
   local function applyNow()
-    if settings then local source=trigger or "personal-graphics";return self:ApplySettings(settings,{graphics=true},source,nil,{kind="graphics-user",context={source=source,mode=selectedMode,preset=selectedPreset,automaticFPS=true}}) end
+    if settings then local source=trigger or "personal-graphics";return self:ApplySettings(settings,{graphics=true},source,{backupSource=backupSource or "legacy"},{kind="graphics-user",context={source=source,mode=selectedMode,preset=selectedPreset,automaticFPS=true}}) end
     return self:ApplyOfficial("graphics")
   end
   local delayed=type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown();local before=not delayed and self:TakeFPSBaseline() or nil;local result=applyNow()
@@ -609,7 +609,7 @@ function STBS:ShowProfiles(section)
     text="|cffffd36b"..self:L("BACKUP_HISTORY").."|r\n"..(count==0 and self:L("NO_BACKUPS") or string.format(self:L("BACKUP_COUNT"),count))
     if selectedBackup then text=text.."\n\n|cff65cfff"..self:L("SELECTED")..":|r #"..selectedBackupPosition.." · "..self:SafeText(selectedBackup.trigger or "backup").." · "..date("%Y-%m-%d %H:%M",selectedBackup.timestamp) end
     if selectedBackup then local backupId=selectedBackup.id;table.insert(actions,{label=self:L("RESTORE_SELECTED"),fn=function()STBS:ConfirmRestoreBackup(backupId)end,style="primary"});table.insert(actions,{label=self:L("DELETE_BACKUP"),fn=function()STBS:ConfirmDeleteBackup(backupId)end,style="danger"}) end
-    table.insert(actions,{label=self:L("CREATE_GRAPHICS_BACKUP"),wide=true,fn=function()local result=STBS:CreateBackup({graphics=true},"manual");if result.ok then STBS.selectedBackupId=result.data.id;STBS.flashMessage=STBS:L("BACKUP_CREATED");STBS.flashKind="success" else STBS.flashMessage=STBS:L("BACKUP_CREATE_FAILED");STBS.flashKind="error" end;STBS:ShowProfiles("backups")end})
+    table.insert(actions,{label=self:L("CREATE_GRAPHICS_BACKUP"),wide=true,fn=function()local result=STBS:CreateBackup({graphics=true},"manual","manual-backup");if result.ok then STBS.selectedBackupId=result.data.id;STBS.flashMessage=STBS:L("BACKUP_CREATED");STBS.flashKind="success" else STBS.flashMessage=STBS:L("BACKUP_CREATE_FAILED");STBS.flashKind="error" end;STBS:ShowProfiles("backups")end})
     for i,backup in ipairs(backups) do if self:BackupHasModule(backup,"graphics") then local index,backupId=i,backup.id;table.insert(actions,{label=self:L("BACKUP_LABEL").." #"..index.." · "..date("%m-%d %H:%M",backup.timestamp),active=backupId==self.selectedBackupId,fn=function()STBS.selectedBackupId=backupId;STBS.flashMessage=string.format(STBS:L("ITEM_SELECTED"),STBS:L("BACKUP_LABEL").." #"..index);STBS.flashKind="success";STBS:ShowProfiles("backups")end}) end end
   else
     text="|cffffd36b"..self:L("TRANSFER_TITLE").."|r\n"..self:L("TRANSFER_HELP").."\n\n|cff9aa7b8"..self:L("TRANSFER_EXCLUDES").."|r"
@@ -664,7 +664,7 @@ function STBS:ShowProfilePreview(profile)
 end
 
 function STBS:ConfirmApplyProfile(profile)
-  self:ShowAddonDialog({title=self:L("PROFILE_APPLY_CONFIRM"),message=self:L("PROFILE_APPLY_CONFIRM_TEXT"),onAccept=function()local settings=STBS:FlattenProfile(profile,{graphics=true});STBS:ApplyGraphicsWithFPS(settings,"personal-profile",profile.sections.graphics.mode)end})
+  self:ShowAddonDialog({title=self:L("PROFILE_APPLY_CONFIRM"),message=self:L("PROFILE_APPLY_CONFIRM_TEXT"),onAccept=function()local settings=STBS:FlattenProfile(profile,{graphics=true});STBS:ApplyGraphicsWithFPS(settings,"personal-profile",profile.sections.graphics.mode,nil,"personal-profile")end})
 end
 
 function STBS:ShowDiagnostics() self:SetPage(self:L("DIAGNOSTICS"),self:DiagnosticReport(),{{label=self:L("COPY"),fn=function()STBS:ShowCopyBox(STBS:DiagnosticReport())end},{label=self:L("BACK"),fn=function()STBS:ShowGraphics()end}},nil,{}) end
@@ -710,7 +710,7 @@ end
 
 function STBS:ApplyPendingImport(graphicsMode)
   local plan,settings=self:PlanImport(self.pendingImport,{graphics=true},graphicsMode);if not plan then return end
-  local mode=graphicsMode=="profile" and self.pendingImport.profile.sections.graphics.mode or self:GetSelectedMode();self.pendingImport=nil;self:ApplyGraphicsWithFPS(settings,"profile-import",mode)
+  local mode=graphicsMode=="profile" and self.pendingImport.profile.sections.graphics.mode or self:GetSelectedMode();self.pendingImport=nil;self:ApplyGraphicsWithFPS(settings,"profile-import",mode,nil,"profile-import")
 end
 
 function STBS:ShowImportPreview(payload)

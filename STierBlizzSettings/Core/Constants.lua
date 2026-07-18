@@ -3,7 +3,7 @@ STBS = STBS or {}
 _G[ADDON] = STBS
 STBS.ADDON = ADDON
 STBS.VERSION = "0.4.20-alpha"
-STBS.DB_SCHEMA = 4
+STBS.DB_SCHEMA = 5
 STBS.PROFILE_SCHEMA = 1
 STBS.EXPORT_PREFIX = "STBS1:"
 STBS.EXPORT_VERSION = 1
@@ -19,6 +19,19 @@ STBS.MAX_PROFILE_NAME_BYTES = 80
 STBS.MAX_PROFILE_DESCRIPTION_BYTES = 1024
 STBS.MAX_LOG_ENTRIES = 100
 STBS.DEFAULT_BACKUP_LIMIT = 10
+STBS.BackupSources = {
+  ["manual-preset"] = true,
+  ["personal-profile"] = true,
+  ["zone-auto"] = true,
+  ["zone-manual"] = true,
+  ["profile-import"] = true,
+  ["addon-import"] = true,
+  ["fps-comparison-temp"] = true,
+  ["restore-safety"] = true,
+  ["manual-backup"] = true,
+  ["ui-tweaks"] = true,
+  legacy = true,
+}
 STBS.GRAPHICS_MODE_UNIFIED = "unified"
 STBS.GRAPHICS_MODE_SPLIT = "split"
 STBS.GRAPHICS_PRESET_PRO = "pro"
@@ -28,6 +41,7 @@ STBS.GRAPHICS_PRESET_CUSTOM = "custom"
 STBS.BENCHMARK_QUICK = "quick"
 STBS.BENCHMARK_ACCURATE = "accurate"
 STBS.Modules = { graphics = true, interfaceGameplay = true, uiTweaks = true }
+function STBS:IsBackupSource(value) return type(value) == "string" and self.BackupSources[value] == true end
 function STBS:Result(ok, code, data) return { ok = ok, code = code, data = data } end
 function STBS:Copy(value, seen)
   if type(value) ~= "table" then return value end

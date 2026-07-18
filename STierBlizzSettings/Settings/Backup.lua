@@ -1,9 +1,12 @@
 local _, STBS = ...
-function STBS:CreateBackup(modules, trigger, deferTrim)
+function STBS:CreateBackup(modules, trigger, source, deferTrim)
   local db,databaseFailure=self:RequireWritableDatabase();if not db then return databaseFailure end
+  if type(source)=="boolean" and deferTrim==nil then deferTrim=source;source=nil end
+  if source~=nil and not self:IsBackupSource(source) then return self:Result(false,"backup-source") end
+  source=source or "legacy"
   local validModules, modulesWhy = self:ValidateModules(modules); if not validModules then return self:Result(false,modulesWhy) end
   local values, failures = self:CaptureModules(modules)
-  local build = self:GetBuild(); local backup = { id=self:AllocateBackupId(db),timestamp=time(), addonVersion=self.VERSION, clientBuild=build, trigger=trigger, affectedModules=self:Copy(modules), values=values, readFailures=failures }
+  local build = self:GetBuild(); local backup = { id=self:AllocateBackupId(db),timestamp=time(), addonVersion=self.VERSION, clientBuild=build, trigger=trigger, source=source, affectedModules=self:Copy(modules), values=values, readFailures=failures }
   table.insert(db.backups, 1, backup); if not deferTrim then while #db.backups > db.preferences.backupLimit do table.remove(db.backups) end end
   return self:Result(true,"created",backup)
 end
@@ -28,7 +31,7 @@ function STBS:RestoreBackupById(id, modules)
   end
   if not next(settings) then return self:Result(false,"no-settings") end
   local validSettings, settingsWhy = self:ValidateSettings(settings, false); if not validSettings then return self:Result(false,settingsWhy) end
-  local safety = self:CreateBackup(modules, "restore-safety")
+  local safety = self:CreateBackup(modules, "restore-safety", "restore-safety")
   if not safety.ok then return safety end
   local result = self:ApplySettings(settings, modules, "restore", { skipBackup = true }, { kind="recovery",context={reason="backup-restore",backupId=id,safetyBackupId=safety.data.id} })
   if result.ok then result.data.safetyBackup = safety.data;if modules.graphics then self:SyncAppliedGraphicsState() end end

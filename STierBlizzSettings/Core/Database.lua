@@ -62,9 +62,44 @@ local function addStableBackupIds(self,db)
   return true
 end
 
+local legacyBackupSources={
+  ["official-graphics"]="manual-preset",
+  ["official-interface"]="manual-preset",
+  ["official-all"]="manual-preset",
+  ["fps-comparison-apply"]="manual-preset",
+  ["personal-profile"]="personal-profile",
+  ["personal-graphics"]="personal-profile",
+  ["zone-change"]="zone-auto",
+  ["zone-enabled"]="zone-manual",
+  ["zone-manual"]="zone-manual",
+  ["zone-graphics"]="zone-manual",
+  ["profile-import"]="profile-import",
+  ["addon-bundle-import"]="addon-import",
+  ["restore-safety"]="restore-safety",
+  manual="manual-backup",
+  ["ui-tweaks"]="ui-tweaks",
+}
+
+local function inferLegacyBackupSource(trigger)
+  if type(trigger)=="string" and trigger:match("^fps%-compare%-") then return "fps-comparison-temp" end
+  return legacyBackupSources[trigger] or "legacy"
+end
+
+local function addBackupSources(self,db)
+  if type(db.backups)~="table" then db.backups={} end
+  for _,backup in ipairs(db.backups) do
+    if type(backup)=="table" then
+      if backup.source==nil then backup.source=inferLegacyBackupSource(backup.trigger)
+      elseif not self:IsBackupSource(backup.source) then backup.source="legacy" end
+    end
+  end
+  return true
+end
+
 -- Migrations are keyed by their real source schema and advance exactly one step.
 migrations[2]=separateLegacyGraphicsState
 migrations[3]=addStableBackupIds
+migrations[4]=addBackupSources
 
 function STBS:MigrateDatabase(db)
   if type(db)~="table" then db={} end
@@ -73,11 +108,11 @@ function STBS:MigrateDatabase(db)
     return self:Result(false,"future-schema",{schemaVersion=rawVersion})
   end
   if rawVersion==nil and next(db)==nil then
-    separateLegacyGraphicsState(self,db);addStableBackupIds(self,db);db.schemaVersion=self.DB_SCHEMA
+    separateLegacyGraphicsState(self,db);addStableBackupIds(self,db);addBackupSources(self,db);db.schemaVersion=self.DB_SCHEMA
     return self:Result(true,"fresh",db)
   end
   if type(rawVersion)~="number" or rawVersion~=rawVersion or rawVersion~=math.floor(rawVersion) or rawVersion<2 then
-    separateLegacyGraphicsState(self,db);addStableBackupIds(self,db);db.schemaVersion=self.DB_SCHEMA
+    separateLegacyGraphicsState(self,db);addStableBackupIds(self,db);addBackupSources(self,db);db.schemaVersion=self.DB_SCHEMA
     return self:Result(true,"recovered-unversioned",db)
   end
   local version=rawVersion
@@ -113,7 +148,7 @@ local function normalizeDatabase(self,db)
   for category,preset in pairs(defaults) do if not presets[zone.assignments[category]] then zone.assignments[category]=preset end end
   if type(db.profiles)~="table" then db.profiles={} end
   if type(db.backups)~="table" then db.backups={} end
-  local backupIds={};for index=#db.backups,1,-1 do local backup=db.backups[index];if type(backup)~="table" or not validBackupId(backup.id) or backupIds[backup.id] or type(backup.timestamp)~="number" or type(backup.values)~="table" or type(backup.affectedModules)~="table" then table.remove(db.backups,index) else backupIds[backup.id]=true end end
+  local backupIds={};for index=#db.backups,1,-1 do local backup=db.backups[index];if type(backup)~="table" or not validBackupId(backup.id) or backupIds[backup.id] or type(backup.timestamp)~="number" or type(backup.values)~="table" or type(backup.affectedModules)~="table" then table.remove(db.backups,index) else backupIds[backup.id]=true;backup.source=self:IsBackupSource(backup.source) and backup.source or "legacy" end end
   while #db.backups>db.preferences.backupLimit do table.remove(db.backups) end
   db.backupSequence=normalizedBackupSequence(db.backupSequence)
   if type(db.log)~="table" then db.log={} end

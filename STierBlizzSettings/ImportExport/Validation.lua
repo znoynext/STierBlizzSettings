@@ -65,7 +65,7 @@ function STBS:ApplyAddonBundle(payload)
   if type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown() then return self:Result(false,"combat") end
   local settings=self:Copy(payload.graphicsSettings);local modules={graphics=true}
   for key,value in pairs(payload.uiTweaksSettings or {}) do settings[key]=value;modules.uiTweaks=true end
-  local result=self:ApplySettings(settings,modules,"addon-bundle-import",nil,{kind="graphics-user",context={source="addon-bundle-import"}})
+  local result=self:ApplySettings(settings,modules,"addon-bundle-import",{backupSource="addon-import"},{kind="graphics-user",context={source="addon-bundle-import"}})
   if not result.ok then return result end
   local db=self:InitializeDatabase();local old=db.preferences
   db.preferences={
