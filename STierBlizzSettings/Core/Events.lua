@@ -19,24 +19,27 @@ frame:SetScript("OnEvent",function(_,event,arg)
     if C_Timer and type(C_Timer.After)=="function" then C_Timer.After(0.8,function()if STBS:GetZoneGraphicsConfig().enabled then STBS:ApplyZoneGraphics("zone-change") end end)
     elseif STBS:GetZoneGraphicsConfig().enabled then STBS:ApplyZoneGraphics("zone-change") end
   end
-  if event=="PLAYER_REGEN_ENABLED" and STBS.pending then
-    local pending=STBS.pending;STBS.pending=nil
-    local result=STBS:ApplySettings(pending.settings,pending.modules,pending.trigger,pending.options)
-    if pending.trigger=="zone-change" or pending.trigger=="zone-enabled" or pending.trigger=="zone-manual" then
+  if event=="PLAYER_REGEN_ENABLED" and STBS:GetPendingOperation() then
+    local completed=STBS:CompletePendingOperation();local completedData=type(completed.data)=="table" and completed.data or {};local pending=completedData.operation;local result=completedData.result or completed
+    if result.code=="queued" or type(pending)~="table" then return end
+    local context=type(pending.context)=="table" and pending.context or {}
+    if pending.kind=="zone-auto" or pending.kind=="zone-manual" then
       local data=type(result.data)=="table" and result.data or nil
       local graphics=data and type(data.graphics)=="table" and data.graphics or nil
       local changed=result.ok and graphics and tonumber(graphics.changed) or 0
-      STBS.zoneStatus={ok=result.ok,code=result.code,category=STBS:GetZoneCategory(),preset=STBS.activeZonePreset,changed=changed}
-      if result.ok then STBS:SetSelectedMode(STBS.GRAPHICS_MODE_UNIFIED);STBS:SetSelectedPreset(STBS.activeZonePreset) end
+      local category=context.category or STBS:GetZoneCategory();local preset=context.preset or STBS.activeZonePreset
+      STBS.zoneStatus={ok=result.ok,code=result.code,category=category,preset=preset,changed=changed}
+      if result.ok then STBS:SetSelectedMode(context.mode or STBS.GRAPHICS_MODE_UNIFIED);STBS:SetSelectedPreset(preset) end
       if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="graphics" and STBS.ui.currentGraphicsSection=="zones" then STBS:ShowZoneGraphics() end
     end
-    if pending.trigger=="fps-compare-restore" or pending.trigger=="fps-compare-cancel-restore" then
-      if result.ok then STBS:DiscardTemporaryFPSRestoreBackup(pending.trigger) else STBS:FinalizeBackupLimit() end
-      if pending.trigger=="fps-compare-restore" then local comparison=STBS:GetLastPresetFPSComparison();if comparison then comparison.restoreQueued=false;comparison.restoreFailed=not result.ok;STBS:StorePresetFPSComparison(comparison) end end
+    local recovery=context.reason or pending.trigger
+    if pending.kind=="recovery" and (recovery=="fps-compare-restore" or recovery=="fps-compare-cancel-restore") then
+      if result.ok then STBS:DiscardTemporaryFPSRestoreBackup(recovery) else STBS:FinalizeBackupLimit() end
+      if recovery=="fps-compare-restore" then local comparison=STBS:GetLastPresetFPSComparison();if comparison then comparison.restoreQueued=false;comparison.restoreFailed=not result.ok;STBS:StorePresetFPSComparison(comparison) end end
       STBS.fpsPresetRestorePending=nil;STBS.flashMessage=result.ok and STBS:L("FPS_COMPARE_RESTORED") or STBS:L("FPS_COMPARE_RESTORE_FAILED");STBS.flashKind=result.ok and "success" or "error"
       if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS:ShowFPSTest() end
     end
-    if pending.trigger=="ui-tweaks" then
+    if pending.kind=="ui-tweaks" then
       if result.ok then STBS.uiTweaksDraft=nil end
       STBS.flashMessage=result.ok and string.format(STBS:L("UI_TWEAK_APPLIED"),(result.data and result.data.uiTweaks and result.data.uiTweaks.changed) or 0) or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error"
       if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="uiTweaks" then STBS:ShowUITweaks() end

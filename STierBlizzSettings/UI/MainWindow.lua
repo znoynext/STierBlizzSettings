@@ -402,7 +402,7 @@ function STBS:ConfirmApplyUITweaks()
   for _,entry in ipairs(plan) do if entry.status=="changed" then changed=changed+1 end end
   if changed==0 then self.flashMessage=self:L("UI_TWEAK_ALREADY");self.flashKind="success";self:ShowUITweaks();return end
   self:ShowAddonDialog({title=self:L("UI_TWEAK_APPLY_CONFIRM"),message=string.format(self:L("UI_TWEAK_APPLY_CONFIRM_TEXT"),changed),onAccept=function()
-    local result=STBS:ApplySettings(settings,{uiTweaks=true},"ui-tweaks")
+    local result=STBS:ApplySettings(settings,{uiTweaks=true},"ui-tweaks",nil,{kind="ui-tweaks",context={source="ui-tweaks"}})
     if result.code=="queued" then STBS.flashMessage=STBS:L("PENDING");STBS.flashKind="warning"
     elseif result.ok then STBS.uiTweaksDraft=nil;STBS.flashMessage=string.format(STBS:L("UI_TWEAK_APPLIED"),(result.data.uiTweaks and result.data.uiTweaks.changed) or changed);STBS.flashKind="success"
     else STBS.flashMessage=STBS:L("APPLY_FAILED").." ("..tostring(result.code)..")";STBS.flashKind="error" end
@@ -527,7 +527,7 @@ end
 
 function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode,selectedPreset)
   local function applyNow(options)
-    if settings then return self:ApplySettings(settings,{graphics=true},trigger or "personal-graphics",options) end
+    if settings then local source=trigger or "personal-graphics";return self:ApplySettings(settings,{graphics=true},source,options,{kind="graphics-user",context={source=source,mode=selectedMode,preset=selectedPreset}}) end
     return self:ApplyOfficial("graphics",options)
   end
   local before=self:TakeFPSBaseline();local result=applyNow({fpsBefore=before})

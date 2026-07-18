@@ -49,7 +49,8 @@ function STBS:ApplyZoneGraphics(trigger)
     if self.ui and self.ui:IsShown() and self.ui.currentPageKey=="graphics" and self.ui.currentGraphicsSection=="zones" then self:ShowZoneGraphics() end
     return self:Result(true,"unchanged",self.zoneStatus)
   end
-  local result=self:ApplySettings(settings,{graphics=true},trigger or "zone-graphics")
+  trigger=trigger or "zone-graphics";local pendingKind=trigger=="zone-change" and "zone-auto" or "zone-manual"
+  local result=self:ApplySettings(settings,{graphics=true},trigger,nil,{kind=pendingKind,context={category=category,preset=preset,mode=mode}})
   self.zoneStatus={ok=result.ok,code=result.code,category=category,preset=preset,changed=changed}
   if result.ok then self:SetSelectedMode(mode);self:SetSelectedPreset(preset) end
   if self.ui and self.ui:IsShown() and self.ui.currentPageKey=="graphics" and self.ui.currentGraphicsSection=="zones" then self:ShowZoneGraphics() end

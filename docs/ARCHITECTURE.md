@@ -24,7 +24,7 @@ Every current registry entry declares `readable`, `writable`, and `portable` as 
 The production pipeline in `Settings/Transaction.lua` is:
 
 1. Validate the selected module map and the submitted setting values against the registry. At least one submitted setting must belong to a selected module.
-2. If combat lockdown is active, deep-copy the operation into the single pending slot and return without building a diff or backup.
+2. If combat lockdown is active, classify the request as a typed pending operation, deep-copy it into the priority-aware single slot when replacement is allowed, and return without building a diff or backup.
 3. Build a diff for registry entries in the submitted payload.
 4. Unless `skipBackup` is set, capture a snapshot of all readable values in the selected modules and insert it into backup history.
 5. Write only `changed` entries through `Settings/Writer.lua`; each write is immediately read back and compared with registry-aware equality.
@@ -55,9 +55,13 @@ The transaction writes only `changed` entries. The other statuses remain part of
 
 ## Pending and combat architecture
 
-Delayed work is an in-memory, non-persistent `STBS.pending` table containing one copied settings payload, module map, string `trigger`, and options table. `ApplySettings` validates the request before queuing it. A second operation is rejected with `pending-exists`; there is no typed operation model, priority, provenance, replacement policy, or queue. `PLAYER_REGEN_ENABLED` clears the slot, applies it, and uses trigger-string branches for follow-up behavior such as Zone Graphics, UI Tweaks, FPS restore, or post-combat FPS baseline handling. Cancellation simply clears the slot.
+Delayed work uses one in-memory, non-persistent typed slot owned by `Settings/Transaction.lua`. Every operation contains `kind`, copied `settings`, copied `modules`, `trigger`, copied transaction `options`, and copied logical `context`. Supported kinds are `graphics-user`, `zone-auto`, `zone-manual`, `ui-tweaks`, and `recovery`. Trigger strings remain transaction-log metadata and a compatibility input; post-combat routing uses kind/context rather than parsing trigger strings.
 
-Consequently, automatic work cannot overwrite a queued user operation, but it is rejected rather than deferred. A queued Zone Graphics request is not reclassified against the player's new zone before execution, and a queued graphics FPS baseline is not revalidated for scene/context drift. The slot and its trigger protocol are current limitations.
+The pending API consists of `QueuePendingOperation`, `GetPendingOperation`, `CancelPendingOperation`, `CanReplacePendingOperation`, and `CompletePendingOperation`. The getter returns an isolated copy. Completion removes the operation from the slot and re-enters the normal validated transaction path, returning both the operation and its transaction result. Cancellation can require an expected kind so one workflow cannot accidentally cancel another.
+
+Replacement is deliberately priority-based rather than FIFO: recovery/restore work outranks explicit user work; `graphics-user`, `zone-manual`, and `ui-tweaks` share the explicit-user priority; automatic `zone-auto` work is lowest. A strictly higher-priority operation may replace the current item. Equal- or lower-priority work receives `pending-exists`. In particular, a later automatic zone event does not replace an earlier one, so latest-zone-wins behavior is not implemented yet. Replaced lower-priority work is discarded rather than deferred because there is still no queue.
+
+A queued Zone Graphics request retains the category/preset resolved when it was created and is not reclassified against the player's new zone before execution. A queued graphics FPS baseline is likewise not revalidated for scene/context drift. These remain current limitations.
 
 ## Backup architecture
 
@@ -102,7 +106,7 @@ The newer preset comparison is separate from the older unused `StartAccurateFPSC
 
 Zone Graphics currently owns a five-category mapping: world, party, raid, PvP/arena, and scenario/delve. The mapping stores built-in preset IDs, not copied setting tables. On relevant world/zone events, current Retail instance APIs classify the player, the assigned built-in unified profile is flattened and validated, and a graphics-only diff is built. Identical assignments stop before transaction/backup creation; changed assignments use the same graphics transaction path as manual applies.
 
-Combat routes Zone Graphics through the shared pending slot. The delayed operation stores the already-resolved preset/settings and is not reclassified on execution. Event handling also uses an uncancelled short timer, so rapid zone events can schedule redundant stale attempts. Zone Graphics blocks standalone and preset-comparison measurement/restore states, but not every post-apply or legacy benchmark state. These are properties of the current implementation, not commitments about future zone systems.
+Combat routes Zone Graphics through the typed pending slot as `zone-auto` for zone events or `zone-manual` for explicit enable/apply actions. The delayed context stores the already-resolved category and preset and is not reclassified on execution. A later automatic zone event cannot replace an existing automatic request. Event handling also uses an uncancelled short timer, so rapid zone events can schedule redundant stale attempts. Zone Graphics blocks standalone and preset-comparison measurement/restore states, but not every post-apply or legacy benchmark state. These are properties of the current implementation, not commitments about future zone systems.
 
 ## UI architecture and lifecycle
 

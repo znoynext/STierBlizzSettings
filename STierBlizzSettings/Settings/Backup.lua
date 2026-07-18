@@ -22,7 +22,7 @@ function STBS:RestoreBackup(index, modules)
   local validSettings, settingsWhy = self:ValidateSettings(settings, false); if not validSettings then return self:Result(false,settingsWhy) end
   local safety = self:CreateBackup(modules, "restore-safety")
   if not safety.ok then return safety end
-  local result = self:ApplySettings(settings, modules, "restore", { skipBackup = true })
+  local result = self:ApplySettings(settings, modules, "restore", { skipBackup = true }, { kind="recovery",context={reason="backup-restore",backupIndex=index} })
   if result.ok then result.data.safetyBackup = safety.data end
   return result
 end

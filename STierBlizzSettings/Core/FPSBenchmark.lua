@@ -104,7 +104,7 @@ end
 
 function STBS:StartPresetFPSComparison(preset,doneCallback)
   if self.fpsTestMeasurement or self.fpsAfterMeasurement or self.fpsAccurateMeasurement then return false,"busy" end
-  if self.pending then return false,"pending" end
+  if self:GetPendingOperation() then return false,"pending" end
   if type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown() then return false,"combat" end
   if not self:IsGraphicsPreset(preset) then return false,"preset" end
   local original,failures=self:CaptureModules({graphics=true});if next(failures or {}) or not next(original or {}) then return false,"capture" end
@@ -120,18 +120,18 @@ function STBS:StartPresetFPSComparison(preset,doneCallback)
     if self.fpsTestRun~=state then return end
     if type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown() then finish(nil,nil,self:Result(false,"combat"));return end
     if type(self.UpdateFPSTestModal)=="function" then self:UpdateFPSTestModal("comparison-switch",0,1,preset) end
-    local applied=self:ApplySettings(candidate,{graphics=true},"fps-compare-"..preset)
-    if not applied.ok then if applied.code=="queued" then self:CancelPendingOperation() end;finish(nil,nil,applied);return end
+    local applied=self:ApplySettings(candidate,{graphics=true},"fps-compare-"..preset,nil,{kind="graphics-user",context={reason="fps-compare-candidate",preset=preset,mode=mode}})
+    if not applied.ok then if applied.code=="queued" then self:CancelPendingOperation("graphics-user") end;finish(nil,nil,applied);return end
     state.candidateApplied=true
     local function captureCandidate()
       if self.fpsTestRun~=state then return end
       local captured=self:CaptureFrameTimes(PRESET_COMPARE_PHASE_SECONDS,"comparison-preset",function(afterTimes)
         if self.fpsTestRun~=state then return end
         if type(self.UpdateFPSTestModal)=="function" then self:UpdateFPSTestModal("comparison-restore",1,1,preset) end
-        local comparison=self:CalculateFPSMetric(nil,nil,beforeTimes,afterTimes);local restored=self:ApplySettings(original,{graphics=true},"fps-compare-restore",{deferBackupTrim=true});if restored.ok then self:DiscardTemporaryFPSRestoreBackup("fps-compare-restore") elseif restored.code~="queued" then self:FinalizeBackupLimit() end
+        local comparison=self:CalculateFPSMetric(nil,nil,beforeTimes,afterTimes);local restored=self:ApplySettings(original,{graphics=true},"fps-compare-restore",{deferBackupTrim=true},{kind="recovery",context={reason="fps-compare-restore"}});if restored.ok then self:DiscardTemporaryFPSRestoreBackup("fps-compare-restore") elseif restored.code~="queued" then self:FinalizeBackupLimit() end
         if restored.code=="queued" then self.fpsPresetRestorePending=true end;finish(comparison,restored,nil)
       end)
-      if not captured then local restored=self:ApplySettings(original,{graphics=true},"fps-compare-restore",{deferBackupTrim=true});if restored.ok then self:DiscardTemporaryFPSRestoreBackup("fps-compare-restore") elseif restored.code~="queued" then self:FinalizeBackupLimit() end;finish(nil,restored,self:Result(false,"unavailable")) end
+      if not captured then local restored=self:ApplySettings(original,{graphics=true},"fps-compare-restore",{deferBackupTrim=true},{kind="recovery",context={reason="fps-compare-restore"}});if restored.ok then self:DiscardTemporaryFPSRestoreBackup("fps-compare-restore") elseif restored.code~="queued" then self:FinalizeBackupLimit() end;finish(nil,restored,self:Result(false,"unavailable")) end
     end
     if C_Timer and type(C_Timer.After)=="function" then C_Timer.After(0.75,captureCandidate) else captureCandidate() end
   end)
@@ -142,7 +142,7 @@ end
 function STBS:CancelFPSTest()
   local state=self.fpsTestRun;if not state then return self:Result(false,"no-test") end
   state.cancelled=true;if self.fpsTestFrame then self.fpsTestFrame:SetScript("OnUpdate",nil) end;self.fpsTestFrame=nil
-  local restored=nil;if state.kind=="comparison" and state.candidateApplied then restored=self:ApplySettings(state.original,{graphics=true},"fps-compare-cancel-restore",{deferBackupTrim=true});if restored.ok then self:DiscardTemporaryFPSRestoreBackup("fps-compare-cancel-restore") elseif restored.code=="queued" then self.fpsPresetRestorePending=true else self:FinalizeBackupLimit() end end
+  local restored=nil;if state.kind=="comparison" and state.candidateApplied then restored=self:ApplySettings(state.original,{graphics=true},"fps-compare-cancel-restore",{deferBackupTrim=true},{kind="recovery",context={reason="fps-compare-cancel-restore"}});if restored.ok then self:DiscardTemporaryFPSRestoreBackup("fps-compare-cancel-restore") elseif restored.code=="queued" then self.fpsPresetRestorePending=true else self:FinalizeBackupLimit() end end
   self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsAccuratePhase=nil;self.fpsTestRun=nil;self.fpsPresetComparison=nil
   return self:Result(true,restored and restored.code=="queued" and "cancelled-restore-queued" or restored and not restored.ok and "cancelled-restore-failed" or "cancelled",{restore=restored})
 end
