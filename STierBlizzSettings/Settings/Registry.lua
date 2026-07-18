@@ -23,6 +23,7 @@ local entries = {
   c("ffxGlow", "uiTweaks", "recommendedTweaks", { ["0"]=true,["1"]=true }, { valueType="booleanString" }),
   c("ffxDeath", "uiTweaks", "optionalTweaks", { ["0"]=true,["1"]=true }, { valueType="booleanString" }),
   c("ffxNether", "uiTweaks", "optionalTweaks", { ["0"]=true,["1"]=true }, { valueType="booleanString" }),
+  c("cameraDistanceMaxZoomFactor", "uiTweaks", "optionalTweaks", nil, { numericMinimum=1,numericMaximum=2.6,numericStep=0.1,numericTolerance=0.001,toggleOn="2.6",toggleOff="1.9" }),
 }
 local function graphicPair(base, raid, values, extra)
   extra = extra or {}; extra.graphicsValidation = "advanced"

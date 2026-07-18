@@ -1,10 +1,11 @@
 local _, STBS = ...
 
-STBS.UI_TWEAK_KEYS={"ResampleAlwaysSharpen","ResampleSharpness","ffxGlow","ffxDeath","ffxNether"}
+STBS.UI_TWEAK_KEYS={"ResampleAlwaysSharpen","ResampleSharpness","ffxGlow","ffxDeath","ffxNether","cameraDistanceMaxZoomFactor"}
 STBS.UI_TWEAK_RECOMMENDED={ResampleAlwaysSharpen="1",ResampleSharpness="0.3",ffxGlow="1"}
 
 local function displayValue(setting,value)
   if setting and setting.numericStep then return string.format("%.1f",tonumber(value) or 0) end
+  if setting and setting.toggleOn and setting.toggleOff then return tostring(value)==setting.toggleOn and setting.toggleOn or setting.toggleOff end
   return value=="1" and "1" or "0"
 end
 

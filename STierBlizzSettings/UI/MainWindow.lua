@@ -6,17 +6,6 @@ local categoryOrder={"graphics","raidGraphics"}
 local MIN_WINDOW_WIDTH,MIN_WINDOW_HEIGHT=900,640
 local DEFAULT_WINDOW_WIDTH,DEFAULT_WINDOW_HEIGHT=1080,760
 
-local function popupEditBox(dialog)
-  if dialog and type(dialog.GetEditBox)=="function" then return dialog:GetEditBox() end
-  return dialog and (dialog.editBox or dialog.EditBox)
-end
-
-local function popupAcceptOnEnter(editBox)
-  local dialog=editBox and editBox:GetParent()
-  local accept=dialog and type(dialog.GetButton1)=="function" and dialog:GetButton1()
-  if accept then accept:Click() end
-end
-
 local function button(parent,text,x,y,width,callback,style)
   local b=STBS:CreateModernButton(parent,text,width or 200,34,callback,style);b:SetPoint("TOPLEFT",x,y)
   return b
@@ -173,7 +162,7 @@ function STBS:CreateUI()
   f.logo=top:CreateTexture(nil,"ARTWORK");f.logo:SetTexture(ASSET.."STierIcon");f.logo:SetSize(48,48);f.logo:SetPoint("LEFT",12,0)
   f.title=top:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.title:SetPoint("LEFT",68,8);f.title:SetText(self:L("TITLE"));f.title:SetTextColor(1,0.82,0)
   f.version=top:CreateFontString(nil,"OVERLAY","GameFontNormalSmall");f.version:SetPoint("LEFT",69,-15);f.version:SetText("v"..self.VERSION);f.version:SetTextColor(0.68,0.62,0.5)
-  f.currentPreset=top:CreateFontString(nil,"OVERLAY","GameFontNormalSmall");f.currentPreset:SetPoint("LEFT",f.version,"RIGHT",18,0);f.currentPreset:SetPoint("RIGHT",top,"RIGHT",-48,-15);f.currentPreset:SetJustifyH("LEFT");f.currentPreset:SetTextColor(0.82,0.72,0.48)
+  f.currentPreset=top:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.currentPreset:SetPoint("LEFT",top,"LEFT",300,-14);f.currentPreset:SetPoint("RIGHT",top,"RIGHT",-54,-14);f.currentPreset:SetJustifyH("LEFT");f.currentPreset:SetTextColor(1,0.82,0.18)
   local close=CreateFrame("Button",nil,f,"UIPanelCloseButton");close:SetPoint("TOPRIGHT",3,3)
 
   local side=CreateFrame("Frame",nil,f,"BackdropTemplate");side:SetPoint("TOPLEFT",18,-92);side:SetPoint("BOTTOMLEFT",18,20);side:SetWidth(194);side:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=12,insets={left=3,right=3,top=3,bottom=3}});side:SetBackdropColor(0.035,0.028,0.018,0.98);side:SetBackdropBorderColor(0.52,0.4,0.2,0.95)
@@ -244,6 +233,43 @@ function STBS:UpdateFPSTestModal(phase,elapsed,duration,preset)
 end
 
 function STBS:HideFPSTestModal() if self.fpsTestModal then self.fpsTestModal:Hide() end end
+
+function STBS:CreateAddonDialog()
+  if self.addonDialog then return self.addonDialog end
+  local shade=CreateFrame("Frame","STierBlizzSettingsActionDialog",UIParent,"BackdropTemplate");shade:SetAllPoints(UIParent);shade:SetFrameStrata("FULLSCREEN_DIALOG");shade:SetFrameLevel(110);shade:EnableMouse(true);shade:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8"});shade:SetBackdropColor(0,0,0,0.62);shade:Hide()
+  local dialog=CreateFrame("Frame",nil,shade,"BackdropTemplate");dialog:SetSize(560,210);dialog:SetPoint("CENTER");dialog:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1,insets={left=1,right=1,top=1,bottom=1}});dialog:SetBackdropColor(0.035,0.038,0.04,0.995);dialog:SetBackdropBorderColor(0.64,0.45,0.12,1)
+  dialog.inner=dialog:CreateTexture(nil,"BACKGROUND",nil,-1);dialog.inner:SetPoint("TOPLEFT",4,-4);dialog.inner:SetPoint("BOTTOMRIGHT",-4,4);dialog.inner:SetColorTexture(0.055,0.058,0.06,0.96)
+  dialog.icon=dialog:CreateTexture(nil,"ARTWORK");dialog.icon:SetTexture(ASSET.."STierIcon");dialog.icon:SetSize(42,42);dialog.icon:SetPoint("TOPLEFT",22,-15)
+  dialog.title=dialog:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");dialog.title:SetPoint("LEFT",dialog.icon,"RIGHT",13,1);dialog.title:SetPoint("RIGHT",-24,0);dialog.title:SetJustifyH("LEFT");dialog.title:SetTextColor(1,0.82,0.18)
+  dialog.line=dialog:CreateTexture(nil,"ARTWORK");dialog.line:SetPoint("TOPLEFT",18,-69);dialog.line:SetPoint("TOPRIGHT",-18,-69);dialog.line:SetHeight(1);dialog.line:SetColorTexture(0.62,0.43,0.12,0.72)
+  dialog.message=dialog:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge");dialog.message:SetPoint("TOPLEFT",34,-87);dialog.message:SetPoint("TOPRIGHT",-34,-87);dialog.message:SetJustifyH("CENTER");dialog.message:SetJustifyV("TOP");dialog.message:SetSpacing(4);dialog.message:SetTextColor(0.92,0.87,0.74)
+  dialog.editBox=CreateFrame("EditBox",nil,dialog,"BackdropTemplate");dialog.editBox:SetHeight(38);dialog.editBox:SetPoint("LEFT",38,0);dialog.editBox:SetPoint("RIGHT",-38,0);dialog.editBox:SetAutoFocus(false);dialog.editBox:SetFontObject(GameFontHighlightLarge);dialog.editBox:SetTextInsets(12,12,0,0);dialog.editBox:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1,insets={left=1,right=1,top=1,bottom=1}});dialog.editBox:SetBackdropColor(0.02,0.022,0.024,1);dialog.editBox:SetBackdropBorderColor(0.42,0.38,0.3,1);dialog.editBox:SetTextColor(1,0.95,0.82);dialog.editBox:SetHighlightColor(0.55,0.38,0.08,0.8)
+  local function acceptDialog()
+    local spec=shade.spec;if not spec then return end
+    local value=spec.hasEditBox and dialog.editBox:GetText() or nil
+    if spec.requireText and (not value or not value:find("%S")) then return end
+    shade:Hide();if spec.onAccept then spec.onAccept(value) end
+  end
+  dialog.accept=button(dialog,"",0,0,225,acceptDialog,"primary");dialog.accept:ClearAllPoints();dialog.accept:SetSize(225,34);dialog.accept:SetPoint("BOTTOMLEFT",34,24)
+  dialog.danger=button(dialog,"",0,0,225,acceptDialog,"danger");dialog.danger:ClearAllPoints();dialog.danger:SetSize(225,34);dialog.danger:SetPoint("BOTTOMLEFT",34,24)
+  dialog.cancel=button(dialog,"",0,0,225,function()local spec=shade.spec;shade:Hide();if spec and spec.onCancel then spec.onCancel() end end);dialog.cancel:ClearAllPoints();dialog.cancel:SetSize(225,34);dialog.cancel:SetPoint("BOTTOMRIGHT",-34,24)
+  dialog.editBox:SetScript("OnEnterPressed",function()local active=dialog.danger:IsShown() and dialog.danger or dialog.accept;if active:IsEnabled() then active:Click() end end);dialog.editBox:SetScript("OnEscapePressed",function()shade:Hide()end);dialog.editBox:SetScript("OnTextChanged",function(self)local spec=shade.spec;local disabled=spec and spec.requireText and not self:GetText():find("%S");dialog.accept:SetDisabled(disabled==true);dialog.danger:SetDisabled(disabled==true)end)
+  shade:SetScript("OnHide",function()dialog.editBox:ClearFocus();shade.spec=nil end)
+  if type(_G.UISpecialFrames)=="table" then local found=false;for _,name in ipairs(_G.UISpecialFrames)do if name=="STierBlizzSettingsActionDialog" then found=true break end end;if not found then table.insert(_G.UISpecialFrames,"STierBlizzSettingsActionDialog")end end
+  shade.dialog=dialog;self.addonDialog=shade;return shade
+end
+
+function STBS:ShowAddonDialog(spec)
+  spec=spec or {};local shade=self:CreateAddonDialog();local dialog=shade.dialog;shade.spec=spec
+  dialog.title:SetText(spec.title or self:L("TITLE"));local message=spec.message or "";dialog.message:SetText(message);dialog.message:SetShown(message~="")
+  local hasEditBox=spec.hasEditBox==true;dialog.editBox:SetShown(hasEditBox);dialog.editBox:SetMaxLetters(math.max(1,math.floor(tonumber(spec.maxLetters) or self.MAX_STRING_BYTES)));dialog.editBox:SetText(spec.initialText or "")
+  local messageHeight=message~="" and math.max(24,math.ceil(dialog.message:GetStringHeight())) or 0;dialog:SetHeight(math.max(hasEditBox and 246 or 194,158+messageHeight+(hasEditBox and 58 or 0)))
+  dialog.editBox:ClearAllPoints();dialog.editBox:SetPoint("TOPLEFT",38,message~="" and -(99+messageHeight) or -91);dialog.editBox:SetPoint("TOPRIGHT",-38,message~="" and -(99+messageHeight) or -91)
+  local active=spec.danger and dialog.danger or dialog.accept;dialog.accept:SetShown(not spec.danger);dialog.danger:SetShown(spec.danger==true);active:SetText(spec.acceptText or _G.ACCEPT or self:L("CONFIRM"));dialog.cancel:SetText(spec.cancelText or _G.CANCEL or self:L("BACK"));active:SetDisabled(spec.requireText and not (spec.initialText or ""):find("%S") or false)
+  shade:SetAlpha(1);shade:Show();if type(_G.UIFrameFadeIn)=="function" then _G.UIFrameFadeIn(shade,0.14,0,1) end
+  if hasEditBox then dialog.editBox:SetFocus();if spec.selectAll then dialog.editBox:HighlightText() else dialog.editBox:SetCursorPosition(#(spec.initialText or ""))end end
+  return shade
+end
 
 function STBS:StartVisibleGraphicsFPSPostMeasurement(beforeSamples)
   local showProgress=self.ui and self.ui:IsShown();local started=self:StartFPSPostMeasurement(beforeSamples,function()
@@ -362,6 +388,7 @@ function STBS:ShowUITweaks()
     {kind="section",label=self:L("UI_TWEAKS_OPTIONAL"),wide=true},
     {kind="check",label=self:L("UI_TWEAK_DEATH"),checked=draft.ffxDeath=="1",disabled=not enabled("ffxDeath"),tooltip=self:L("UI_TWEAK_DEATH_TIP"),fn=function(value)choose("ffxDeath",value and "1" or "0")end},
     {kind="check",label=self:L("UI_TWEAK_NETHER"),checked=draft.ffxNether=="1",disabled=not enabled("ffxNether"),tooltip=self:L("UI_TWEAK_NETHER_TIP"),fn=function(value)choose("ffxNether",value and "1" or "0")end},
+    {kind="check",label=self:L("UI_TWEAK_CAMERA_DISTANCE"),checked=draft.cameraDistanceMaxZoomFactor=="2.6",disabled=not enabled("cameraDistanceMaxZoomFactor"),tooltip=self:L("UI_TWEAK_CAMERA_DISTANCE_TIP"),fn=function(value)choose("cameraDistanceMaxZoomFactor",value and "2.6" or "1.9")end},
     {label=self:L("UI_TWEAK_APPLY"),style="primary",wide=true,fn=function()STBS:ConfirmApplyUITweaks()end},
     {label=self:L("UI_TWEAK_UNDO"),wide=true,disabled=not self:GetLatestBackupIndex("uiTweaks"),fn=function()STBS:ConfirmUndoUITweaks()end},
   }
@@ -374,20 +401,20 @@ function STBS:ConfirmApplyUITweaks()
   local settings=self:GetAvailableUITweakSettings();local plan=self:BuildDiff(settings);local changed=0
   for _,entry in ipairs(plan) do if entry.status=="changed" then changed=changed+1 end end
   if changed==0 then self.flashMessage=self:L("UI_TWEAK_ALREADY");self.flashKind="success";self:ShowUITweaks();return end
-  StaticPopupDialogs["STBS_APPLY_UI_TWEAKS"]={text=self:L("UI_TWEAK_APPLY_CONFIRM"),subText=string.format(self:L("UI_TWEAK_APPLY_CONFIRM_TEXT"),changed),button1=ACCEPT,button2=CANCEL,OnAccept=function()
+  self:ShowAddonDialog({title=self:L("UI_TWEAK_APPLY_CONFIRM"),message=string.format(self:L("UI_TWEAK_APPLY_CONFIRM_TEXT"),changed),onAccept=function()
     local result=STBS:ApplySettings(settings,{uiTweaks=true},"ui-tweaks")
     if result.code=="queued" then STBS.flashMessage=STBS:L("PENDING");STBS.flashKind="warning"
     elseif result.ok then STBS.uiTweaksDraft=nil;STBS.flashMessage=string.format(STBS:L("UI_TWEAK_APPLIED"),(result.data.uiTweaks and result.data.uiTweaks.changed) or changed);STBS.flashKind="success"
     else STBS.flashMessage=STBS:L("APPLY_FAILED").." ("..tostring(result.code)..")";STBS.flashKind="error" end
     STBS:ShowUITweaks()
-  end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_APPLY_UI_TWEAKS")
+  end})
 end
 
 function STBS:ConfirmUndoUITweaks()
   local index=self:GetLatestBackupIndex("uiTweaks");if not index then self.flashMessage=self:L("UI_TWEAK_ALREADY");self.flashKind="warning";self:ShowUITweaks();return end
-  StaticPopupDialogs["STBS_UNDO_UI_TWEAKS"]={text=self:L("UI_TWEAK_UNDO_CONFIRM"),subText=self:L("UI_TWEAK_UNDO_CONFIRM_TEXT"),button1=ACCEPT,button2=CANCEL,OnAccept=function()
+  self:ShowAddonDialog({title=self:L("UI_TWEAK_UNDO_CONFIRM"),message=self:L("UI_TWEAK_UNDO_CONFIRM_TEXT"),onAccept=function()
     local result=STBS:RestoreBackup(index,{uiTweaks=true});if result.ok then STBS.uiTweaksDraft=nil end;STBS.flashMessage=result.ok and STBS:L("UI_TWEAK_RESTORED") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowUITweaks()
-  end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_UNDO_UI_TWEAKS")
+  end})
 end
 
 function STBS:GetFPSStabilityLabel(value)
@@ -481,8 +508,7 @@ end
 function STBS:ConfirmApplyFPSComparisonPreset(comparison)
   local recommendation=self:GetPresetFPSComparisonRecommendation(comparison);if not recommendation then self.flashMessage=self:L("FPS_COMPARE_RECOMMEND_EXPIRED");self.flashKind="warning";self:ShowFPSTest();return end
   local preset=recommendation.preset;local mode=comparison.mode;local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,preset),{graphics=true});local plan=self:BuildDiff(settings);local label=self:GetPresetLabel(preset)
-  StaticPopupDialogs["STBS_APPLY_FPS_COMPARISON"]={text=string.format(self:L("FPS_COMPARE_APPLY_CONFIRM"),label),subText=string.format(self:L("FPS_COMPARE_APPLY_CONFIRM_TEXT"),#plan),button1=string.format(self:L("FPS_COMPARE_APPLY"),label),button2=CANCEL,OnAccept=function()local result=STBS:ApplyGraphicsWithFPS(settings,"fps-comparison-apply",mode,preset);if result.ok or result.code=="queued" then comparison.applied=true;STBS:StorePresetFPSComparison(comparison) end end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3}
-  StaticPopup_Show("STBS_APPLY_FPS_COMPARISON")
+  self:ShowAddonDialog({title=string.format(self:L("FPS_COMPARE_APPLY_CONFIRM"),label),message=string.format(self:L("FPS_COMPARE_APPLY_CONFIRM_TEXT"),#plan),acceptText=string.format(self:L("FPS_COMPARE_APPLY"),label),onAccept=function()local result=STBS:ApplyGraphicsWithFPS(settings,"fps-comparison-apply",mode,preset);if result.ok or result.code=="queued" then comparison.applied=true;STBS:StorePresetFPSComparison(comparison) end end})
 end
 
 function STBS:ShowOfficialPreview()
@@ -496,8 +522,7 @@ function STBS:ShowOfficialPreview()
 end
 
 function STBS:ConfirmApplyGraphics(count)
-  StaticPopupDialogs["STBS_APPLY_GRAPHICS"]={text=self:L("APPLY_CONFIRM"),subText=string.format(self:L("APPLY_CONFIRM_TEXT"),count or 0),button1=ACCEPT,button2=CANCEL,OnAccept=function()local preset=STBS:GetSelectedPreset();local mode=STBS.GRAPHICS_MODE_UNIFIED;local settings=STBS:FlattenProfile(STBS:GetOfficialGraphics(mode,preset),{graphics=true});STBS:ApplyGraphicsWithFPS(settings,"official-graphics",mode,preset)end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3}
-  StaticPopup_Show("STBS_APPLY_GRAPHICS")
+  self:ShowAddonDialog({title=self:L("APPLY_CONFIRM"),message=string.format(self:L("APPLY_CONFIRM_TEXT"),count or 0),onAccept=function()local preset=STBS:GetSelectedPreset();local mode=STBS.GRAPHICS_MODE_UNIFIED;local settings=STBS:FlattenProfile(STBS:GetOfficialGraphics(mode,preset),{graphics=true});STBS:ApplyGraphicsWithFPS(settings,"official-graphics",mode,preset)end})
 end
 
 function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode,selectedPreset)
@@ -521,34 +546,32 @@ function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode,selectedPreset)
 end
 
 function STBS:ConfirmReloadUI()
-  StaticPopupDialogs["STBS_RELOAD_UI"]={text=self:L("RELOAD_CONFIRM"),subText=self:L("RELOAD_CONFIRM_TEXT"),button1=self:L("RELOAD_UI"),button2=CANCEL,OnAccept=function()if type(_G.ReloadUI)=="function" then _G.ReloadUI() else STBS.flashMessage=STBS:L("RELOAD_FAILED");STBS.flashKind="error";STBS:ShowGraphics() end end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3}
-  StaticPopup_Show("STBS_RELOAD_UI")
+  self:ShowAddonDialog({title=self:L("RELOAD_CONFIRM"),message=self:L("RELOAD_CONFIRM_TEXT"),acceptText=self:L("RELOAD_UI"),onAccept=function()if type(_G.ReloadUI)=="function" then _G.ReloadUI() else STBS.flashMessage=STBS:L("RELOAD_FAILED");STBS.flashKind="error";STBS:ShowGraphics() end end})
 end
 
 function STBS:ConfirmUndoGraphics()
   local index=self:GetLatestBackupIndex("graphics");if not index then self.flashMessage=self:L("UNDO_UNAVAILABLE");self.flashKind="warning";self:ShowGraphics();return end
-  StaticPopupDialogs["STBS_UNDO_GRAPHICS"]={text=self:L("UNDO_CONFIRM"),subText=self:L("UNDO_CONFIRM_TEXT"),button1=ACCEPT,button2=CANCEL,OnAccept=function()local result=STBS:RestoreBackup(index,{graphics=true});STBS.flashMessage=result.ok and STBS:L("RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3}
-  StaticPopup_Show("STBS_UNDO_GRAPHICS")
+  self:ShowAddonDialog({title=self:L("UNDO_CONFIRM"),message=self:L("UNDO_CONFIRM_TEXT"),onAccept=function()local result=STBS:RestoreBackup(index,{graphics=true});STBS.flashMessage=result.ok and STBS:L("RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end})
 end
 
 function STBS:OpenSaveDialog()
-  StaticPopupDialogs["STBS_SAVE"]={text=self:L("PROFILE_NAME"),subText=self:L("PROFILE_SAVE_HELP"),button1=ACCEPT,button2=CANCEL,hasEditBox=true,maxLetters=self.MAX_PROFILE_NAME_BYTES,EditBoxOnEnterPressed=popupAcceptOnEnter,EditBoxOnTextChanged=StaticPopup_StandardNonEmptyTextHandler,OnAccept=function(p)local box=popupEditBox(p);local profile,why=STBS:SaveCurrent(box and box:GetText(),{graphics=true});if profile then STBS.selectedItemType="profile";STBS.selectedProfileId=profile.id;STBS.flashMessage=string.format(STBS:L("PROFILE_SAVED"),STBS:SafeText(profile.displayName));STBS.flashKind="success" else STBS.flashMessage=STBS:L("PROFILE_SAVE_FAILED").." ("..tostring(why)..")";STBS.flashKind="error" end;STBS:ShowProfiles()end,OnShow=function(p)local box=popupEditBox(p);if box then box:SetText("");box:SetFocus() end end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_SAVE")
+  self:ShowAddonDialog({title=self:L("PROFILE_NAME"),message=self:L("PROFILE_SAVE_HELP"),hasEditBox=true,requireText=true,maxLetters=self.MAX_PROFILE_NAME_BYTES,onAccept=function(value)local profile,why=STBS:SaveCurrent(value,{graphics=true});if profile then STBS.selectedItemType="profile";STBS.selectedProfileId=profile.id;STBS.flashMessage=string.format(STBS:L("PROFILE_SAVED"),STBS:SafeText(profile.displayName));STBS.flashKind="success" else STBS.flashMessage=STBS:L("PROFILE_SAVE_FAILED").." ("..tostring(why)..")";STBS.flashKind="error" end;STBS:ShowProfiles()end})
 end
 
 function STBS:OpenRenameDialog(profile)
-  StaticPopupDialogs["STBS_RENAME"]={text=self:L("PROFILE_NAME"),button1=ACCEPT,button2=CANCEL,hasEditBox=true,maxLetters=self.MAX_PROFILE_NAME_BYTES,EditBoxOnEnterPressed=popupAcceptOnEnter,EditBoxOnTextChanged=StaticPopup_StandardNonEmptyTextHandler,OnAccept=function(p)local box=popupEditBox(p);local result=STBS:RenameProfile(profile.id,box and box:GetText());STBS.flashMessage=result.ok and STBS:L("PROFILE_RENAMED") or STBS:L("PROFILE_RENAME_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowProfiles()end,OnShow=function(p)local box=popupEditBox(p);if box then box:SetText(profile.displayName);box:SetFocus();box:HighlightText() end end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_RENAME")
+  self:ShowAddonDialog({title=self:L("PROFILE_NAME"),hasEditBox=true,requireText=true,maxLetters=self.MAX_PROFILE_NAME_BYTES,initialText=profile.displayName,selectAll=true,onAccept=function(value)local result=STBS:RenameProfile(profile.id,value);STBS.flashMessage=result.ok and STBS:L("PROFILE_RENAMED") or STBS:L("PROFILE_RENAME_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowProfiles()end})
 end
 
 function STBS:ConfirmDeleteProfile(profile)
-  StaticPopupDialogs["STBS_DELETE_PROFILE"]={text=self:L("DELETE")..": "..self:SafeText(profile.displayName).."?",button1=ACCEPT,button2=CANCEL,OnAccept=function()local result=STBS:DeleteProfile(profile.id);STBS.selectedProfileId=nil;STBS.selectedItemType=nil;STBS.flashMessage=result.ok and STBS:L("PROFILE_DELETED") or STBS:L("ACTION_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowProfiles()end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_DELETE_PROFILE")
+  self:ShowAddonDialog({title=self:L("DELETE").."?",message=self:SafeText(profile.displayName),acceptText=self:L("DELETE"),danger=true,onAccept=function()local result=STBS:DeleteProfile(profile.id);STBS.selectedProfileId=nil;STBS.selectedItemType=nil;STBS.flashMessage=result.ok and STBS:L("PROFILE_DELETED") or STBS:L("ACTION_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowProfiles()end})
 end
 
 function STBS:ConfirmDeleteBackup(index)
-  StaticPopupDialogs["STBS_DELETE_BACKUP"]={text=self:L("DELETE_BACKUP"),subText=self:L("DELETE_BACKUP_CONFIRM"),button1=ACCEPT,button2=CANCEL,OnAccept=function()local result=STBS:DeleteBackup(index);STBS.selectedBackupIndex=nil;STBS.selectedItemType=nil;STBS.flashMessage=result.ok and STBS:L("BACKUP_DELETED") or STBS:L("ACTION_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowProfiles()end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_DELETE_BACKUP")
+  self:ShowAddonDialog({title=self:L("DELETE_BACKUP"),message=self:L("DELETE_BACKUP_CONFIRM"),acceptText=self:L("DELETE"),danger=true,onAccept=function()local result=STBS:DeleteBackup(index);STBS.selectedBackupIndex=nil;STBS.selectedItemType=nil;STBS.flashMessage=result.ok and STBS:L("BACKUP_DELETED") or STBS:L("ACTION_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowProfiles()end})
 end
 
 function STBS:ConfirmRestoreBackup(index)
-  StaticPopupDialogs["STBS_RESTORE_BACKUP"]={text=self:L("RESTORE_SELECTED"),button1=ACCEPT,button2=CANCEL,OnAccept=function()local result=STBS:RestoreBackup(index,{graphics=true});STBS.flashMessage=result.ok and STBS:L("RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_RESTORE_BACKUP")
+  self:ShowAddonDialog({title=self:L("RESTORE_SELECTED"),onAccept=function()local result=STBS:RestoreBackup(index,{graphics=true});STBS.flashMessage=result.ok and STBS:L("RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end})
 end
 
 function STBS:GetGraphicsProfiles()
@@ -642,7 +665,7 @@ function STBS:ShowProfilePreview(profile)
 end
 
 function STBS:ConfirmApplyProfile(profile)
-  StaticPopupDialogs["STBS_APPLY_PROFILE"]={text=self:L("PROFILE_APPLY_CONFIRM"),subText=self:L("PROFILE_APPLY_CONFIRM_TEXT"),button1=ACCEPT,button2=CANCEL,OnAccept=function()local settings=STBS:FlattenProfile(profile,{graphics=true});STBS:ApplyGraphicsWithFPS(settings,"personal-profile",profile.sections.graphics.mode)end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_APPLY_PROFILE")
+  self:ShowAddonDialog({title=self:L("PROFILE_APPLY_CONFIRM"),message=self:L("PROFILE_APPLY_CONFIRM_TEXT"),onAccept=function()local settings=STBS:FlattenProfile(profile,{graphics=true});STBS:ApplyGraphicsWithFPS(settings,"personal-profile",profile.sections.graphics.mode)end})
 end
 
 function STBS:ShowDiagnostics() self:SetPage(self:L("DIAGNOSTICS"),self:DiagnosticReport(),{{label=self:L("COPY"),fn=function()STBS:ShowCopyBox(STBS:DiagnosticReport())end},{label=self:L("BACK"),fn=function()STBS:ShowGraphics()end}},nil,{}) end
@@ -683,7 +706,7 @@ function STBS:ShowAddonImportPreview(payload)
 end
 
 function STBS:OpenImport()
-  StaticPopupDialogs["STBS_IMPORT"]={text=self:L("IMPORT_PROMPT"),button1=ACCEPT,button2=CANCEL,hasEditBox=true,maxLetters=STBS.MAX_IMPORT_BYTES,EditBoxOnEnterPressed=popupAcceptOnEnter,EditBoxOnTextChanged=StaticPopup_StandardNonEmptyTextHandler,OnAccept=function(p)local box=popupEditBox(p);local payload,why=STBS:ImportProfile(box and box:GetText());if not payload or not payload.selectedModules.graphics then STBS:SetPage(STBS:L("IMPORT"),STBS:L("INVALID_IMPORT").." ("..tostring(why or "graphics")..")",{{label=STBS:L("BACK"),fn=function()STBS:ShowProfiles()end}},STBS:L("ACTION_FAILED"),{pageKey="profiles",statusKind="error"});return end;STBS.pendingImport=payload;STBS:ShowImportPreview(payload)end,OnShow=function(p)local box=popupEditBox(p);if box then box:SetText("");box:SetFocus() end end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3};StaticPopup_Show("STBS_IMPORT")
+  self:ShowAddonDialog({title=self:L("IMPORT"),message=self:L("IMPORT_PROMPT"),hasEditBox=true,requireText=true,maxLetters=self.MAX_IMPORT_BYTES,onAccept=function(value)local payload,why=STBS:ImportProfile(value);if not payload or not payload.selectedModules.graphics then STBS:SetPage(STBS:L("IMPORT"),STBS:L("INVALID_IMPORT").." ("..tostring(why or "graphics")..")",{{label=STBS:L("BACK"),fn=function()STBS:ShowProfiles()end}},STBS:L("ACTION_FAILED"),{pageKey="profiles",statusKind="error"});return end;STBS.pendingImport=payload;STBS:ShowImportPreview(payload)end})
 end
 
 function STBS:ApplyPendingImport(graphicsMode)

@@ -8,7 +8,7 @@ A lightweight WoW Retail addon that applies a curated balance of FPS, image qual
 
 ## Install
 
-1. Download [STierBlizzSettings-v0.4.18-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.4.18-alpha.zip).
+1. Download [STierBlizzSettings-v0.4.19-alpha.zip](https://github.com/znoynext/STierBlizzSettings/raw/refs/heads/main/dist/STierBlizzSettings-v0.4.19-alpha.zip).
 2. Extract it into `World of Warcraft/_retail_/Interface/AddOns/`.
 3. Verify the final path is `.../AddOns/STierBlizzSettings/STierBlizzSettings.toc`.
 4. Enable the addon and open it with `/stier` or the minimap button.
@@ -16,7 +16,7 @@ A lightweight WoW Retail addon that applies a curated balance of FPS, image qual
 ## What works
 
 - Five focused top-level tabs: **Graphics**, **UI Tweaks**, **Test FPS**, **Profiles**, and **About**. Graphics contains native **Graphics Settings** and **Zone Graphics Switcher** sub-tabs.
-- **UI Tweaks** exposes only curated live Retail CVars: universal resample sharpening/glow recommendations plus optional death and ghost-world effects. It is autonomous: graphics presets never change these values. Controls fail closed when unavailable, show short hover explanations and apply through a dedicated backup-first transaction with Undo.
+- **UI Tweaks** exposes only curated live Retail CVars: universal resample sharpening/glow recommendations plus optional death/ghost-world effects and maximum camera distance. It is autonomous: graphics presets never change these values. Controls fail closed when unavailable, show short hover explanations and apply through a dedicated backup-first transaction with Undo.
 - Three presets: **PRO** for maximum practical FPS, **Optimized** for the recommended balance, and **Quality** for a better picture without wasteful maximums.
 - Optional zone profiles for world/cities, dungeons, raids, PvP/arenas and scenarios/delves. They switch only when the content type changes and are off by default.
 - One clear preset at a time; optional Zone Graphics is the single place for content-specific switching.
@@ -31,8 +31,8 @@ A lightweight WoW Retail addon that applies a curated balance of FPS, image qual
 - Apply, rename, export and delete profiles; restore or delete backups.
 - Strict data-only `STBS1:` import. Imported text is never executed.
 - Clear colored feedback after saves, backups, deletes, restores, and applies.
-- A gold `S` minimap icon, larger standard WoW fonts, and scalable Blizzard Retail-style buttons and checkboxes with dark surfaces, restrained gold states, smooth feedback and red reserved for destructive actions.
-- The header always shows the detected active graphics preset: **PRO**, **Optimized**, **Quality**, or **Custom** after manual changes.
+- A gold `S` minimap icon, larger standard WoW fonts, and scalable Blizzard Retail-style buttons, checkboxes and addon-owned modal dialogs with dark surfaces, restrained gold states, smooth feedback and red reserved for destructive actions.
+- The header prominently shows the detected active graphics preset in the standard large addon font: **PRO**, **Optimized**, **Quality**, or **Custom** after manual changes.
 
 The addon optimizes every independent control in the active **Graphics Quality** set, plus safe **Graphics** and **Advanced** controls. Monitor, resolution, Render Scale, V-Sync, graphics API/card, FPS caps, color calibration, and latency mode are deliberately preserved because they are hardware- or preference-dependent. See the complete [coverage matrix](docs/RECOMMENDED_PROFILE_RESEARCH.md).
 
@@ -46,6 +46,6 @@ While Graphics is open, the addon displays Retail `GetFramerate()` live and auto
 
 No telemetry, network access, ads, premium features, donation prompts or gameplay automation are included. Every supported setting is curated and validated against current Blizzard Retail UI sources; unavailable values fail closed.
 
-Current version: **0.4.18-alpha**. Baseline: Retail 12.0.7, Interface 120007, Blizzard UI build 68453. Live-client visual testing and controlled hardware benchmarks are still required before declaring v1.0 production-ready.
+Current version: **0.4.19-alpha**. Baseline: Retail 12.0.7, Interface 120007, Blizzard UI build 68453. Live-client visual testing and controlled hardware benchmarks are still required before declaring v1.0 production-ready.
 
 See the [current project state](docs/PROJECT_STATE.md), [Russian README](README.ru.md), [preset research](docs/RECOMMENDED_PROFILE_RESEARCH.md), [architecture](docs/ARCHITECTURE.md), [UI/UX notes](docs/UI_UX_RESEARCH.md) and [test plan](docs/TEST_PLAN.md).

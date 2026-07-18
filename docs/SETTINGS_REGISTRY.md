@@ -14,10 +14,11 @@ Research baseline: Blizzard `wow-ui-source` branch `live`, version `12.0.7.68453
 | Nameplates | `nameplateShowEnemies`, `nameplateShowAll`, `nameplateShowOffscreen` | `1`, `1`, `1` |
 | UI Tweaks — universal | `ResampleAlwaysSharpen`, `ResampleSharpness`, `ffxGlow` | `1`, `0.3`, `1` |
 | UI Tweaks — optional | `ffxDeath`, `ffxNether` | user choice (`0` or `1`) |
+| UI Tweaks — camera | `cameraDistanceMaxZoomFactor` | standard `1.9` or Retail maximum `2.6` |
 
 `RAIDsettingsEnabled` is set to `0` for unified mode and `1` for split mode. `graphicsQuality` and `raidGraphicsQuality` are deliberately not written. Hardware-dependent CVars are not present in the registry.
 
-`ResampleSharpness` mirrors Blizzard's own 0.0–2.0 slider with 0.1 steps; the UI Tweaks recommendation is 0.3. The four hidden effect/sharpening toggles are never assumed to exist: the live Retail client must return writable metadata through `C_CVar.GetCVarInfo`, the pre-change value must be captured, and the post-write readback must match. A missing, protected or read-only CVar disables its control. UI Tweaks are independent of PRO/Optimized/Quality and are included in full-addon exchange only when readable.
+`ResampleSharpness` mirrors Blizzard's own 0.0–2.0 slider with 0.1 steps; the UI Tweaks recommendation is 0.3. `cameraDistanceMaxZoomFactor` is deliberately presented as a checkbox rather than a free slider: checked selects Retail's supported maximum `2.6`, while unchecked restores the standard `1.9`. The registry still accepts and preserves an existing valid value in the documented `1.0–2.6` Retail range until the user toggles that checkbox. The current command remains confirmed on Blizzard's [UI and Macro forum](https://us.forums.blizzard.com/en/wow/t/how-to-set-max-camera-distance/1901520), including a 2026 Retail report; runtime metadata and readback remain authoritative. Hidden effect, sharpening and camera CVars are never assumed to exist: the live Retail client must return writable metadata through `C_CVar.GetCVarInfo`, the pre-change value must be captured, and the post-write readback must match. A missing, protected or read-only CVar disables its control. UI Tweaks are independent of PRO/Optimized/Quality and are included in full-addon exchange only when readable.
 
 Primary evidence:
 

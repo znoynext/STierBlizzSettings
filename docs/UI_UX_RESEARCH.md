@@ -43,6 +43,8 @@ The only custom bitmap is the 128×128 gold S emblem, rendered at 48 px in the h
 
 Boolean states use a fixed 24x24 custom `CheckButton` inside a full-width clickable row. Its scalable dark fill, bronze border, gold checked state and 0.12-second hover feedback now match the shared button system without stretching bitmap artwork; the mark remains Blizzard-owned. UI Tweaks uses the current `MinimalSliderWithSteppersTemplate` for resample sharpness and concise native tooltips on every CVar control. Mutually exclusive presets and zone mappings remain buttons because a checkbox would communicate the wrong interaction. All visible labels use the native `GameFontNormalLarge` / `GameFontHighlightLarge` family, preserving the selected WoW typeface and existing colors.
 
+Addon confirmations no longer inherit the small generic `StaticPopup` layout. One reusable S-Tier modal owns the dark native surface, thin gold frame, addon icon, readable standard fonts, styled text input, consistent primary/cancel buttons and red destructive state. New confirmation and short-entry flows must reuse this component so they cannot drift visually. The current preset is promoted to a right-shifted `GameFontNormalLarge` header label because it is persistent decision-critical state.
+
 ## Intentionally not adopted
 
 - No generic CVar editor or copied lists of speculative console tweaks; only the explicit runtime-verified allowlist is exposed.

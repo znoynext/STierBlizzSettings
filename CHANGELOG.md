@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.19-alpha
+
+- Replaced every addon `StaticPopup` with one reusable S-Tier modal: dark native surface, gold frame, addon icon, larger standard WoW text, scalable primary/cancel buttons, destructive red actions and styled text fields.
+- Added an optional autonomous **Maximum camera distance** UI Tweak using the verified Retail `cameraDistanceMaxZoomFactor` values `1.9` and `2.6`, with runtime availability checks, tooltip, backup, Undo and full-addon exchange support.
+- Moved the current preset label farther right in the header and promoted it to the addon's standard large gold font.
+
 ## 0.4.18-alpha
 
 - Added a centered, smoothly animated five-second progress bar after every successful Graphics preset apply.

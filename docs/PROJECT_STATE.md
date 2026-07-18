@@ -1,6 +1,6 @@
 # Project state
 
-Last updated: 2026-07-18. Current release: **0.4.18-alpha**. Target: WoW Retail 12.0.7, Interface 120007, Blizzard UI build 68453.
+Last updated: 2026-07-18. Current release: **0.4.19-alpha**. Target: WoW Retail 12.0.7, Interface 120007, Blizzard UI build 68453.
 
 This is the short handoff for continuing work in a new Codex task. Read it before changing behavior or UI. Use `CHANGELOG.md` for version history and the linked specialist documents for implementation details.
 
@@ -16,18 +16,18 @@ Five top-level pages are currently exposed: **Graphics**, **UI Tweaks**, **Test 
 - The Graphics dashboard shows live FPS and measured before/after/change cards. Its five-second check has a centered smooth progress dialog and automatically offers Reload UI when finished; no permanent Reload button is shown. The result is local to the same scene and is never presented as a guaranteed gain or prediction.
 - Test FPS captures every frame for 20 seconds and reports average FPS, 1% Low, stability, adaptive spikes and worst frame time. It can compare current graphics with each official preset using two 20-second measurements, then restore the original settings. A verified restore followed by at least 5% gains in both Average FPS and 1% Low exposes a confirmed backup-first action to apply the exact tested unified preset.
 - Zone Graphics is optional and disabled by default. It maps world/city, dungeon, raid, PvP/arena and scenario/delve content to presets and delegates every real change to the same backup-first transaction.
-- UI Tweaks provides curated resample sharpening and glow recommendations plus optional death/ghost-world effects. It is an autonomous transaction module: built-in and zone graphics presets never read or change its values. Every control is runtime-gated through current Retail CVar metadata, includes a short tooltip and applies transactionally with a dedicated Undo path. The displayed performance cost is an expectation of about 0 FPS, never a guarantee.
+- UI Tweaks provides curated resample sharpening and glow recommendations plus optional death/ghost-world effects and a `1.9 / 2.6` maximum-camera-distance toggle. It is an autonomous transaction module: built-in and zone graphics presets never read or change its values. Every control is runtime-gated through current Retail CVar metadata, includes a short tooltip and applies transactionally with a dedicated Undo path. The displayed performance cost is an expectation of about 0 FPS, never a guarantee.
 - Profiles combines named graphics profiles, backup history and full-addon `STBSA1` import/export, including available UI Tweaks values. Imports are untrusted data, parsed without execution and reviewed before application.
 - The optional bottom overlay displays real live FPS and the greater Home/World latency. Ctrl + drag moves it.
 
 ## Current UX decisions
 
 - Use standard WoW fonts, dark native panels, restrained gold accents and readable text sizes. Avoid unrelated modern web styling.
-- The shared control system is in `UI/Style.lua`: buttons and checkboxes use flat dark Retail surfaces, thin scalable borders, gold active states and smooth hover/press feedback; red fills remain exclusive to destructive buttons.
+- The shared control system is in `UI/Style.lua`: buttons and checkboxes use flat dark Retail surfaces, thin scalable borders, gold active states and smooth hover/press feedback; red fills remain exclusive to destructive buttons. Every addon confirmation or text-entry prompt must use `ShowAddonDialog`; do not add new `StaticPopup` windows.
 - Graphics sub-tabs live in a dedicated responsive bar at the top of the page, above its title and status text.
 - The main window is resizable, opens centered and is not clamped to screen edges. Layout must remain responsive at supported sizes.
 - Every user action must produce visible success, warning or error feedback.
-- The header detects the actual active PRO, Optimized or Quality preset; otherwise it shows Custom.
+- The header prominently displays the actual active PRO, Optimized or Quality preset in `GameFontNormalLarge`; otherwise it shows Custom.
 - Do not fake a live game preview. Addons cannot render the world with unapplied graphics settings or diagnose GPU/CPU load and temperatures.
 
 ## Safety boundaries
