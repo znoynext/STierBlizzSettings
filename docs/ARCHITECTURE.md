@@ -1,21 +1,124 @@
 # Architecture
 
-`Core` owns startup, compatibility, SavedVariables, FPS/frame-time sampling, zone classification, curated UI Tweaks and diagnostics. `Settings` contains the registry, validation, verified read/write operations, diffs, backups and transactions. `Profiles` owns schema, migration, built-ins and personal profiles. `ImportExport` implements deterministic serialization and a data-only parser; it never calls `loadstring`. `UI` is lazily created from Blizzard frame primitives and exposes Graphics, UI Tweaks, Test FPS, Profiles and About plus an optional performance widget. Zone Graphics is a native sub-tab inside Graphics.
+This document describes the current technical boundaries and contracts of S-Tier Blizz Settings. Mutable product behavior and release status belong in `docs/PROJECT_STATE.md`. The addon is loaded in `.toc` order into the shared `STBS` namespace; the boundaries below are conventions enforced by ownership, validation, and tests rather than by a Lua module loader.
 
-Application is one operation: validate modules and values → read/diff → save one backup → write individual CVars → read back → report. Invalid work is rejected before combat queuing. If any write or verification fails, attempted CVars are restored in reverse order. In combat, the complete validated operation is queued for `PLAYER_REGEN_ENABLED`.
+## Component boundaries
 
-The Graphics tab owns the three official presets as one active Blizzard graphics set, concise outcome preview, confirmation, live FPS, automatic five-second post-apply comparison and latest-backup undo. `StartVisibleGraphicsFPSPostMeasurement` reuses the central Test FPS progress dialog, hides cancellation for this short mandatory check, and offers Reload UI only after completion; if sampling cannot start, the reload confirmation opens immediately. The addon does not pretend a packaged texture is a live world preview. The separate Test FPS page records `OnUpdate` frame times for 20 seconds and derives average FPS, 1% Low, stability, adaptive spikes and worst-frame time. It can also compare current graphics with one official unified preset using two 20-second captures. The candidate is applied transactionally, Zone Graphics is suspended, cancellation restores the captured original values, and the temporary restoration backup is removed only after a verified successful restore so one user rollback point remains. After that restore, a result is recommended only when rounded Average FPS and 1% Low both improve by at least 5%; applying it requires confirmation and delegates to the normal backup-first graphics transaction and five-second follow-up measurement. UI refresh is throttled, results are character-local, and no value is presented as a guaranteed gain.
+- **Core** owns bootstrap/localization helpers, Retail capability checks, SavedVariables initialization, event routing, zone classification, FPS/frame-time sampling, the autonomous UI Tweaks draft, and small runtime integrations such as the performance widget and minimap entry.
+- **Settings** is the only approved path for managed CVar access. It owns the allowlisted registry, validation, reads, writes with read-back verification, diff planning, backups, and transaction execution.
+- **Profiles** owns the versioned profile schema, built-in recommended profiles, personal-profile persistence, legacy profile normalization, and flattening profiles into registry-backed settings.
+- **ImportExport** owns deterministic serialization, bounded data-only parsing, integrity checks, schema/allowlist validation, and orchestration of profile or full-addon imports. Imported data must cross this boundary before it reaches persistence or a transaction.
+- **UI** owns the shared visual style, lazily-created main window, reusable addon dialogs, dynamic page/action construction, responsive layout, and presentation of settings, profiles, backups, and FPS workflows. It may collect intent, but managed CVar mutation remains a Settings responsibility.
+- **Integrations** contains optional adapters to Blizzard Settings, Edit Mode, and keybindings. Blizzard Settings launches the addon UI. Edit Mode capture/restore is a separate confirmed, non-CVar mechanism and is not part of the current profile transaction path. Keybinding integration is currently disabled and must remain explicit opt-in if enabled later.
 
-The main frame is resizable within screen-derived bounds. Content width, action columns, scroll viewport and copy box dimensions are recalculated from the current frame size. The chosen size and normalized FPS/ping position are stored locally; device-specific positions are deliberately excluded from shared exports.
+## Settings registry contract
 
-UI Tweaks is a separate autonomous `uiTweaks` transaction module. Graphics presets and Zone Graphics pass only `{graphics=true}`, so they cannot select, back up or write any UI Tweaks entry. It exposes boolean controls through the addon's shared scalable Retail-style checkbox, `ResampleSharpness` through the current `MinimalSliderWithSteppersTemplate`, and maximum camera distance as a strict `cameraDistanceMaxZoomFactor` `1.9 / 2.6` toggle. Hidden engine CVars remain unavailable unless `C_CVar.GetCVarInfo` confirms they exist and are writable; every write is read back, and floating-point values use a narrow tolerance for client normalization. The draft is never written until the user confirms Apply.
+`Settings/Registry.lua` is the data-driven allowlist for every managed setting. Each record identifies the owning module and category and supplies the metadata needed to validate and compare values: type, allowed values or numeric bounds/step/tolerance, optional safety minimums, official-profile eligibility, graphics validation strategy, and capability/feature requirements. Entries also carry the verified client build used when the registry was authored.
 
-All addon-owned confirmations and short text-entry prompts go through the reusable `CreateAddonDialog` / `ShowAddonDialog` component. It supplies the fullscreen shade, centered S-Tier surface, icon, standard large WoW fonts, styled edit field, primary/cancel actions, destructive state, Enter validation and Escape handling. `StaticPopupDialogs` is intentionally absent so future flows inherit the same responsive visual language.
+Module ownership is a transaction boundary. A transaction selects modules; capture, backup, and write execution are filtered to registry entries owned by those modules. The diff planner can still describe an unselected entry submitted in a mixed payload, but the transaction ignores it as noted below. Runtime availability is checked separately from static registry validation: CVar access uses `C_CVar.GetCVarInfo`, while graphics features can require Blizzard capability APIs or feature validators. Missing, protected, locked, secure, read-only, or unsupported settings fail closed or become non-writable diff entries.
 
-Profiles has three focused views. Full `STBSA1` exports use the existing deterministic serializer, checksum and data-only parser. Validation rejects unknown fields, future bundle versions, invalid presets/zones, settings outside the graphics/UI Tweaks allowlist and malformed personal profiles. Import applies shared CVars through one normal backup-first transaction before replacing addon preferences and profiles.
+Every current registry entry declares `readable`, `writable`, and `portable` as true. These fields document intended semantics, but the current Reader, Writer, and import validation do not consistently consult the flags themselves. A future false value would therefore not yet be an enforced policy; this is technical debt. Portability also does not mean that device-local addon preferences should be exported.
 
-Zone Graphics uses current Retail `C_PartyInfo.IsDelveInProgress()` plus `IsInInstance()` values to classify world, party, raid, PvP/arena and scenario/delve mappings. It is disabled by default, runs only on `PLAYER_ENTERING_WORLD` and `ZONE_CHANGED_NEW_AREA`, skips unchanged settings, and applies the selected preset as the unified active Blizzard set through the same backup-first transaction. The performance widget uses `GetFramerate()` and the greater Home/World latency returned by `GetNetStats()` at a 0.5-second cadence.
+## Transaction pipeline
 
-The Profiles tab combines personal graphics profiles and backup history. They remain separate persisted record types: profiles are named/exportable configurations, while backups are automatic point-in-time snapshots. The shared addon dialog owns profile text fields; names are trimmed and blank names fail closed. Restore always creates a safety backup first; deleting either record requires explicit confirmation. Every user action returns a visible success, warning or error state.
+The production pipeline in `Settings/Transaction.lua` is:
 
-Interface & Gameplay remains a separate internal module for backward compatibility, import validation and lossless old-data handling, but it is temporarily hidden from the 0.4 user workflow while being redesigned. Hardware/display, audio, accessibility, mouse, UI scale, Edit Mode and keybindings remain untouched.
+1. Validate the selected module map and the submitted setting values against the registry. At least one submitted setting must belong to a selected module.
+2. If combat lockdown is active, deep-copy the operation into the single pending slot and return without building a diff or backup.
+3. Build a diff for registry entries in the submitted payload.
+4. Unless `skipBackup` is set, capture a snapshot of all readable values in the selected modules and insert it into backup history.
+5. Write only `changed` entries through `Settings/Writer.lua`; each write is immediately read back and compared with registry-aware equality.
+6. If a write or read-back fails, restore attempted entries in reverse order from the values captured by the diff and record `rolled-back` or `rollback-failed` in the transaction log.
+7. If writes complete, record an `applied` transaction result. Callers, not the transaction layer, update persistent selection/applied-state fields.
+
+This approximates the desired `Validate -> Diff -> Snapshot/Backup -> Write -> Read-back Verify -> Rollback on Failure -> Commit Applied State` invariant, with current gaps:
+
+- Commit of applied state is not centralized. Most callers update state after success, but a combat-queued graphics/profile apply records the selected mode and preset before the queued transaction succeeds.
+- A backup is created before the transaction knows whether the plan contains any actual writes, so identical, skipped, or unavailable-only operations can create no-op history entries.
+- Snapshot read failures are stored in the backup but do not abort the transaction. Rollback uses the diff's per-setting current values for attempted writes, not the backup record.
+- Unsupported, unreadable, and non-writable entries do not fail the whole transaction; they are reported and the remaining changed entries may still apply.
+- A mixed payload is accepted when at least one setting belongs to a selected module; settings owned by unselected modules are ignored rather than rejected as a module-closure error.
+
+These gaps are technical debt, not alternative architectural invariants.
+
+## Diff contract
+
+`Settings/Diff.lua` produces a sorted plan and counts with these current statuses:
+
+- `changed`: valid, readable, writable, and different from the current value;
+- `identical`: equal under the registry's exact or tolerance-aware comparison;
+- `skipped`: known but unsupported by the current client capability;
+- `unavailable`: the current value cannot be read or the setting is not writable;
+- `failed`: the submitted value is invalid for another reason.
+
+The transaction writes only `changed` entries. The other statuses remain part of the result so the UI and logs can explain partial or empty work.
+
+## Pending and combat architecture
+
+Delayed work is an in-memory, non-persistent `STBS.pending` table containing one copied settings payload, module map, string `trigger`, and options table. `ApplySettings` validates the request before queuing it. A second operation is rejected with `pending-exists`; there is no typed operation model, priority, provenance, replacement policy, or queue. `PLAYER_REGEN_ENABLED` clears the slot, applies it, and uses trigger-string branches for follow-up behavior such as Zone Graphics, UI Tweaks, FPS restore, or post-combat FPS baseline handling. Cancellation simply clears the slot.
+
+Consequently, automatic work cannot overwrite a queued user operation, but it is rejected rather than deferred. A queued Zone Graphics request is not reclassified against the player's new zone before execution, and a queued graphics FPS baseline is not revalidated for scene/context drift. The slot and its trigger protocol are current limitations.
+
+## Backup architecture
+
+Before a normal transaction writes, `Settings/Backup.lua` captures all readable values owned by the selected modules. A backup records timestamp, addon/client versions, free-form trigger, affected modules, captured values, and read failures. New records are inserted at index 1 and history is trimmed to the configured limit (normalized to 1-50, default 10); deferred trimming is used by the preset-comparison restore flow.
+
+Restore resolves a backup by its current list index, filters out removed or no-longer-owned settings, validates the remaining payload, creates a `restore-safety` backup, then applies with `skipBackup`. Failed restore preserves the safety record. Successful preset-comparison restoration removes its temporary restore backup only when the newest record still has the expected trigger.
+
+Backups have no stable ID and no structured source/provenance type. Identity is list position plus timestamp/trigger, so deletion, trimming, or interleaved operations can change the target index. Temporary benchmark cleanup likewise relies on the newest index and a coarse trigger string. These are current restore/history limitations.
+
+## Database and schema architecture
+
+Account-wide `STierBlizzSettingsDB` stores schema version, preferences, personal profiles, backups, transaction log, and profile sequencing. Initialization creates missing containers, normalizes known preferences and Zone Graphics data, removes structurally invalid backup records, and applies retention. Character-local `STierBlizzSettingsCharDB` stores measured FPS results and has no independent schema version.
+
+The account schema constant is currently 2, but initialization assigns that value directly. There is no ordered, idempotent database migration pipeline and no fail-closed rejection of a future SavedVariables schema. Existing normalization provides compatibility for known shapes but is not a substitute for explicit migrations. This is technical debt. Device-local preferences must be preserved by shared-data import; the current full-addon import preserves window/widget fields but omits `minimapAngle` when replacing preferences.
+
+## Profiles
+
+Profiles use schema version 1 with validated metadata and module sections. Personal profiles are named account-wide records created by capturing current registry values. Built-in recommended profiles are generated in code and can adapt supported graphics capabilities. Legacy split graphics and Interface & Gameplay data remain accepted for compatibility even though the current primary graphics application path is unified.
+
+`Profiles/Manager.lua` validates or migrates the profile, resolves the requested graphics mode, and flattens sections into a registry-backed settings map. Application then delegates to the normal transaction/FPS UI workflow; the profile layer does not write CVars. Profile migration rejects future schema versions, but its current migration work is limited to normalizing missing version/section/graphics containers.
+
+## Import/export security boundary
+
+Exports use a deterministic serializer with sorted keys and cycle/depth restrictions. The transport codec uses a deterministic non-cryptographic checksum and a hex payload encoding (despite legacy helper names referring to Base64). The checksum detects accidental corruption; it does not authenticate a sender.
+
+Imports use a purpose-built data parser rather than `load`, `loadstring`, or execution of Lua source. Input size, nesting depth, entry count, string length, prefix/version/flavor, and checksum are bounded before data is accepted. Profile and full-addon validators reject unknown fields, unknown registry settings, invalid module ownership, future schemas, and malformed preferences/profiles. Imported strings displayed by the UI pass through `SafeText`.
+
+A full-addon bundle applies shared graphics/UI Tweaks through one normal backup-first transaction. Only after that transaction reports success are validated preferences and personal profiles installed. Individual `STBS1` profile import is implemented in the import layer, but the current Profiles navigation has no launcher for it.
+
+## FPS architecture
+
+FPS functionality has four distinct mechanisms:
+
+- **Live sampling** periodically reads `GetFramerate()` and feeds a bounded baseline window used by the UI.
+- **Post-apply measurement** collects a short five-second sample after a successful graphics apply and compares it with the captured baseline.
+- **Standalone measurement** records raw `OnUpdate` frame times for 20 seconds and derives average FPS, 1% Low, stability, spike count, and worst-frame time into character-local results.
+- **Preset comparison** captures a complete original graphics snapshot, measures the current state for 20 seconds, transactionally applies one built-in unified candidate, measures it for 20 seconds, and transactionally restores the exact captured values. Zone Graphics is suspended during this workflow. Cancellation after candidate apply also attempts restoration; combat can defer that restoration through the pending slot. Temporary restore backups are discarded only after verified restoration.
+
+The newer preset comparison is separate from the older unused `StartAccurateFPSComparison` 10+10-second path, which remains legacy code. Stored results have no scene identity or freshness context, and the current recommendation UI compares rounded display metrics rather than raw precision. Post-apply and legacy accurate modes are not included in every Zone Graphics benchmark guard. These are current technical limitations.
+
+## Zone Graphics architecture
+
+Zone Graphics currently owns a five-category mapping: world, party, raid, PvP/arena, and scenario/delve. The mapping stores built-in preset IDs, not copied setting tables. On relevant world/zone events, current Retail instance APIs classify the player, the assigned built-in unified profile is flattened and validated, and a graphics-only diff is built. Identical assignments stop before transaction/backup creation; changed assignments use the same graphics transaction path as manual applies.
+
+Combat routes Zone Graphics through the shared pending slot. The delayed operation stores the already-resolved preset/settings and is not reclassified on execution. Event handling also uses an uncancelled short timer, so rapid zone events can schedule redundant stale attempts. Zone Graphics blocks standalone and preset-comparison measurement/restore states, but not every post-apply or legacy benchmark state. These are properties of the current implementation, not commitments about future zone systems.
+
+## UI architecture and lifecycle
+
+`UI/Style.lua` is the shared visual contract for addon buttons, checkboxes, palettes, and interactive states. `UI/MainWindow.lua` lazily creates one resizable main frame, computes responsive content/action geometry from its size, builds pages and their actions dynamically, and routes managed changes to profiles or transactions. `ShowAddonDialog` provides a reusable addon-owned confirmation/text-input surface; FPS measurement uses a dedicated reusable progress/result modal. The optional Performance Widget is a separate frame with a single replaceable 0.5-second ticker. The minimap entry and Blizzard Settings category both open the same main window.
+
+Frames, callbacks, `OnUpdate` handlers, and tickers are expected to have explicit ownership and cleanup. The FPS samplers clear their handlers/tickers, the main window stops its live callbacks when hidden, the widget replaces or cancels its ticker, and minimap drag updates end with the drag. Two lifecycle gaps remain: repeated page renders create new action frames without reclaiming or reusing old ones, and Zone Graphics event delays use uncancellable timers. These can accumulate dormant frames or stale callbacks during a long session.
+
+## Architectural invariants
+
+The following are durable boundaries. Known deviations above are technical debt and must not be treated as precedent.
+
+- Managed CVars are mutated only by `Settings/Writer.lua` through an approved transaction or rollback path; direct unsafe mutation elsewhere is forbidden.
+- Registry allowlisting, module ownership, validation, and runtime capability checks fail closed for unknown or unavailable settings.
+- Every successful managed write is read back; a failed write or verification triggers best-effort reverse rollback.
+- Persistent state that claims an operation was applied is committed only after the transaction succeeds.
+- Graphics/profile operations select only their intended modules and must not mutate unrelated autonomous modules such as UI Tweaks.
+- Imports are bounded, schema-validated data and never execute code.
+- User-visible text crosses the localization boundary; untrusted display strings are sanitized.
+- Runtime frames, callbacks, `OnUpdate` handlers, and tickers have bounded ownership and cleanup.
