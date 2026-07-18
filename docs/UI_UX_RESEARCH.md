@@ -24,7 +24,7 @@ The external findings below remain useful design evidence. Statements under Prod
 - Unsupported values are visibly skipped; failed writes trigger rollback and a separate result state.
 - Profile and backup lists never cap selection to the first items; actions scroll inside a fixed-size dashboard. Both kinds support explicit deletion confirmation.
 - Imported names are treated as untrusted display text so WoW color/hyperlink markup cannot spoof the UI.
-- A visible Undo action restores the latest graphics backup. Settings restore remains reversible because it creates a safety backup first.
+- A visible Undo action restores the latest graphics backup. Settings restore remains reversible because every real restore creates a safety backup first; an already-matching target creates no redundant record.
 - The FPS card shows the current value live in a large font and keeps the last before/after average as a smaller local estimate. The dedicated Test FPS page reports average, frame-time-based 1% Low, their stability ratio, adaptive spikes and worst-frame time. A centered modal blocks accidental mouse camera movement, shows progress and always offers Cancel. Preset comparisons use two real 20-second runs, restore the player's graphics and describe likely causes as suggestions rather than claiming access to CPU/GPU telemetry. A separate bottom-screen FPS/ping indicator is optional.
 - Every user action produces an in-window success, warning or error state. Choosing a preset explicitly says that nothing has been applied yet; apply, reload, save, backup, restore, delete, rename and export have distinct completion copy.
 - The About page explains evidence, scope, backup/undo behavior, preserved hardware controls and the limits of the FPS claim.
@@ -37,7 +37,7 @@ The external findings below remain useful design evidence. Statements under Prod
 - Screenshoter temporarily changes real graphics for a capture and then restores them. ScreenPlus likewise enters a camera mode, hides UI, takes the real screenshot and restores state.
 - The reviewed Retail API exposes `Screenshot()` as an action but no addon-readable framebuffer or render-to-texture API for the current world, and there is no supported way to render the world twice with different unapplied CVars. A static texture labelled as a live preset preview would therefore be misleading.
 
-S-Tier now uses the same honest product principle: show concise setting outcomes before confirmation, apply through a backup-first transaction, then let the player close the addon normally and inspect the actual game scene. A dedicated action that only duplicated the close button was intentionally removed; Undo remains one click away.
+S-Tier now uses the same honest product principle: show concise setting outcomes before confirmation, back up and apply real changes transactionally, and report an already-active selection without creating redundant history. The player can then close the addon normally and inspect the actual game scene. A dedicated action that only duplicated the close button was intentionally removed; Undo remains one click away.
 
 ## Texture and control audit
 

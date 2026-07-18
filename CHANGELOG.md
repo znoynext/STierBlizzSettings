@@ -15,6 +15,7 @@ Entries below are version-scoped historical records, not a description of the cu
 - Corrected Graphics Undo to select the latest retained user-initiated graphics change by stable backup ID. Automatic Zone Graphics, FPS temporary, restore-safety, manual snapshots, legacy and unknown records are skipped, while explicit Backup History restore remains independent.
 - Scoped temporary FPS comparison backups by a collision-safe session ID. Successful and cancelled comparisons now remove only their own temporary records after verified restoration, queued restores wait for actual completion, and restore/rollback failures retain recovery data without deleting user or unrelated-session backups.
 - Guaranteed an exact pre-write value for every changed transaction target. Transactions now complete an immutable snapshot before backup or writes, fail closed with zero writes if a changed value cannot be captured, and use that snapshot for verified reverse rollback without blocking unrelated unavailable settings.
+- Removed no-op transaction side effects. Already-active settings now return explicit `unchanged` statistics without backups, writes, rollback, applied-change history, FPS measurement or Reload prompts; no-op restores also skip redundant safety backups.
 
 ## 0.4.19-alpha
 

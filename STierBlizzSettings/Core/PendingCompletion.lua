@@ -21,12 +21,12 @@ handlers["graphics-user"]=function(self,operation,result)
   if context.automaticFPS then self:ResetFPSBaselineSampling() end
   if result.ok then
     if context.mode then self:CommitAppliedGraphicsState(context.mode,context.preset) end
-    self.flashMessage=context.automaticFPS and self:L("SETTINGS_APPLIED_DELAYED_NO_MEASURE") or self:L("SETTINGS_APPLIED_NO_MEASURE");self.flashKind="success"
+    self.flashMessage=result.code=="unchanged" and self:L("SETTINGS_UNCHANGED") or context.automaticFPS and self:L("SETTINGS_APPLIED_DELAYED_NO_MEASURE") or self:L("SETTINGS_APPLIED_NO_MEASURE");self.flashKind="success"
   else
     self.flashMessage=failedMessage(self,"PENDING_GRAPHICS_FAILED",result);self.flashKind="error"
   end
   if visible(self,"graphics") then self:ShowGraphics() end
-  if result.ok and operation.modules and operation.modules.graphics then self:ConfirmReloadUI() end
+  if result.ok and result.code~="unchanged" and operation.modules and operation.modules.graphics then self:ConfirmReloadUI() end
 end
 
 local function handleZone(self,operation,result)
@@ -42,7 +42,7 @@ handlers["zone-auto"]=handleZone
 handlers["zone-manual"]=handleZone
 
 handlers["ui-tweaks"]=function(self,operation,result)
-  if result.ok then self.uiTweaksDraft=nil;self.flashMessage=string.format(self:L("UI_TWEAK_APPLIED"),resultChanged(result,"uiTweaks"));self.flashKind="success"
+  if result.ok then self.uiTweaksDraft=nil;self.flashMessage=result.code=="unchanged" and self:L("UI_TWEAK_ALREADY") or string.format(self:L("UI_TWEAK_APPLIED"),resultChanged(result,"uiTweaks"));self.flashKind="success"
   else self.flashMessage=self:L("APPLY_FAILED").." ("..tostring(result.code or "failed")..")";self.flashKind="error" end
   if visible(self,"uiTweaks") then self:ShowUITweaks() end
 end
@@ -61,7 +61,7 @@ handlers.recovery=function(self,operation,result)
   if result.ok then
     if operation.modules and operation.modules.uiTweaks then self.uiTweaksDraft=nil end
     if operation.modules and operation.modules.graphics then self:SyncAppliedGraphicsState() end
-    self.flashMessage=self:L("RESTORE_COMPLETE");self.flashKind="success"
+    self.flashMessage=self:L(result.code=="unchanged" and "SETTINGS_UNCHANGED" or "RESTORE_COMPLETE");self.flashKind="success"
   else self.flashMessage=failedMessage(self,"PENDING_RECOVERY_FAILED",result);self.flashKind="error" end
   if operation.modules and operation.modules.uiTweaks and not operation.modules.graphics then
     if visible(self,"uiTweaks") then self:ShowUITweaks() end

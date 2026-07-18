@@ -6,6 +6,10 @@ local categoryOrder={"graphics","raidGraphics"}
 local MIN_WINDOW_WIDTH,MIN_WINDOW_HEIGHT=900,640
 local DEFAULT_WINDOW_WIDTH,DEFAULT_WINDOW_HEIGHT=1080,760
 
+local function changedCount(plan)
+  local count=0;for _,entry in ipairs(plan or {}) do if entry.status=="changed" then count=count+1 end end;return count
+end
+
 local function button(parent,text,x,y,width,callback,style)
   local b=STBS:CreateModernButton(parent,text,width or 200,34,callback,style);b:SetPoint("TOPLEFT",x,y)
   return b
@@ -509,7 +513,9 @@ end
 function STBS:ConfirmApplyFPSComparisonPreset(comparison)
   local recommendation=self:GetPresetFPSComparisonRecommendation(comparison);if not recommendation then self.flashMessage=self:L("FPS_COMPARE_RECOMMEND_EXPIRED");self.flashKind="warning";self:ShowFPSTest();return end
   local preset=recommendation.preset;local mode=comparison.mode;local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,preset),{graphics=true});local plan=self:BuildDiff(settings);local label=self:GetPresetLabel(preset)
-  self:ShowAddonDialog({title=string.format(self:L("FPS_COMPARE_APPLY_CONFIRM"),label),message=string.format(self:L("FPS_COMPARE_APPLY_CONFIRM_TEXT"),#plan),acceptText=string.format(self:L("FPS_COMPARE_APPLY"),label),onAccept=function()local result=STBS:ApplyGraphicsWithFPS(settings,"fps-comparison-apply",mode,preset,"manual-preset");if result.ok or result.code=="queued" then comparison.applied=true;STBS:StorePresetFPSComparison(comparison) end end})
+  local function apply()local result=STBS:ApplyGraphicsWithFPS(settings,"fps-comparison-apply",mode,preset,"manual-preset");if result.ok or result.code=="queued" then comparison.applied=true;STBS:StorePresetFPSComparison(comparison) end end
+  local changed=changedCount(plan);if changed==0 then apply();return end
+  self:ShowAddonDialog({title=string.format(self:L("FPS_COMPARE_APPLY_CONFIRM"),label),message=string.format(self:L("FPS_COMPARE_APPLY_CONFIRM_TEXT"),changed),acceptText=string.format(self:L("FPS_COMPARE_APPLY"),label),onAccept=apply})
 end
 
 function STBS:ShowOfficialPreview()
@@ -517,13 +523,15 @@ function STBS:ShowOfficialPreview()
   local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,self:GetSelectedPreset()),{graphics=true});local plan=self:BuildDiff(settings)
   self:SetLiveFPSCallback(nil)
   self:SetPage(self:L("PREVIEW"),self:FormatDiff(plan),{
-    {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ConfirmApplyGraphics(#plan)end,style="primary",wide=true},
+    {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ConfirmApplyGraphics(changedCount(plan))end,style="primary",wide=true},
     {label=self:L("BACK"),fn=function()STBS:ShowGraphics()end},
   },self:L("REVIEW_READY"),{pageKey="graphics"})
 end
 
 function STBS:ConfirmApplyGraphics(count)
-  self:ShowAddonDialog({title=self:L("APPLY_CONFIRM"),message=string.format(self:L("APPLY_CONFIRM_TEXT"),count or 0),onAccept=function()local preset=STBS:GetSelectedPreset();local mode=STBS.GRAPHICS_MODE_UNIFIED;local settings=STBS:FlattenProfile(STBS:GetOfficialGraphics(mode,preset),{graphics=true});STBS:ApplyGraphicsWithFPS(settings,"official-graphics",mode,preset,"manual-preset")end})
+  local function apply()local preset=STBS:GetSelectedPreset();local mode=STBS.GRAPHICS_MODE_UNIFIED;local settings=STBS:FlattenProfile(STBS:GetOfficialGraphics(mode,preset),{graphics=true});STBS:ApplyGraphicsWithFPS(settings,"official-graphics",mode,preset,"manual-preset")end
+  if (count or 0)==0 then apply();return end
+  self:ShowAddonDialog({title=self:L("APPLY_CONFIRM"),message=string.format(self:L("APPLY_CONFIRM_TEXT"),count),onAccept=apply})
 end
 
 function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode,selectedPreset,backupSource)
@@ -532,7 +540,10 @@ function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode,selectedPreset,
     return self:ApplyOfficial("graphics")
   end
   local delayed=type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown();local before=not delayed and self:TakeFPSBaseline() or nil;local result=applyNow()
-  if result.ok then
+  if result.code=="unchanged" then
+    if selectedMode then self:CommitAppliedGraphicsState(selectedMode,selectedPreset) end
+    self:ResetFPSBaselineSampling();self.flashMessage=self:L("SETTINGS_UNCHANGED");self.flashKind="success";self:ShowGraphics()
+  elseif result.ok then
     if selectedMode then self:CommitAppliedGraphicsState(selectedMode,selectedPreset) end
     local measuring=self:StartVisibleGraphicsFPSPostMeasurement(before)
     self.flashMessage=measuring and self:L("SETTINGS_APPLIED") or self:L("SETTINGS_APPLIED_NO_MEASURE");self.flashKind="success"
@@ -549,7 +560,7 @@ end
 
 function STBS:ConfirmUndoGraphics()
   local backup=self:GetLatestUndoableBackup("graphics");local backupId=backup and backup.id;if not backupId then self.flashMessage=self:L("UNDO_UNAVAILABLE");self.flashKind="warning";self:ShowGraphics();return end
-  self:ShowAddonDialog({title=self:L("UNDO_CONFIRM"),message=self:L("UNDO_CONFIRM_TEXT"),onAccept=function()local result=STBS:RestoreBackupById(backupId,{graphics=true});STBS.flashMessage=result.ok and STBS:L("RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end})
+  self:ShowAddonDialog({title=self:L("UNDO_CONFIRM"),message=self:L("UNDO_CONFIRM_TEXT"),onAccept=function()local result=STBS:RestoreBackupById(backupId,{graphics=true});STBS.flashMessage=result.ok and STBS:L(result.code=="unchanged" and "SETTINGS_UNCHANGED" or "RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end})
 end
 
 function STBS:OpenSaveDialog()
@@ -569,7 +580,7 @@ function STBS:ConfirmDeleteBackup(backupId)
 end
 
 function STBS:ConfirmRestoreBackup(backupId)
-  self:ShowAddonDialog({title=self:L("RESTORE_SELECTED"),onAccept=function()local result=STBS:RestoreBackupById(backupId,{graphics=true});STBS.flashMessage=result.ok and STBS:L("RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end})
+  self:ShowAddonDialog({title=self:L("RESTORE_SELECTED"),onAccept=function()local result=STBS:RestoreBackupById(backupId,{graphics=true});STBS.flashMessage=result.ok and STBS:L(result.code=="unchanged" and "SETTINGS_UNCHANGED" or "RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end})
 end
 
 function STBS:GetGraphicsProfiles()
@@ -664,7 +675,9 @@ function STBS:ShowProfilePreview(profile)
 end
 
 function STBS:ConfirmApplyProfile(profile)
-  self:ShowAddonDialog({title=self:L("PROFILE_APPLY_CONFIRM"),message=self:L("PROFILE_APPLY_CONFIRM_TEXT"),onAccept=function()local settings=STBS:FlattenProfile(profile,{graphics=true});STBS:ApplyGraphicsWithFPS(settings,"personal-profile",profile.sections.graphics.mode,nil,"personal-profile")end})
+  local settings=self:FlattenProfile(profile,{graphics=true});local function apply()STBS:ApplyGraphicsWithFPS(settings,"personal-profile",profile.sections.graphics.mode,nil,"personal-profile")end
+  if changedCount(self:BuildDiff(settings))==0 then apply();return end
+  self:ShowAddonDialog({title=self:L("PROFILE_APPLY_CONFIRM"),message=self:L("PROFILE_APPLY_CONFIRM_TEXT"),onAccept=apply})
 end
 
 function STBS:ShowDiagnostics() self:SetPage(self:L("DIAGNOSTICS"),self:DiagnosticReport(),{{label=self:L("COPY"),fn=function()STBS:ShowCopyBox(STBS:DiagnosticReport())end},{label=self:L("BACK"),fn=function()STBS:ShowGraphics()end}},nil,{}) end

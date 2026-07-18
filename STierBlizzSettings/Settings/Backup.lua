@@ -41,10 +41,8 @@ function STBS:RestoreBackupById(id, modules)
   end
   if not next(settings) then return self:Result(false,"no-settings") end
   local validSettings, settingsWhy = self:ValidateSettings(settings, false); if not validSettings then return self:Result(false,settingsWhy) end
-  local safety = self:CreateBackup(modules, "restore-safety", "restore-safety")
-  if not safety.ok then return safety end
-  local result = self:ApplySettings(settings, modules, "restore", { skipBackup = true }, { kind="recovery",context={reason="backup-restore",backupId=id,safetyBackupId=safety.data.id} })
-  if result.ok then result.data.safetyBackup = safety.data;if modules.graphics then self:SyncAppliedGraphicsState() end end
+  local result = self:ApplySettings(settings, modules, "restore", { backupSource = "restore-safety" }, { kind="recovery",context={reason="backup-restore",backupId=id} })
+  if result.ok then result.data.safetyBackup = result.data.backup;if modules.graphics then self:SyncAppliedGraphicsState() end end
   return result
 end
 function STBS:RestoreBackup(id, modules)
