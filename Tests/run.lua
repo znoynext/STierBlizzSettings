@@ -65,12 +65,58 @@ local comparisonResult,comparisonRestore,comparisonPhases,comparisonDurations;co
 local liveFPS;ns:SetLiveFPSCallback(function(value)liveFPS=value end);check("live FPS callback receives current framerate",liveFPS==60);ns:SetLiveFPSCallback(nil)
 store.graphicsShadowQuality="1";store.cameraSmoothStyle="1";local initial=ns:CreateBackup({graphics=true,interfaceGameplay=true},"test");local beforeRestore=#_G.STierBlizzSettingsDB.backups;store.graphicsShadowQuality="5";store.cameraSmoothStyle="4";local restore=ns:RestoreBackup(1,{graphics=true,interfaceGameplay=true});check("full restore succeeds",restore.ok and store.graphicsShadowQuality=="1" and store.cameraSmoothStyle=="1");check("restore creates one safety backup",#_G.STierBlizzSettingsDB.backups==beforeRestore+1)
 store.graphicsShadowQuality="5";store.cameraSmoothStyle="4";local graphicsRestore=ns:RestoreBackup(2,{graphics=true});check("graphics-only restore",graphicsRestore.ok and store.graphicsShadowQuality=="1" and store.cameraSmoothStyle=="4");store.graphicsShadowQuality="5";store.cameraSmoothStyle="4";local interfaceRestore=ns:RestoreBackup(3,{interfaceGameplay=true});check("interface-only restore",interfaceRestore.ok and store.graphicsShadowQuality=="5" and store.cameraSmoothStyle=="1")
-_G.STierBlizzSettingsDB={preferences="bad",profiles="bad",backups="bad",log="bad",transactions="bad"};local db=ns:InitializeDatabase();check("corrupted SavedVariables recovered",type(db.preferences)=="table" and type(db.profiles)=="table" and type(db.backups)=="table")
-do local function testGraphicsStateMigration()
-local currentDB,currentPresetSelection,currentModeSelection=_G.STierBlizzSettingsDB,ns.graphicsPresetSelection,ns.graphicsModeSelection;_G.STierBlizzSettingsDB={schemaVersion=2,preferences={graphicsPreset=ns.GRAPHICS_PRESET_PRO,graphicsMode=ns.GRAPHICS_MODE_SPLIT},profiles={},backups={},log={},transactions={}};ns.graphicsPresetSelection=nil;ns.graphicsModeSelection=nil;local migrated=ns:InitializeDatabase();check("database migration separates legacy selection from applied graphics state",migrated.schemaVersion==3 and migrated.graphicsStateNeedsSync==true and migrated.preferences.graphicsPreset==ns.GRAPHICS_PRESET_CUSTOM and ns:GetSelectedPreset()==ns.GRAPHICS_PRESET_PRO and ns:GetSelectedMode()==ns.GRAPHICS_MODE_SPLIT)
-local target=ns:FlattenProfile(ns:GetOfficialGraphics(ns.GRAPHICS_MODE_UNIFIED,ns.GRAPHICS_PRESET_QUALITY),{graphics=true});for key,value in pairs(target)do store[key]=value end;check("database migration sync commits actual graphics only after CVar inspection",ns:SyncAppliedGraphicsState() and migrated.graphicsStateNeedsSync==nil and ns:GetAppliedGraphicsPreset()==ns.GRAPHICS_PRESET_QUALITY and ns:GetAppliedGraphicsMode()==ns.GRAPHICS_MODE_UNIFIED)
-_G.STierBlizzSettingsDB=currentDB;ns.graphicsPresetSelection=currentPresetSelection;ns.graphicsModeSelection=currentModeSelection
-end;testGraphicsStateMigration() end
+do local function testDatabaseMigrations()
+  local originalDB,originalPresetSelection,originalModeSelection=_G.STierBlizzSettingsDB,ns.graphicsPresetSelection,ns.graphicsModeSelection
+  local originalStatus,originalUnsupportedView=ns.databaseMigrationStatus,ns.unsupportedDatabaseView
+  local function useDatabase(database)
+    _G.STierBlizzSettingsDB=database;ns.graphicsPresetSelection=nil;ns.graphicsModeSelection=nil;ns.databaseMigrationStatus=nil;ns.unsupportedDatabaseView=nil
+  end
+
+  useDatabase(nil);local fresh=ns:InitializeDatabase()
+  check("fresh database initializes directly at the current schema",fresh.schemaVersion==ns.DB_SCHEMA and type(fresh.preferences)=="table" and type(fresh.profiles)=="table" and type(fresh.backups)=="table" and type(fresh.transactions)=="table" and fresh.graphicsStateNeedsSync==true)
+
+  useDatabase({preferences={graphicsPreset=ns.GRAPHICS_PRESET_PRO,graphicsMode=ns.GRAPHICS_MODE_SPLIT,zoneGraphics={enabled=true,assignments={world=ns.GRAPHICS_PRESET_QUALITY}}},profiles={missing_schema_profile={marker="keep"}},backups={},transactions={}})
+  local missing=ns:InitializeDatabase()
+  check("missing database schema recovers without inventing an intermediate version",missing.schemaVersion==ns.DB_SCHEMA and missing.profiles.missing_schema_profile.marker=="keep" and missing.preferences.zoneGraphics.assignments.world==ns.GRAPHICS_PRESET_QUALITY and missing.graphicsStateNeedsSync==true)
+
+  useDatabase({schemaVersion="broken",preferences="bad",profiles="bad",backups="bad",log="bad",transactions="bad"})
+  local corrupted=ns:InitializeDatabase()
+  check("corrupted database schema recovers safely",corrupted.schemaVersion==ns.DB_SCHEMA and type(corrupted.preferences)=="table" and type(corrupted.profiles)=="table" and type(corrupted.backups)=="table" and type(corrupted.transactions)=="table")
+
+  local assignments={world=ns.GRAPHICS_PRESET_QUALITY,party=ns.GRAPHICS_PRESET_PRO,raid=ns.GRAPHICS_PRESET_QUALITY,pvp=ns.GRAPHICS_PRESET_OPTIMIZED,scenario=ns.GRAPHICS_PRESET_PRO}
+  local preferences={backupLimit=20,graphicsPreset=ns.GRAPHICS_PRESET_PRO,graphicsMode=ns.GRAPHICS_MODE_SPLIT,benchmarkMode=ns.BENCHMARK_ACCURATE,performanceWidgetEnabled=true,performanceWidgetPosition={x=0.25,y=0.75},windowWidth=1100,windowHeight=760,minimapAngle=1.25,zoneGraphics={enabled=true,assignments=assignments}}
+  local profiles={legacy_profile={marker="profile-survives"}}
+  local backups={{timestamp=77,affectedModules={graphics=true},values={graphicsShadowQuality="1"},readFailures={},trigger="legacy"}}
+  local transactions={{time=76,trigger="legacy",code="applied"}}
+  useDatabase({schemaVersion=2,preferences=preferences,profiles=profiles,backups=backups,transactions=transactions,log={{code="keep"}},profileSequence=9})
+  local migrated=ns:InitializeDatabase()
+  check("schema 2 migrates to schema 3 through the explicit pipeline",migrated.schemaVersion==3 and migrated.graphicsStateNeedsSync==true and migrated.preferences.graphicsPreset==ns.GRAPHICS_PRESET_CUSTOM and migrated.preferences.graphicsMode==ns.GRAPHICS_MODE_SPLIT and ns:GetSelectedPreset()==ns.GRAPHICS_PRESET_PRO and ns:GetSelectedMode()==ns.GRAPHICS_MODE_SPLIT)
+  check("preferences and device-local positions survive database migration",migrated.preferences==preferences and preferences.backupLimit==20 and preferences.benchmarkMode==ns.BENCHMARK_ACCURATE and preferences.performanceWidgetEnabled==true and preferences.performanceWidgetPosition.x==0.25 and preferences.windowWidth==1100 and preferences.windowHeight==760 and preferences.minimapAngle==1.25)
+  check("profiles survive database migration",migrated.profiles==profiles and migrated.profiles.legacy_profile.marker=="profile-survives")
+  check("backups survive database migration",migrated.backups==backups and migrated.backups[1].trigger=="legacy")
+  check("transactions survive database migration",migrated.transactions==transactions and migrated.transactions[1].code=="applied")
+  check("Zone Graphics assignments survive database migration",migrated.preferences.zoneGraphics.assignments==assignments and assignments.world==ns.GRAPHICS_PRESET_QUALITY and assignments.raid==ns.GRAPHICS_PRESET_QUALITY)
+
+  local target=ns:FlattenProfile(ns:GetOfficialGraphics(ns.GRAPHICS_MODE_UNIFIED,ns.GRAPHICS_PRESET_QUALITY),{graphics=true});for key,value in pairs(target)do store[key]=value end
+  check("schema 2 applied graphics state syncs from actual client graphics",ns:SyncAppliedGraphicsState() and migrated.graphicsStateNeedsSync==nil and ns:GetAppliedGraphicsPreset()==ns.GRAPHICS_PRESET_QUALITY and ns:GetAppliedGraphicsMode()==ns.GRAPHICS_MODE_UNIFIED)
+  for key,value in pairs(ns:FlattenProfile(ns:GetOfficialGraphics(ns.GRAPHICS_MODE_UNIFIED,ns.GRAPHICS_PRESET_PRO),{graphics=true}))do store[key]=value end
+  local repeated=ns:InitializeDatabase()
+  check("repeated initialization does not rerun a completed graphics state migration",repeated==migrated and repeated.graphicsStateNeedsSync==nil and ns:GetAppliedGraphicsPreset()==ns.GRAPHICS_PRESET_QUALITY and ns:GetAppliedGraphicsMode()==ns.GRAPHICS_MODE_UNIFIED)
+
+  useDatabase({schemaVersion=3,preferences={graphicsPreset=ns.GRAPHICS_PRESET_OPTIMIZED,graphicsMode=ns.GRAPHICS_MODE_UNIFIED,zoneGraphics={assignments={world=ns.GRAPHICS_PRESET_PRO}}},profiles={current={marker="keep"}},backups={},transactions={}})
+  local current=ns:InitializeDatabase();local currentAgain=ns:InitializeDatabase()
+  check("current schema 3 is normalized without migration",current==currentAgain and current.schemaVersion==3 and current.preferences.graphicsPreset==ns.GRAPHICS_PRESET_OPTIMIZED and current.preferences.graphicsMode==ns.GRAPHICS_MODE_UNIFIED and current.profiles.current.marker=="keep" and ns:GetDatabaseMigrationStatus().code=="current")
+
+  local futurePreferences={graphicsPreset="future-preset",windowWidth=1234,zoneGraphics={assignments={world="future-zone"}}}
+  local futureProfiles={future_profile={marker="do-not-touch"}};local futureBackups={{marker="do-not-touch"}};local futureTransactions={{marker="do-not-touch"}}
+  local future={schemaVersion=ns.DB_SCHEMA+1,preferences=futurePreferences,profiles=futureProfiles,backups=futureBackups,transactions=futureTransactions,futureField={keep=true}}
+  useDatabase(future);local safeView=ns:InitializeDatabase();local futureStatus=ns:GetDatabaseMigrationStatus();store.graphicsShadowQuality="1"
+  local blocked=ns:ApplySettings({graphicsShadowQuality="2"},{graphics=true},"future-schema-test");ns:Log("error","future-schema-test")
+  check("future database schema enters a safe unsupported state",safeView~=future and not ns:IsDatabaseSchemaSupported() and futureStatus.code=="future-schema" and futureStatus.schemaVersion==ns.DB_SCHEMA+1 and blocked.code=="database-schema-unsupported")
+  check("future database is not destructively rewritten",_G.STierBlizzSettingsDB==future and future.schemaVersion==ns.DB_SCHEMA+1 and future.preferences==futurePreferences and future.profiles==futureProfiles and future.backups==futureBackups and future.transactions==futureTransactions and future.log==nil and future.futureField.keep==true and store.graphicsShadowQuality=="1")
+
+  _G.STierBlizzSettingsDB=originalDB;ns.graphicsPresetSelection=originalPresetSelection;ns.graphicsModeSelection=originalModeSelection;ns.databaseMigrationStatus=originalStatus;ns.unsupportedDatabaseView=originalUnsupportedView
+end;testDatabaseMigrations() end
 store.cameraSmoothStyle="1";local queuedSettings={cameraSmoothStyle="0"};local queuedModules={interfaceGameplay=true};local queuedContext={source="manual-test"};_G.__combat=true;local queued=ns:ApplySettings(queuedSettings,queuedModules,"test",nil,{kind="graphics-user",context=queuedContext});local typedPending=ns:GetPendingOperation();queuedSettings.cameraSmoothStyle="2";queuedModules.interfaceGameplay=false;queuedContext.source="mutated";check("combat queue stores a copied typed operation",queued.code=="queued" and typedPending and typedPending.kind=="graphics-user" and typedPending.settings.cameraSmoothStyle=="0" and typedPending.modules.interfaceGameplay==true and typedPending.trigger=="test" and type(typedPending.options)=="table" and typedPending.context.source=="manual-test");check("pending getter returns an isolated copy",(function()typedPending.context.source="read-mutated";return ns:GetPendingOperation().context.source=="manual-test"end)());check("pending cancellation rejects a mismatched expected kind",not ns:CancelPendingOperation("recovery").ok and ns:GetPendingOperation().kind=="graphics-user");check("pending cancellation returns and clears the typed operation",ns:CancelPendingOperation("graphics-user").data.kind=="graphics-user" and ns:GetPendingOperation()==nil);_G.__combat=false
 _G.__combat=true;local invalidQueued=ns:ApplySettings({unknownSetting="1"},{interfaceGameplay=true},"bad");check("invalid operation is rejected before combat queue",invalidQueued.code~="queued" and ns:GetPendingOperation()==nil);_G.__combat=false
 _G.__combat=true;local appliedAutoPending=ns:ApplySettings({graphicsShadowQuality="1"},{graphics=true},"zone-change",nil,{kind="zone-auto",context={category="raid"}});local appliedUserPending=ns:ApplySettings({graphicsShadowQuality="2"},{graphics=true},"manual",nil,{kind="graphics-user",context={source="manual"}});local blockedAutoPending=ns:ApplySettings({graphicsShadowQuality="3"},{graphics=true},"zone-change",nil,{kind="zone-auto",context={category="world"}});check("ApplySettings exposes typed priority replacement while preserving queued result codes",appliedAutoPending.code=="queued" and appliedUserPending.code=="queued" and appliedUserPending.data.replaced.kind=="zone-auto" and blockedAutoPending.code=="pending-exists" and ns:GetPendingOperation().kind=="graphics-user");ns:CancelPendingOperation("graphics-user");_G.__combat=false

@@ -1,21 +1,63 @@
 local _, STBS = ...
-function STBS:InitializeDatabase()
-  local db = _G.STierBlizzSettingsDB
-  if type(db) ~= "table" then db = {} end
-  local previousSchema=math.max(0,math.floor(tonumber(db.schemaVersion) or 0))
-  if type(db.preferences) ~= "table" then db.preferences = {} end
-  db.preferences.backupLimit = math.max(1, math.min(50, math.floor(tonumber(db.preferences.backupLimit) or self.DEFAULT_BACKUP_LIMIT)))
-  local validPreset={ [self.GRAPHICS_PRESET_PRO]=true,[self.GRAPHICS_PRESET_OPTIMIZED]=true,[self.GRAPHICS_PRESET_QUALITY]=true }
-  local validMode={ [self.GRAPHICS_MODE_UNIFIED]=true,[self.GRAPHICS_MODE_SPLIT]=true }
-  if previousSchema<3 then
-    if validPreset[db.preferences.graphicsPreset] then self.graphicsPresetSelection=db.preferences.graphicsPreset end
-    if validMode[db.preferences.graphicsMode] then self.graphicsModeSelection=db.preferences.graphicsMode end
-    db.preferences.graphicsPreset=self.GRAPHICS_PRESET_CUSTOM
-    db.preferences.graphicsMode=validMode[db.preferences.graphicsMode] and db.preferences.graphicsMode or self.GRAPHICS_MODE_UNIFIED
-    db.graphicsStateNeedsSync=true
+
+local migrations={}
+
+local function validPresets(self)
+  return { [self.GRAPHICS_PRESET_PRO]=true,[self.GRAPHICS_PRESET_OPTIMIZED]=true,[self.GRAPHICS_PRESET_QUALITY]=true }
+end
+
+local function validModes(self)
+  return { [self.GRAPHICS_MODE_UNIFIED]=true,[self.GRAPHICS_MODE_SPLIT]=true }
+end
+
+local function separateLegacyGraphicsState(self,db)
+  if type(db.preferences)~="table" then db.preferences={} end
+  local presets,modes=validPresets(self),validModes(self);local preferences=db.preferences
+  if presets[preferences.graphicsPreset] then self.graphicsPresetSelection=preferences.graphicsPreset end
+  if modes[preferences.graphicsMode] then self.graphicsModeSelection=preferences.graphicsMode end
+  preferences.graphicsPreset=self.GRAPHICS_PRESET_CUSTOM
+  preferences.graphicsMode=modes[preferences.graphicsMode] and preferences.graphicsMode or self.GRAPHICS_MODE_UNIFIED
+  db.graphicsStateNeedsSync=true
+  return true
+end
+
+-- Schema 2 is the only known historical account database schema. Future
+-- migrations are added by source version and must advance exactly one step.
+migrations[2]=separateLegacyGraphicsState
+
+function STBS:MigrateDatabase(db)
+  if type(db)~="table" then db={} end
+  local rawVersion=db.schemaVersion;local numericVersion=tonumber(rawVersion)
+  if numericVersion and numericVersion==numericVersion and numericVersion>self.DB_SCHEMA then
+    return self:Result(false,"future-schema",{schemaVersion=rawVersion})
   end
-  if not validPreset[db.preferences.graphicsPreset] and db.preferences.graphicsPreset~=self.GRAPHICS_PRESET_CUSTOM then db.preferences.graphicsPreset=self.GRAPHICS_PRESET_CUSTOM end
-  if db.preferences.graphicsMode~=self.GRAPHICS_MODE_UNIFIED and db.preferences.graphicsMode~=self.GRAPHICS_MODE_SPLIT then db.preferences.graphicsMode=self.GRAPHICS_MODE_SPLIT end
+  if rawVersion==nil and next(db)==nil then
+    separateLegacyGraphicsState(self,db);db.schemaVersion=self.DB_SCHEMA
+    return self:Result(true,"fresh",db)
+  end
+  if type(rawVersion)~="number" or rawVersion~=rawVersion or rawVersion~=math.floor(rawVersion) or rawVersion<2 then
+    separateLegacyGraphicsState(self,db);db.schemaVersion=self.DB_SCHEMA
+    return self:Result(true,"recovered-unversioned",db)
+  end
+  local version=rawVersion
+  for sourceVersion=version,self.DB_SCHEMA-1 do
+    if type(migrations[sourceVersion])~="function" then return self:Result(false,"unsupported-schema",{schemaVersion=sourceVersion}) end
+  end
+  while version<self.DB_SCHEMA do
+    local migration=migrations[version]
+    local ok,why=migration(self,db)
+    if not ok then return self:Result(false,why or "migration-failed",{schemaVersion=version}) end
+    version=version+1;db.schemaVersion=version
+  end
+  return self:Result(true,version==rawVersion and "current" or "migrated",db)
+end
+
+local function normalizeDatabase(self,db)
+  if type(db.preferences)~="table" then db.preferences={} end
+  db.preferences.backupLimit=math.max(1,math.min(50,math.floor(tonumber(db.preferences.backupLimit) or self.DEFAULT_BACKUP_LIMIT)))
+  local presets,modes=validPresets(self),validModes(self)
+  if not presets[db.preferences.graphicsPreset] and db.preferences.graphicsPreset~=self.GRAPHICS_PRESET_CUSTOM then db.preferences.graphicsPreset=self.GRAPHICS_PRESET_CUSTOM end
+  if not modes[db.preferences.graphicsMode] then db.preferences.graphicsMode=self.GRAPHICS_MODE_SPLIT end
   if db.preferences.benchmarkMode~=self.BENCHMARK_QUICK and db.preferences.benchmarkMode~=self.BENCHMARK_ACCURATE then db.preferences.benchmarkMode=self.BENCHMARK_QUICK end
   db.preferences.performanceWidgetEnabled=db.preferences.performanceWidgetEnabled==true
   local widgetPosition=db.preferences.performanceWidgetPosition
@@ -27,15 +69,40 @@ function STBS:InitializeDatabase()
   local zone=db.preferences.zoneGraphics;zone.enabled=zone.enabled==true
   if type(zone.assignments)~="table" then zone.assignments={} end
   local defaults={world=self.GRAPHICS_PRESET_OPTIMIZED,party=self.GRAPHICS_PRESET_OPTIMIZED,raid=self.GRAPHICS_PRESET_PRO,pvp=self.GRAPHICS_PRESET_PRO,scenario=self.GRAPHICS_PRESET_OPTIMIZED}
-  for category,preset in pairs(defaults) do if not validPreset[zone.assignments[category]] then zone.assignments[category]=preset end end
-  if type(db.profiles) ~= "table" then db.profiles = {} end
-  if type(db.backups) ~= "table" then db.backups = {} end
+  for category,preset in pairs(defaults) do if not presets[zone.assignments[category]] then zone.assignments[category]=preset end end
+  if type(db.profiles)~="table" then db.profiles={} end
+  if type(db.backups)~="table" then db.backups={} end
   for index=#db.backups,1,-1 do local backup=db.backups[index];if type(backup)~="table" or type(backup.timestamp)~="number" or type(backup.values)~="table" or type(backup.affectedModules)~="table" then table.remove(db.backups,index) end end
-  while #db.backups > db.preferences.backupLimit do table.remove(db.backups) end
-  if type(db.log) ~= "table" then db.log = {} end
-  if type(db.transactions) ~= "table" then db.transactions = {} end
-  db.profileSequence = math.max(0, math.floor(tonumber(db.profileSequence) or 0))
-  db.schemaVersion = self.DB_SCHEMA
-  _G.STierBlizzSettingsDB = db; if type(_G.STierBlizzSettingsCharDB) ~= "table" then _G.STierBlizzSettingsCharDB = {} end
+  while #db.backups>db.preferences.backupLimit do table.remove(db.backups) end
+  if type(db.log)~="table" then db.log={} end
+  if type(db.transactions)~="table" then db.transactions={} end
+  db.profileSequence=math.max(0,math.floor(tonumber(db.profileSequence) or 0))
+  return db
+end
+
+function STBS:IsDatabaseSchemaSupported()
+  return not self.databaseMigrationStatus or self.databaseMigrationStatus.supported~=false
+end
+
+function STBS:GetDatabaseMigrationStatus()
+  return self.databaseMigrationStatus and self:Copy(self.databaseMigrationStatus) or {supported=true,code="uninitialized"}
+end
+
+function STBS:InitializeDatabase()
+  local source=_G.STierBlizzSettingsDB;if type(source)~="table" then source={} end
+  local migration=self:MigrateDatabase(source)
+  if not migration.ok then
+    local version=type(migration.data)=="table" and migration.data.schemaVersion or source.schemaVersion
+    self.databaseMigrationStatus={supported=false,code=migration.code,schemaVersion=version}
+    if type(self.unsupportedDatabaseView)~="table" then
+      local fallback={schemaVersion=self.DB_SCHEMA};separateLegacyGraphicsState(self,fallback);fallback.graphicsStateNeedsSync=nil
+      self.unsupportedDatabaseView=normalizeDatabase(self,fallback)
+    end
+    if type(_G.STierBlizzSettingsCharDB)~="table" then _G.STierBlizzSettingsCharDB={} end
+    return self.unsupportedDatabaseView
+  end
+  local db=normalizeDatabase(self,migration.data)
+  self.databaseMigrationStatus={supported=true,code=migration.code,schemaVersion=db.schemaVersion};self.unsupportedDatabaseView=nil
+  _G.STierBlizzSettingsDB=db;if type(_G.STierBlizzSettingsCharDB)~="table" then _G.STierBlizzSettingsCharDB={} end
   return db
 end

@@ -13,7 +13,7 @@ function STBS:CommitAppliedGraphicsState(mode,preset)
   mode=mode or self:GetCurrentGraphicsMode();if mode~=self.GRAPHICS_MODE_UNIFIED and mode~=self.GRAPHICS_MODE_SPLIT then return false end
   if preset==nil then preset=self:GetCurrentGraphicsPreset() or self.GRAPHICS_PRESET_CUSTOM end
   if not self:IsGraphicsPreset(preset) and preset~=self.GRAPHICS_PRESET_CUSTOM then return false end
-  local preferences=self:InitializeDatabase().preferences;preferences.graphicsMode=mode;preferences.graphicsPreset=preset;return true
+  local preferences=self:InitializeDatabase().preferences;if not self:IsDatabaseSchemaSupported() then return false end;preferences.graphicsMode=mode;preferences.graphicsPreset=preset;return true
 end
 function STBS:SyncAppliedGraphicsState()
   local mode=self:GetCurrentGraphicsMode();if not mode then return false end

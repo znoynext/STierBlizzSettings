@@ -37,6 +37,7 @@ function STBS:Copy(value, seen)
   return result
 end
 function STBS:Log(level, code, detail)
+  if self.databaseMigrationStatus and self.databaseMigrationStatus.supported==false then return end
   local db = _G.STierBlizzSettingsDB
   if not db then return end
   db.log = db.log or {}
