@@ -23,7 +23,10 @@ frame:SetScript("OnEvent",function(_,event,arg)
     local pending=STBS.pending;STBS.pending=nil
     local result=STBS:ApplySettings(pending.settings,pending.modules,pending.trigger,pending.options)
     if pending.trigger=="zone-change" or pending.trigger=="zone-enabled" or pending.trigger=="zone-manual" then
-      STBS.zoneStatus={ok=result.ok,code=result.code,category=STBS:GetZoneCategory(),preset=STBS.activeZonePreset,changed=result.data and result.data.changed or 0}
+      local data=type(result.data)=="table" and result.data or nil
+      local graphics=data and type(data.graphics)=="table" and data.graphics or nil
+      local changed=result.ok and graphics and tonumber(graphics.changed) or 0
+      STBS.zoneStatus={ok=result.ok,code=result.code,category=STBS:GetZoneCategory(),preset=STBS.activeZonePreset,changed=changed}
       if result.ok then STBS:SetSelectedMode(STBS.GRAPHICS_MODE_UNIFIED);STBS:SetSelectedPreset(STBS.activeZonePreset) end
       if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="graphics" and STBS.ui.currentGraphicsSection=="zones" then STBS:ShowZoneGraphics() end
     end
