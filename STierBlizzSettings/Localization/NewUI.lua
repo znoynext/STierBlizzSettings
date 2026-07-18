@@ -58,6 +58,7 @@ local experience = {
   VISUAL_PREVIEW="Real in-game example",
   READY="Ready - choose a mode, then apply",
   REVIEW_READY="Ready to apply - a backup will be created first",
+  REVIEWED_CHANGE_COUNT="Reviewed changes: %d.",
   RESTORE_COMPLETE_SUMMARY="Backup restored: %d restored, %d already matched.",
   RESTORE_PARTIAL_SUMMARY="Backup restored partially: %d restored, %d unavailable on this client.",
   RESTORE_ALL_UNAVAILABLE="Backup was not restored: all %d settings are unavailable on this client.",
@@ -162,6 +163,7 @@ local experience = {
   EXPORT_ALL="Export all settings", IMPORT_ALL="Import all settings", IMPORT_REVIEW="Review import", BUNDLE_EXPORT_READY="The full settings string is ready. Click Copy, then press Ctrl+C.", BUNDLE_EXPORT_FAILED="Could not export addon settings.", BUNDLE_IMPORT_PASTE="Paste a complete STBSA1 string below, then click Review import.", BUNDLE_IMPORT_FAILED="The settings string was not imported.", BUNDLE_IMPORT_SUMMARY="This will apply the shared graphics and replace personal profiles (%d). Preset: %s. A graphics backup will be created first.", IMPORT_ALL_CONFIRM="Import and apply", BUNDLE_IMPORTED="All shared addon settings were imported.",
   ACCURATE_CHECK="Accurate 20-second test", WIDGET_CHECK="Show FPS & Ping overlay", ZONE_CHECK="Enable Zone Graphics",
   TRANSFER_READY="Ready to copy or paste a settings string.",
+  BUNDLE_GRAPHICS_UNCHANGED="Graphics already match. Shared profiles and preferences can still be imported.",
   LEGACY_SPLIT_BADGE="Legacy split profile",
   LEGACY_SPLIT_SELECTED_HELP="Uses separate Raid/Battleground graphics from an older workflow.",
   LEGACY_SPLIT_PREVIEW="This older profile stores separate base and Raid/Battleground graphics.",
@@ -180,7 +182,7 @@ local experience = {
 }
 
 local russianExperience = {
-  ABOUT="Об аддоне", ZONE_GRAPHICS="Графика по зонам", GRAPHICS_SETTINGS_TAB="Настройки графики", ZONE_SWITCHER_TAB="Переключение по зонам", GRAPHICS_TITLE="Больше FPS. Чёткая графика.", LIVE_FPS="Текущий FPS", FPS_MEASURING="Измеряем FPS… не меняйте ракурс.", VISUAL_PREVIEW="Реальный пример из игры", READY="Готово — выберите профиль и примените", REVIEW_READY="Всё готово — перед применением будет создан бэкап",
+  ABOUT="Об аддоне", ZONE_GRAPHICS="Графика по зонам", GRAPHICS_SETTINGS_TAB="Настройки графики", ZONE_SWITCHER_TAB="Переключение по зонам", GRAPHICS_TITLE="Больше FPS. Чёткая графика.", LIVE_FPS="Текущий FPS", FPS_MEASURING="Измеряем FPS… не меняйте ракурс.", VISUAL_PREVIEW="Реальный пример из игры", READY="Готово — выберите профиль и примените", REVIEW_READY="Всё готово — перед применением будет создан бэкап", REVIEWED_CHANGE_COUNT="Проверено изменений: %d.",
   QUICK_START="Быстрый старт", QUICK_START_TEXT="1. Выберите PRO, Оптимальный или Качество.\n2. Нажмите «Применить» и подтвердите.\n3. Не меняйте ракурс во время сравнения 5 секунд.", SAVE_OWN_TITLE="Хотите сохранить текущую графику?", SAVE_OWN_TEXT="Откройте «Профили» и нажмите «Сохранить графику» до применения пресета.",
   PLAN_SUMMARY="Результат: изменятся — %d, уже совпадают — %d, пропущены — %d, недоступны — %d, ошибки — %d.", PERFORMANCE_TUNED="Тяжёлые эффекты снижены там, где потеря качества почти незаметна.", QUALITY_PRESERVED="Качество текстур, эффекты на земле, частицы и контуры остаются читаемыми.", HARDWARE_UNCHANGED="Разрешение, масштаб рендера, лимиты FPS и задержка не меняются.",
   MODE_SELECTED="Режим зон выбран. Настройки ещё не применены.", PRESET_SELECTED="Пресет выбран. Настройки ещё не применены.", PRESET_PRO="PRO", PRESET_OPTIMIZED="Оптимальный", PRESET_QUALITY="Качество", UNIFIED="Одинаково везде", SPLIT="Облегчённый рейд", GRAPHICS_SELECTION_SUMMARY="PRO отдаёт приоритет FPS; Оптимальный — рекомендуемый баланс; Качество улучшает картинку без бесполезных максимумов. Zone Graphics может переключать эти пресеты по типу контента.", PENDING_FPS="Операция выполнится после боя. Затем аддон покажет результат применения.", FPS_LOW_RESULT_FORMAT="1%% Low: %d  |TInterface\\Buttons\\UI-SpellbookIcon-NextPage-Up:12:12|t  %d FPS", FPS_RESULT_FORMAT="Средний FPS: %d  |TInterface\\Buttons\\UI-SpellbookIcon-NextPage-Up:14:14|t  %d, %+d FPS (%+d%%)", SHOW_WIDGET="Показать FPS и пинг", HIDE_WIDGET="Скрыть FPS и пинг", WIDGET_ENABLED="Индикатор FPS и пинга включён.", WIDGET_DISABLED="Индикатор FPS и пинга выключен.", PERFORMANCE_WIDGET="FPS и пинг", PERFORMANCE_WIDGET_HELP="Текущий FPS и максимальный пинг.\nCtrl + перетаскивание — переместить.", WIDGET_FPS_FORMAT="FPS %d", WIDGET_PING_FORMAT="Пинг %d",
@@ -205,7 +207,7 @@ local russianExperience = {
   FPS_APPLY_MEASURE_TITLE="Проверка применённой графики",
   FPS_APPLY_MEASURE_HELP="Не меняйте ракурс, пока аддон измеряет результат.",
   FPS_APPLY_MEASURE_PHASE="Замер FPS после применения",
-  TRANSFER_READY="Можно копировать или вставлять строку настроек.",
+  TRANSFER_READY="Можно копировать или вставлять строку настроек.", BUNDLE_GRAPHICS_UNCHANGED="Графика уже совпадает. Общие профили и настройки всё ещё можно импортировать.",
   LEGACY_SPLIT_BADGE="Старый раздельный профиль",
   LEGACY_SPLIT_SELECTED_HELP="Хранит отдельную графику для рейдов и полей боя из старой схемы работы.",
   LEGACY_SPLIT_PREVIEW="Этот старый профиль хранит отдельные базовые настройки и графику для рейдов и полей боя.",

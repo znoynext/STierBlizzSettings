@@ -514,15 +514,16 @@ function STBS:ShowOfficialPreview()
   local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,self:GetSelectedPreset()),{graphics=true});local plan,summary=self:BuildDiff(settings,{graphics=true})
   self:SetLiveFPSCallback(nil)
   self:SetPage(self:L("PREVIEW"),self:FormatDiff(plan,summary),{
-    {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ConfirmApplyGraphics(summary.changed)end,style="primary",wide=true},
+    {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ConfirmApplyGraphics()end,style="primary",wide=true},
     {label=self:L("BACK"),fn=function()STBS:ShowGraphics()end},
-  },self:L("REVIEW_READY"),{pageKey="graphics"})
+  },summary.changed==0 and self:L("SETTINGS_UNCHANGED") or string.format(self:L("REVIEWED_CHANGE_COUNT"),summary.changed),{pageKey="graphics",statusKind=summary.changed==0 and "success" or nil})
 end
 
-function STBS:ConfirmApplyGraphics(count)
-  local function apply()local preset=STBS:GetSelectedPreset();local mode=STBS.GRAPHICS_MODE_UNIFIED;local settings=STBS:FlattenProfile(STBS:GetOfficialGraphics(mode,preset),{graphics=true});STBS:ApplyGraphicsWithFPS(settings,"official-graphics",mode,preset,"manual-preset")end
-  if (count or 0)==0 then apply();return end
-  self:ShowAddonDialog({title=self:L("APPLY_CONFIRM"),message=string.format(self:L("APPLY_CONFIRM_TEXT"),count),onAccept=apply})
+function STBS:ConfirmApplyGraphics()
+  local preset=self:GetSelectedPreset();local mode=self.GRAPHICS_MODE_UNIFIED;local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,preset),{graphics=true});local _,summary=self:BuildDiff(settings,{graphics=true})
+  local function apply()STBS:ApplyGraphicsWithFPS(settings,"official-graphics",mode,preset,"manual-preset")end
+  if summary.changed==0 then apply();return end
+  self:ShowAddonDialog({title=self:L("APPLY_CONFIRM"),message=string.format(self:L("APPLY_CONFIRM_TEXT"),summary.changed),onAccept=apply})
 end
 
 function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode,selectedPreset,backupSource)
@@ -676,7 +677,7 @@ function STBS:ShowProfilePreview(profile)
   self:SetPage(self:L("PREVIEW"),"|cffffd36b"..self:SafeText(profile.displayName).."|r\n\n"..self:FormatDiff(plan,summary),{
     {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ConfirmApplyProfile(profile)end,style="primary",wide=true},
     {label=self:L("BACK"),fn=function()STBS:ShowProfiles()end},
-  },self:L("STATUS")..": "..#plan.." "..self:L("SETTINGS_COUNT"),{pageKey="profiles"})
+  },summary.changed==0 and self:L("SETTINGS_UNCHANGED") or string.format(self:L("REVIEWED_CHANGE_COUNT"),summary.changed),{pageKey="profiles",statusKind=summary.changed==0 and "success" or nil})
 end
 
 function STBS:OpenLegacySplitConversion(profileId)
@@ -706,7 +707,7 @@ function STBS:ConfirmApplyProfile(profile)
   if self:IsLegacySplitProfile(profile) then return self:ConfirmApplyLegacySplitProfile(profile.id) end
   local settings=self:FlattenProfile(profile,{graphics=true});local function apply()STBS:ApplyGraphicsWithFPS(settings,"personal-profile",profile.sections.graphics.mode,nil,"personal-profile")end
   local _,summary=self:BuildDiff(settings,{graphics=true});if summary.changed==0 then apply();return end
-  self:ShowAddonDialog({title=self:L("PROFILE_APPLY_CONFIRM"),message=self:L("PROFILE_APPLY_CONFIRM_TEXT"),onAccept=apply})
+  self:ShowAddonDialog({title=self:L("PROFILE_APPLY_CONFIRM"),message=string.format(self:L("APPLY_CONFIRM_TEXT"),summary.changed),onAccept=apply})
 end
 
 function STBS:ShowDiagnostics() self:SetPage(self:L("DIAGNOSTICS"),self:DiagnosticReport(),{{label=self:L("COPY"),fn=function()STBS:ShowCopyBox(STBS:DiagnosticReport())end},{label=self:L("BACK"),fn=function()STBS:ShowGraphics()end}},nil,{}) end
@@ -744,7 +745,7 @@ function STBS:ShowAddonImportPreview(payload)
     local result=STBS:ApplyAddonBundle(STBS.pendingAddonBundle);STBS.pendingAddonBundle=nil
     if result.ok then STBS.flashMessage=STBS:L("BUNDLE_IMPORTED");STBS.flashKind="success" else STBS.flashMessage=STBS:L("BUNDLE_IMPORT_FAILED").." ("..tostring(result.code)..")";STBS.flashKind="error" end
     STBS:ShowProfiles("transfer")
-  end},{label=self:L("BACK"),fn=function()STBS.pendingAddonBundle=nil;STBS:ShowProfiles("transfer")end}},self:L("REVIEW_READY"),{pageKey="profiles",statusKind="warning"})
+  end},{label=self:L("BACK"),fn=function()STBS.pendingAddonBundle=nil;STBS:ShowProfiles("transfer")end}},plan and (summary.changed==0 and self:L("BUNDLE_GRAPHICS_UNCHANGED") or string.format(self:L("REVIEWED_CHANGE_COUNT"),summary.changed)) or self:L("REVIEW_READY"),{pageKey="profiles",statusKind=plan and summary.changed==0 and "success" or "warning"})
 end
 
 function STBS:OpenImport()
@@ -761,7 +762,7 @@ function STBS:ShowImportPreview(payload)
   local actions={{label=self:L("IMPORT_GRAPHICS")..": "..self:L("USE_PROFILE_MODE"),fn=function()STBS:ApplyPendingImport("profile")end,style="primary",wide=true}}
   if self:GetSelectedMode() then table.insert(actions,{label=self:L("IMPORT_GRAPHICS")..": "..self:L("KEEP_MODE"),fn=function()STBS:ApplyPendingImport("current")end}) end
   table.insert(actions,{label=self:L("BACK"),fn=function()STBS.pendingImport=nil;STBS:ShowProfiles()end})
-  self:SetPage(self:L("IMPORT"),"|cff65cfff"..self:L("PROFILE_SUMMARY").."|r\n"..self:SafeText(payload.profile.displayName).."\n\n"..self:FormatDiff(plan,summary).."\n\n"..self:L("IMPORT_CONFIRMATION"),actions,nil,{pageKey="profiles"})
+  self:SetPage(self:L("IMPORT"),"|cff65cfff"..self:L("PROFILE_SUMMARY").."|r\n"..self:SafeText(payload.profile.displayName).."\n\n"..self:FormatDiff(plan,summary).."\n\n"..(summary.changed==0 and self:L("SETTINGS_UNCHANGED") or self:L("IMPORT_CONFIRMATION")),actions,summary.changed==0 and self:L("SETTINGS_UNCHANGED") or string.format(self:L("REVIEWED_CHANGE_COUNT"),summary.changed),{pageKey="profiles",statusKind=summary.changed==0 and "success" or nil})
 end
 
 function STBS:ShowReport(result)
