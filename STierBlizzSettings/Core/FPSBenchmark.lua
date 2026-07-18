@@ -104,15 +104,43 @@ function STBS:StartFPSPostMeasurement(beforeSamples,callback,progressCallback)
   self.fpsAfterTicker=C_Timer.NewTicker(QUICK_INTERVAL,sample,QUICK_SAMPLES);return true
 end
 
+local function clearFrameTimeSampler(sampler)
+  if sampler.frame and sampler.frame.SetScript then pcall(sampler.frame.SetScript,sampler.frame,"OnUpdate",nil) end
+  sampler.active=false;sampler.phase=nil;sampler.duration=nil;sampler.elapsed=0;sampler.displayElapsed=0;sampler.frameTimes={};sampler.callback=nil;sampler.isUserTest=false
+end
+
+function STBS:GetFrameTimeSampler()
+  if self.fpsSampler then return self.fpsSampler end
+  if type(_G.CreateFrame)~="function" then return nil end
+  local sampler={frame=CreateFrame("Frame"),active=false,phase=nil,duration=nil,elapsed=0,displayElapsed=0,frameTimes={},callback=nil,isUserTest=false,generation=0}
+  self.fpsSampler=sampler;return sampler
+end
+
+function STBS:CancelFrameTimeCapture(generation)
+  local sampler=self.fpsSampler
+  if not sampler or not sampler.active or generation and sampler.generation~=generation then return false end
+  clearFrameTimeSampler(sampler);return true
+end
+
+function STBS:AdvanceFrameTimeSampler(generation,elapsed)
+  local sampler=self.fpsSampler
+  if not sampler or not sampler.active or sampler.generation~=generation then return false end
+  if finitePositive(elapsed) then sampler.frameTimes[#sampler.frameTimes+1]=elapsed;sampler.elapsed=sampler.elapsed+elapsed;sampler.displayElapsed=sampler.displayElapsed+elapsed;if sampler.isUserTest then self.fpsTestElapsed=sampler.elapsed end end
+  if sampler.displayElapsed>=QUICK_INTERVAL then self:NotifyLiveFPS(self:ReadFramerate());if sampler.isUserTest and type(self.UpdateFPSTestModal)=="function" then self:UpdateFPSTestModal(sampler.phase,sampler.elapsed,sampler.duration,self.fpsTestRun and self.fpsTestRun.preset) end;sampler.displayElapsed=0 end
+  if sampler.elapsed<sampler.duration then return true end
+  local callback,frameTimes=sampler.callback,sampler.frameTimes;clearFrameTimeSampler(sampler);if callback then callback(frameTimes) end;return true
+end
+
 function STBS:CaptureFrameTimes(duration,phase,callback)
-  if type(_G.CreateFrame)~="function" then return false end
-  local frame=CreateFrame("Frame");local elapsedTotal,displayElapsed,frameTimes=0,0,{};local isUserTest=phase=="standalone" or phase=="comparison-current" or phase=="comparison-preset";if isUserTest then self.fpsTestFrame=frame end
+  if not finitePositive(duration) or type(phase)~="string" or type(callback)~="function" then return false,"invalid" end
+  local sampler=self:GetFrameTimeSampler();if not sampler then return false,"unavailable" end
+  if sampler.active then return false,"busy" end
+  sampler.generation=sampler.generation+1;local generation=sampler.generation
+  sampler.active=true;sampler.phase=phase;sampler.duration=duration;sampler.elapsed=0;sampler.displayElapsed=0;sampler.frameTimes={};sampler.callback=callback;sampler.isUserTest=phase=="standalone" or phase=="comparison-current" or phase=="comparison-preset"
   if self.ui and self.ui:IsShown() and self.ui.currentPageKey=="graphics" then self:ShowGraphics() end
-  frame:SetScript("OnUpdate",function(self,elapsed)
-    if finitePositive(elapsed) then frameTimes[#frameTimes+1]=elapsed;elapsedTotal=elapsedTotal+elapsed;displayElapsed=displayElapsed+elapsed;if isUserTest then STBS.fpsTestElapsed=elapsedTotal end end
-    if displayElapsed>=QUICK_INTERVAL then STBS:NotifyLiveFPS(STBS:ReadFramerate());if isUserTest and type(STBS.UpdateFPSTestModal)=="function" then STBS:UpdateFPSTestModal(phase,elapsedTotal,duration,STBS.fpsTestRun and STBS.fpsTestRun.preset) end;displayElapsed=0 end
-    if elapsedTotal>=duration then self:SetScript("OnUpdate",nil);if STBS.fpsTestFrame==self then STBS.fpsTestFrame=nil end;callback(frameTimes) end
-  end);return true
+  local ok=pcall(sampler.frame.SetScript,sampler.frame,"OnUpdate",function(_,elapsed)STBS:AdvanceFrameTimeSampler(generation,elapsed)end)
+  if not ok then clearFrameTimeSampler(sampler);return false,"unavailable" end
+  return true
 end
 
 function STBS:StartStandaloneFPSTest(doneCallback)
@@ -138,7 +166,7 @@ function STBS:StartPresetFPSComparison(preset,doneCallback)
   local state={kind="comparison",preset=preset,original=original,candidate=candidate,candidateApplied=false,sessionId=sessionId};self.fpsTestRun=state;self.fpsPresetComparison=state;self.fpsTestMeasurement=true;self.fpsTestElapsed=0;self:StopFPSBaselineSampling()
   local function finish(comparison,restoreResult,errorResult)
     if self.fpsTestRun~=state then return end
-    self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsTestFrame=nil;self.fpsTestRun=nil;self.fpsPresetComparison=nil
+    self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsTestRun=nil;self.fpsPresetComparison=nil
     if comparison then comparison.preset=preset;comparison.mode=mode;comparison.sessionId=sessionId;comparison.restoreQueued=restoreResult and restoreResult.code=="queued" or false;comparison.restoreFailed=restoreResult and not restoreResult.ok and restoreResult.code~="queued" or false;self:StoreStandaloneFPSTest(comparison.beforeStats);self:StorePresetFPSComparison(comparison) end
     if doneCallback then doneCallback(comparison,restoreResult,errorResult) end
   end
@@ -167,7 +195,7 @@ end
 
 function STBS:CancelFPSTest()
   local state=self.fpsTestRun;if not state then return self:Result(false,"no-test") end
-  state.cancelled=true;if self.fpsTestFrame then self.fpsTestFrame:SetScript("OnUpdate",nil) end;self.fpsTestFrame=nil
+  state.cancelled=true;self:CancelFrameTimeCapture()
   local restored=nil;if state.kind=="comparison" and state.candidateApplied then restored=self:ApplySettings(state.original,{graphics=true},"fps-compare-cancel-restore",{deferBackupTrim=true,backupSource="fps-comparison-temp",backupSessionId=state.sessionId},{kind="recovery",context={reason="fps-compare-cancel-restore",comparisonSessionId=state.sessionId}});if restored.code=="queued" then self.fpsPresetRestorePending=true else self:FinalizeFPSComparisonRestore(restored,state.sessionId) end elseif state.kind=="comparison" then self:FinalizeFPSComparisonRestore(nil,state.sessionId) end
   self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsTestRun=nil;self.fpsPresetComparison=nil
   return self:Result(true,restored and restored.code=="queued" and "cancelled-restore-queued" or restored and not restored.ok and "cancelled-restore-failed" or "cancelled",{restore=restored})
