@@ -8,6 +8,7 @@ frame:SetScript("OnEvent",function(_,event,arg)
       msg=(msg or ""):lower()
       if msg=="profiles" or msg=="backup" or msg=="restore" or msg=="save" or msg=="export" or msg=="import" then STBS:ShowProfiles()
       elseif msg=="zone" then STBS:ShowZoneGraphics()
+      elseif msg=="fps" or msg=="test" then STBS:ShowFPSTest()
       elseif msg=="about" then STBS:ShowAbout()
       elseif msg=="debug" then STBS:ShowDiagnostics()
       else STBS:ShowGraphics() end
@@ -23,7 +24,7 @@ frame:SetScript("OnEvent",function(_,event,arg)
     if pending.trigger=="zone-change" or pending.trigger=="zone-enabled" or pending.trigger=="zone-manual" then
       STBS.zoneStatus={ok=result.ok,code=result.code,category=STBS:GetZoneCategory(),preset=STBS.activeZonePreset,changed=result.data and result.data.changed or 0}
       if result.ok then STBS.reloadRecommended=true end
-      if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="zone" then STBS:ShowZoneGraphics() end
+      if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="graphics" and STBS.ui.currentGraphicsSection=="zones" then STBS:ShowZoneGraphics() end
     end
     if result.ok and pending.options and pending.options.fpsBefore then
       STBS.reloadRecommended=true;STBS.flashMessage=STBS:L("SETTINGS_APPLIED");STBS.flashKind="success"

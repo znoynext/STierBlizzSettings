@@ -14,14 +14,14 @@ Reviewed 2026-07-16. The addon keeps a custom lightweight dashboard but follows 
 
 ## Product-specific decisions
 
-- First use is three explicit decisions: choose one of three presets, choose quick or accurate measurement, then review and confirm in a native popup. Unified/split mode is a compact secondary toggle.
-- The dashboard has four top-level destinations: Graphics, Profiles, Zone Graphics and About. The removed Home screen duplicated the graphics workflow; backups and profiles share one history screen while remaining distinct data types.
+- First use is two explicit decisions: choose one of three presets, then review and confirm in a native popup. Unified/split mode is a compact secondary toggle; FPS diagnostics live on their own page.
+- The dashboard has four top-level destinations: Graphics, Test FPS, Profiles and About. Graphics uses Blizzard `PanelTabButtonTemplate` sub-tabs for Graphics Settings and the complete Zone Graphics Switcher, avoiding a duplicate top-level destination.
 - Change previews report counts and user-visible outcomes instead of listing every CVar.
 - Unsupported values are visibly skipped; failed writes trigger rollback and a separate result state.
 - Profile and backup lists never cap selection to the first items; actions scroll inside a fixed-size dashboard. Both kinds support explicit deletion confirmation.
 - Imported names are treated as untrusted display text so WoW color/hyperlink markup cannot spoof the UI.
 - A visible Undo action restores the latest graphics backup. Settings restore remains reversible because it creates a safety backup first.
-- The FPS card shows the current value live in a large font and keeps the last before/after average plus accurate 1% Low as a smaller local estimate. A separate bottom-screen FPS/ping indicator is optional.
+- The FPS card shows the current value live in a large font and keeps the last before/after average as a smaller local estimate. The dedicated 20-second Test FPS page reports average, frame-time-based 1% Low, their stability ratio, adaptive spikes and worst-frame time. A separate bottom-screen FPS/ping indicator is optional.
 - Every user action produces an in-window success, warning or error state. Choosing a mode explicitly says that nothing has been applied yet; apply, reload, save, backup, restore, delete, rename and export have distinct completion copy.
 - The About page explains evidence, scope, backup/undo behavior, preserved hardware controls and the limits of the FPS claim.
 - Motion is limited to short window/page fades, status feedback and button hover feedback so the UI feels responsive without distracting from the decision flow.

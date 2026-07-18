@@ -51,6 +51,16 @@ local function navButton(parent,text,icon,y,pageKey,callback)
   return b
 end
 
+local function panelTab(parent,text,callback)
+  local tab=CreateFrame("Button",nil,parent,"PanelTabButtonTemplate");tab:SetText(text);tab:SetScript("OnClick",function()if type(_G.PlaySound)=="function" and _G.SOUNDKIT and _G.SOUNDKIT.IG_CHARACTER_INFO_TAB then _G.PlaySound(_G.SOUNDKIT.IG_CHARACTER_INFO_TAB)end;callback()end)
+  tab:SetNormalFontObject(GameFontNormal);tab:SetHighlightFontObject(GameFontHighlight);tab:SetDisabledFontObject(GameFontHighlight);tab:Hide()
+  return tab
+end
+
+local function setPanelTabActive(tab,active)
+  if active then PanelTemplates_SelectTab(tab);tab:SetDisabledFontObject(GameFontHighlight) else PanelTemplates_DeselectTab(tab);tab:SetNormalFontObject(GameFontNormal) end
+end
+
 local function resultSummary(data)
   data=data or {}
   local lines={"|cff35e6ad"..STBS:L("CHANGED")..":|r "..(data.changed or 0),STBS:L("IDENTICAL")..": "..(data.identical or 0),STBS:L("SKIPPED")..": "..(data.skipped or 0),"|cffffd36b"..STBS:L("UNAVAILABLE")..":|r "..(data.unavailable or 0),"|cffff6666"..STBS:L("FAILED")..":|r "..(data.failed or 0)}
@@ -77,21 +87,28 @@ local function layoutActionButtons(f)
   f.actionRows=row;f.actionContent:SetHeight(math.max(1,row*40));return row
 end
 
+local function layoutFPSDashboard(f,width)
+  local available=math.max(320,width-19);local columns=available>=650 and 4 or 2;local gap=10;local cardHeight=86;local cardWidth=math.floor((available-gap*(columns-1))/columns);local rows=math.ceil(#f.fpsDashboardCards/columns)
+  f.fpsDashboard:SetSize(available,rows*cardHeight+(rows-1)*gap)
+  for index,card in ipairs(f.fpsDashboardCards) do local row=math.floor((index-1)/columns);local column=(index-1)%columns;card:ClearAllPoints();card:SetPoint("TOPLEFT",column*(cardWidth+gap),-row*(cardHeight+gap));card:SetSize(cardWidth,cardHeight) end
+end
+
 function STBS:LayoutUI()
   local f=self.ui;if not f then return end
   local panelWidth=math.max(440,math.floor(f.panel:GetWidth()+0.5));local panelHeight=math.max(448,math.floor(f.panel:GetHeight()+0.5));local contentWidth=math.max(360,panelWidth-76)
   f.status:SetWidth(panelWidth-60);f.content:SetWidth(contentWidth);f.actionContent:SetWidth(contentWidth)
   f.body:SetWidth(contentWidth-19);f.metricCard:SetWidth(contentWidth-19);f.metricSub:SetWidth(contentWidth-50)
+  if f.fpsDashboard:IsShown() then layoutFPSDashboard(f,contentWidth);f.bodyY=-(f.fpsDashboard:GetHeight()+16);f.body:ClearAllPoints();f.body:SetPoint("TOPLEFT",7,f.bodyY) end
   if f.copyBox then f.copyBox:SetWidth(contentWidth-19);f.copyBox:SetHeight(math.max(120,(f.scroll:GetHeight() or 200)-18)) end
   layoutActionButtons(f)
-  local availableHeight=panelHeight-94
-  f.scroll:ClearAllPoints();f.scroll:SetPoint("TOPLEFT",18,-76);f.scroll:SetPoint("TOPRIGHT",-27,-76)
+  local contentTop=f.graphicsTabsVisible and 108 or 76;local availableHeight=panelHeight-contentTop-18
+  f.scroll:ClearAllPoints();f.scroll:SetPoint("TOPLEFT",18,-contentTop);f.scroll:SetPoint("TOPRIGHT",-27,-contentTop)
   if f.hasActions then
     local desired=math.max(82,(f.actionRows or 0)*40);local actionHeight=math.min(desired,math.max(122,math.min(240,availableHeight-220)))
     local scrollHeight=math.max(180,availableHeight-actionHeight-20)
     f.scroll:SetHeight(scrollHeight)
-    f.rule:ClearAllPoints();f.rule:SetPoint("TOPLEFT",22,-(76+scrollHeight+10));f.rule:SetPoint("TOPRIGHT",-26,-(76+scrollHeight+10));f.rule:Show()
-    f.actionScroll:ClearAllPoints();f.actionScroll:SetPoint("TOPLEFT",18,-(76+scrollHeight+20));f.actionScroll:SetPoint("BOTTOMRIGHT",-27,18);f.actionScroll:Show()
+    f.rule:ClearAllPoints();f.rule:SetPoint("TOPLEFT",22,-(contentTop+scrollHeight+10));f.rule:SetPoint("TOPRIGHT",-26,-(contentTop+scrollHeight+10));f.rule:Show()
+    f.actionScroll:ClearAllPoints();f.actionScroll:SetPoint("TOPLEFT",18,-(contentTop+scrollHeight+20));f.actionScroll:SetPoint("BOTTOMRIGHT",-27,18);f.actionScroll:Show()
   else
     f.scroll:SetPoint("BOTTOMRIGHT",-27,18);f.rule:Hide();f.actionScroll:Hide()
   end
@@ -127,6 +144,10 @@ function STBS:CreateUI()
 
   f.header=panel:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.header:SetPoint("TOPLEFT",22,-20);f.header:SetTextColor(1,0.82,0)
   f.status=panel:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge");f.status:SetPoint("TOPLEFT",24,-50);f.status:SetWidth(660);f.status:SetJustifyH("LEFT");f.status:SetTextColor(0.78,0.72,0.58)
+  panel.tabPadding=18;panel.minTabWidth=150;panel.maxTabWidth=235
+  f.graphicsSettingsTab=panelTab(panel,self:L("GRAPHICS_SETTINGS_TAB"),function()STBS:ShowGraphics()end);f.graphicsSettingsTab:SetPoint("TOPLEFT",panel,"TOPLEFT",22,-43)
+  f.zoneGraphicsTab=panelTab(panel,self:L("ZONE_SWITCHER_TAB"),function()STBS:ShowZoneGraphics()end);f.zoneGraphicsTab:SetPoint("LEFT",f.graphicsSettingsTab,"RIGHT",-7,0)
+  f.graphicsTabs={f.graphicsSettingsTab,f.zoneGraphicsTab}
   local scroll=CreateFrame("ScrollFrame",nil,panel,"UIPanelScrollFrameTemplate");scroll:SetPoint("TOPLEFT",18,-76)
   local content=CreateFrame("Frame",nil,scroll);content:SetHeight(350);scroll:SetScrollChild(content);f.scroll,f.content=scroll,content
   local pageFade=content:CreateAnimationGroup();pageFade:SetToFinalAlpha(true);local pageAlpha=pageFade:CreateAnimation("Alpha");pageAlpha:SetFromAlpha(0.35);pageAlpha:SetToAlpha(1);pageAlpha:SetDuration(0.16);pageAlpha:SetSmoothing("OUT");f.pageFade=pageFade
@@ -134,6 +155,8 @@ function STBS:CreateUI()
   f.metricTitle=f.metricCard:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.metricTitle:SetPoint("TOPLEFT",14,-12);f.metricTitle:SetText(self:L("LIVE_FPS"));f.metricTitle:SetTextColor(1,0.82,0)
   f.metricValue=f.metricCard:CreateFontString(nil,"OVERLAY","GameFontNormalHuge2");f.metricValue:SetPoint("TOPRIGHT",-16,-14);f.metricValue:SetTextColor(0.45,1,0.72)
   f.metricSub=f.metricCard:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge");f.metricSub:SetPoint("BOTTOMLEFT",14,14);f.metricSub:SetJustifyH("LEFT");f.metricSub:SetTextColor(0.82,0.82,0.75)
+  f.fpsDashboard=CreateFrame("Frame",nil,content);f.fpsDashboard:SetPoint("TOPLEFT",5,-2);f.fpsDashboard:Hide();f.fpsDashboardCards={}
+  for index=1,4 do local card=CreateFrame("Frame",nil,f.fpsDashboard,"BackdropTemplate");card:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=12,insets={left=3,right=3,top=3,bottom=3}});card:SetBackdropColor(0.045,0.038,0.022,0.98);card:SetBackdropBorderColor(0.58,0.43,0.2,0.95);card.title=card:CreateFontString(nil,"OVERLAY","GameFontNormal");card.title:SetPoint("TOPLEFT",12,-12);card.title:SetPoint("TOPRIGHT",-10,-12);card.title:SetJustifyH("LEFT");card.title:SetTextColor(1,0.82,0);card.value=card:CreateFontString(nil,"OVERLAY","GameFontNormalHuge2");card.value:SetPoint("BOTTOMLEFT",12,12);card.value:SetPoint("BOTTOMRIGHT",-10,12);card.value:SetJustifyH("LEFT");f.fpsDashboardCards[index]=card end
   f.body=content:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge");f.body:SetJustifyH("LEFT");f.body:SetJustifyV("TOP");f.body:SetSpacing(6)
 
   local rule=panel:CreateTexture(nil,"ARTWORK");rule:SetColorTexture(0.55,0.4,0.18,0.75);rule:SetHeight(1);f.rule=rule
@@ -141,8 +164,8 @@ function STBS:CreateUI()
   local actionContent=CreateFrame("Frame",nil,actionScroll);actionContent:SetHeight(82);actionScroll:SetScrollChild(actionContent);f.actionScroll,f.actionContent=actionScroll,actionContent
   f.pageButtons={};f.navButtons={};self.ui=f
   table.insert(f.navButtons,navButton(side,self:L("GRAPHICS"),"Interface\\Icons\\INV_Misc_EngGizmos_30",-16,"graphics",function()STBS:ShowGraphics()end))
-  table.insert(f.navButtons,navButton(side,self:L("PROFILES"),"Interface\\Icons\\INV_Misc_Book_09",-68,"profiles",function()STBS:ShowProfiles()end))
-  table.insert(f.navButtons,navButton(side,self:L("ZONE_GRAPHICS"),"Interface\\Icons\\INV_Misc_Map_01",-120,"zone",function()STBS:ShowZoneGraphics()end))
+  table.insert(f.navButtons,navButton(side,self:L("FPS_TEST"),"Interface\\Icons\\INV_Misc_PocketWatch_01",-68,"fpsTest",function()STBS:ShowFPSTest()end))
+  table.insert(f.navButtons,navButton(side,self:L("PROFILES"),"Interface\\Icons\\INV_Misc_Book_09",-120,"profiles",function()STBS:ShowProfiles()end))
   table.insert(f.navButtons,navButton(side,self:L("ABOUT"),"Interface\\Icons\\INV_Misc_Note_05",-172,"about",function()STBS:ShowAbout()end))
   local resize=CreateFrame("Button",nil,f);resize:SetSize(22,22);resize:SetPoint("BOTTOMRIGHT",-13,12);resize:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up");resize:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight");resize:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
   resize:SetScript("OnMouseDown",function(_,mouseButton)if mouseButton=="LeftButton" then f:StartSizing("BOTTOMRIGHT",true)end end);resize:SetScript("OnMouseUp",function()f:StopMovingOrSizing();STBS:SaveWindowSize();STBS:LayoutUI()end)
@@ -156,11 +179,19 @@ function STBS:SetPage(title,text,actions,status,options)
   f.header:SetText(title);f.status:SetText(status or "")
   if options.statusKind=="success" then f.status:SetTextColor(0.35,1,0.62) elseif options.statusKind=="error" then f.status:SetTextColor(1,0.35,0.3) elseif options.statusKind=="warning" then f.status:SetTextColor(1,0.78,0.24) else f.status:SetTextColor(0.78,0.72,0.58) end
   if options.statusKind and type(_G.UIFrameFadeIn)=="function" then UIFrameFadeIn(f.status,0.18,0.35,1) end
-  if f.copyBox then f.copyBox:Hide() end;f.scroll:Show();f.metricCard:Hide()
+  if f.copyBox then f.copyBox:Hide() end;f.scroll:Show();f.metricCard:Hide();f.fpsDashboard:Hide()
+  local graphicsSection=options.pageKey=="graphics" and (options.graphicsSection or "settings") or nil;f.currentGraphicsSection=graphicsSection;f.graphicsTabsVisible=graphicsSection~=nil
+  for _,tab in ipairs(f.graphicsTabs) do tab:SetShown(f.graphicsTabsVisible) end
+  if f.graphicsTabsVisible then setPanelTabActive(f.graphicsSettingsTab,graphicsSection=="settings");setPanelTabActive(f.zoneGraphicsTab,graphicsSection=="zones");f.status:ClearAllPoints();f.status:SetPoint("TOPLEFT",24,-82)
+  else f.status:ClearAllPoints();f.status:SetPoint("TOPLEFT",24,-50) end
   local bodyY=-6
   if options.metric then
     f.metricCard:ClearAllPoints();f.metricCard:SetPoint("TOPLEFT",5,-2);f.metricCard:Show();bodyY=-110
     f.metricValue:SetText(self:L("FPS_READING"));f.metricSub:SetText(options.metricText or self:L("FPS_UNAVAILABLE"));f.metricSub:SetTextColor(options.metricPositive==false and 1 or 0.82,options.metricPositive==false and 0.42 or 0.82,options.metricPositive==false and 0.4 or 0.75)
+  end
+  if options.fpsDashboard then
+    f.fpsDashboard:Show();bodyY=-110
+    for index,card in ipairs(f.fpsDashboardCards) do local data=options.fpsDashboard[index] or {};local color=data.color or {0.45,1,0.72};card.title:SetText(data.label or "");card.value:SetText(data.value or "—");card.value:SetTextColor(color[1],color[2],color[3]) end
   end
   f.bodyY=bodyY;f.body:ClearAllPoints();f.body:SetPoint("TOPLEFT",7,bodyY);f.body:SetText(text or "")
   for _,nav in ipairs(f.navButtons) do nav:SetActive(nav.pageKey==options.pageKey) end
@@ -184,8 +215,8 @@ function STBS:ShowInterface() return self:ShowGraphics() end
 
 function STBS:ShowGraphics()
   self:StartFPSBaselineSampling()
-  local mode=self:GetSelectedMode();local preset=self:GetSelectedPreset();local benchmark=self:GetBenchmarkMode();local preferences=self:InitializeDatabase().preferences
-  local metric=self:GetLastFPSMetric();local measuring=self.fpsAfterMeasurement or self.fpsAccurateMeasurement;local metricText=measuring and self:L("FPS_MEASURING") or self:FormatFPSMetric(metric)
+  local mode=self:GetSelectedMode();local preset=self:GetSelectedPreset()
+  local metric=self:GetLastFPSMetric();local measuring=self.fpsAfterMeasurement or self.fpsAccurateMeasurement or self.fpsTestMeasurement;local metricText=measuring and self:L("FPS_MEASURING") or self:FormatFPSMetric(metric)
   local text="|cffffd36b"..self:L("QUICK_START").."|r\n"..self:L("QUICK_START_TEXT").."\n\n|cffffd36b"..self:L("SAVE_OWN_TITLE").."|r\n"..self:L("SAVE_OWN_TEXT").."\n\n|cff9aa7b8"..self:L("GRAPHICS_SELECTION_SUMMARY").."\n"..self:L("IN_GAME_PREVIEW_HELP").."|r"
   local latest=self:GetLatestBackupIndex("graphics")
   local actions={
@@ -193,8 +224,6 @@ function STBS:ShowGraphics()
     {label=self:L("PRESET_OPTIMIZED"),third=true,fn=function()STBS:SetSelectedPreset(STBS.GRAPHICS_PRESET_OPTIMIZED);STBS.flashMessage=STBS:L("PRESET_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=preset==self.GRAPHICS_PRESET_OPTIMIZED},
     {label=self:L("PRESET_QUALITY"),third=true,fn=function()STBS:SetSelectedPreset(STBS.GRAPHICS_PRESET_QUALITY);STBS.flashMessage=STBS:L("PRESET_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=preset==self.GRAPHICS_PRESET_QUALITY},
     {kind="check",label=self:L("LIGHT_RAID_CHECK"),checked=mode==self.GRAPHICS_MODE_SPLIT,third=true,fn=function(checked)STBS:SetSelectedMode(checked and STBS.GRAPHICS_MODE_SPLIT or STBS.GRAPHICS_MODE_UNIFIED);STBS.flashMessage=STBS:L("MODE_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end},
-    {kind="check",label=self:L("ACCURATE_CHECK"),checked=benchmark==self.BENCHMARK_ACCURATE,third=true,fn=function(checked)STBS:SetBenchmarkMode(checked and STBS.BENCHMARK_ACCURATE or STBS.BENCHMARK_QUICK);STBS.flashMessage=STBS:L("BENCHMARK_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end},
-    {kind="check",label=self:L("WIDGET_CHECK"),checked=preferences.performanceWidgetEnabled,third=true,fn=function(checked)STBS:SetPerformanceWidgetEnabled(checked);STBS.flashMessage=checked and STBS:L("WIDGET_ENABLED") or STBS:L("WIDGET_DISABLED");STBS.flashKind="success";STBS:ShowGraphics()end},
     {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ShowOfficialPreview("graphics")end,style="primary",wide=true,disabled=measuring},
   }
   if self.reloadRecommended then table.insert(actions,{label=self:L("RELOAD_UI"),fn=function()STBS:ConfirmReloadUI()end,style="primary",wide=true,disabled=measuring and true or false}) end
@@ -203,11 +232,43 @@ function STBS:ShowGraphics()
   table.insert(actions,{label=self:L("PROFILES"),fn=function()STBS:ShowProfiles()end})
   local phase=self.fpsAccuratePhase=="before" and self:L("FPS_MEASURING_BEFORE") or self.fpsAccuratePhase=="after" and self:L("FPS_MEASURING_AFTER") or self:L("FPS_MEASURING")
   local status=self.flashMessage or (measuring and phase or self:L("READY"));local statusKind=self.flashKind or (measuring and "warning" or nil);self.flashMessage=nil;self.flashKind=nil
-  self:SetPage(self:L("GRAPHICS_TITLE"),text,actions,status,{pageKey="graphics",metric=true,metricText=metricText,metricPositive=not metric or (metric.delta or 0)>=0,statusKind=statusKind})
+  self:SetPage(self:L("GRAPHICS_TITLE"),text,actions,status,{pageKey="graphics",graphicsSection="settings",metric=true,metricText=metricText,metricPositive=not metric or (metric.delta or 0)>=0,statusKind=statusKind})
   self:SetLiveFPSCallback(function(value)
     if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="graphics" then STBS.ui.metricValue:SetText(value and string.format(STBS:L("LIVE_FPS_FORMAT"),math.floor(value+0.5)) or STBS:L("FPS_READING")) end
   end)
   if not self.settingsRegistered then self.settingsRegistered=self:RegisterBlizzardSettings() end
+end
+
+function STBS:GetFPSStabilityLabel(value)
+  if value>=85 then return self:L("FPS_STABILITY_EXCELLENT") end
+  if value>=70 then return self:L("FPS_STABILITY_GOOD") end
+  if value>=50 then return self:L("FPS_STABILITY_UNEVEN") end
+  return self:L("FPS_STABILITY_POOR")
+end
+
+function STBS:FormatStandaloneFPSTest(result)
+  if type(result)~="table" then return self:L("FPS_TEST_NO_RESULT") end
+  local worst=math.floor((result.worstFrameMs or 0)+0.5)
+  return string.format(self:L("FPS_TEST_SPIKES"),result.spikes or 0).."\n"..string.format(self:L("FPS_TEST_WORST"),worst)
+end
+
+function STBS:ShowFPSTest()
+  self:StartFPSBaselineSampling();local result=self:GetLastStandaloneFPSTest();local measuring=self.fpsTestMeasurement==true;local preferences=self:InitializeDatabase().preferences
+  local resultText=self:FormatStandaloneFPSTest(result);local text=self:L("FPS_TEST_HELP").."\n\n|cffffd36b"..self:L("FPS_TEST_DETAILS").."|r\n"..resultText
+  local actions={
+    {label=self:L("FPS_TEST_START"),style="primary",wide=true,disabled=measuring,fn=function()local started=STBS:StartStandaloneFPSTest(function()if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS.flashMessage=STBS:L("FPS_TEST_COMPLETE");STBS.flashKind="success";STBS:ShowFPSTest()end end);STBS.flashMessage=started and STBS:L("FPS_TEST_RUNNING") or STBS:L("FPS_TEST_BUSY");STBS.flashKind=started and "warning" or "error";STBS:ShowFPSTest()end},
+    {kind="check",label=self:L("WIDGET_CHECK"),checked=preferences.performanceWidgetEnabled,wide=true,fn=function(checked)STBS:SetPerformanceWidgetEnabled(checked);STBS.flashMessage=checked and STBS:L("WIDGET_ENABLED") or STBS:L("WIDGET_DISABLED");STBS.flashKind="success";STBS:ShowFPSTest()end},
+  }
+  local live=self:ReadFramerate();local average=result and math.floor(result.average+0.5);local low=result and math.floor(result.onePercentLow+0.5);local stability=result and math.floor(result.stability+0.5);local stabilityColor=stability and (stability>=85 and {0.35,1,0.62} or stability>=70 and {1,0.82,0.2} or {1,0.38,0.3}) or {0.65,0.65,0.6}
+  local dashboard={
+    {label=self:L("FPS_DASH_LIVE"),value=live and string.format(self:L("LIVE_FPS_FORMAT"),math.floor(live+0.5)) or "—",color={0.45,1,0.72}},
+    {label=self:L("FPS_DASH_AVERAGE"),value=average and string.format(self:L("LIVE_FPS_FORMAT"),average) or "—",color={0.45,1,0.72}},
+    {label=self:L("FPS_DASH_ONE_LOW"),value=low and string.format(self:L("LIVE_FPS_FORMAT"),low) or "—",color={0.4,0.8,1}},
+    {label=self:L("FPS_DASH_STABILITY"),value=stability and string.format("%d%%",stability) or "—",color=stabilityColor},
+  }
+  local status=self.flashMessage or (measuring and self:L("FPS_TEST_RUNNING") or self:L("FPS_TEST_READY"));local statusKind=self.flashKind or (measuring and "warning" or nil);self.flashMessage=nil;self.flashKind=nil
+  self:SetPage(self:L("FPS_TEST_TITLE"),text,actions,status,{pageKey="fpsTest",fpsDashboard=dashboard,statusKind=statusKind})
+  self:SetLiveFPSCallback(function(value)if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS.ui.fpsDashboardCards[1].value:SetText(value and string.format(STBS:L("LIVE_FPS_FORMAT"),math.floor(value+0.5)) or "—") end end)
 end
 
 function STBS:ViewInGame()
@@ -234,19 +295,6 @@ function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode)
   local function applyNow(options)
     if settings then return self:ApplySettings(settings,{graphics=true},trigger or "personal-graphics",options) end
     return self:ApplyOfficial("graphics",options)
-  end
-  if self:GetBenchmarkMode()==self.BENCHMARK_ACCURATE then
-    if type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown() then
-      local queued=applyNow();if selectedMode then self:SetSelectedMode(selectedMode) end;self.flashMessage=self:L("PENDING_FPS");self.flashKind="warning";self:ShowGraphics();return queued
-    end
-    self.flashMessage=self:L("FPS_MEASURING_BEFORE");self.flashKind="warning";self:ShowGraphics()
-    local started=self:StartAccurateFPSComparison(function()return applyNow()end,function(metric,result)
-      if result and result.ok then STBS.reloadRecommended=true;if selectedMode then STBS:SetSelectedMode(selectedMode) end;STBS.flashMessage=metric and STBS:L("ACCURATE_COMPLETE") or STBS:L("SETTINGS_APPLIED_NO_MEASURE");STBS.flashKind="success"
-      else STBS.flashMessage=STBS:L("APPLY_FAILED");STBS.flashKind="error" end
-      if STBS.ui and STBS.ui:IsShown() then STBS:ShowGraphics() end
-    end)
-    if not started then self.flashMessage=self:L("FPS_UNAVAILABLE");self.flashKind="error";self:ShowGraphics() end
-    return self:Result(started,started and "measuring" or "fps-unavailable")
   end
   local before=self:TakeFPSBaseline();local result=applyNow({fpsBefore=before})
   if result.ok then
@@ -363,7 +411,7 @@ function STBS:ShowZoneGraphics()
     elseif zoneStatus.code=="mapping" then status=self:L("ZONE_MAPPING_SAVED");kind="success"
     elseif zoneStatus.ok==false then status=self:L("APPLY_FAILED");kind="error" end
   end
-  self:SetPage(self:L("ZONE_GRAPHICS_TITLE"),text,actions,status,{pageKey="zone",statusKind=kind})
+  self:SetPage(self:L("ZONE_GRAPHICS_TITLE"),text,actions,status,{pageKey="graphics",graphicsSection="zones",statusKind=kind})
 end
 
 function STBS:ShowAbout()

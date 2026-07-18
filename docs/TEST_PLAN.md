@@ -2,13 +2,13 @@
 
 Run on a clean current Retail installation in English and Russian at 1080p, 1440p and above 1440p.
 
-Focused 0.4 checks: validate all three presets; run quick 5-second and accurate 10+10-second frame-time measurements; test Zone Graphics across world, dungeon, raid, PvP/arena and scenario/delve content; toggle the bottom FPS/ping indicator and verify it stops updating while disabled.
+Focused 0.4 checks: validate all three presets; run the automatic 5-second post-apply comparison and standalone 20-second frame-time test; test Zone Graphics across world, dungeon, raid, PvP/arena and scenario/delve content; toggle the bottom FPS/ping indicator and verify it stops updating while disabled.
 
-1. Open with `/stier`, `/stbs`, the minimap button and Blizzard Settings. Verify Graphics, Profiles, Zone Graphics and About appear as tabs; right-clicking the minimap button opens Profiles, `/stier zone` opens Zone Graphics and `/stier about` opens About.
+1. Open with `/stier`, `/stbs`, the minimap button and Blizzard Settings. Verify Graphics, Test FPS, Profiles and About appear on the left; Graphics Settings and Zone Graphics Switcher appear as native sub-tabs. Right-clicking the minimap button opens Profiles, `/stier zone` opens the nested Zone Graphics page, `/stier fps` opens Test FPS and `/stier about` opens About.
 2. Drag the minimap button around the minimap, reload the UI and verify its position persists.
 3. Select PRO, Optimized and Quality in turn and verify expensive settings scale while projected textures, particles, outlines and texture resolution remain safe. Select unified mode, review the diff, cancel the popup, then confirm. Verify only base graphics and `RAIDsettingsEnabled=0` change. Repeat for split mode and verify `RAIDsettingsEnabled=1` plus raid values.
 4. Confirm the apply popup names the change count, a backup is created before writes, unavailable values are skipped, and a failed write rolls every attempted setting back.
-5. Verify the large current FPS updates while Graphics is open. Quick mode must sample five seconds after apply. Accurate mode must sample frame times 10 seconds before and 10 seconds after, then show average FPS and 1% Low with the built-in arrow texture.
+5. Verify the large current FPS updates while Graphics is open and the post-apply comparison samples five seconds. In Test FPS, run one 20-second capture and verify average FPS, 1% Low, stability rating, adaptive spike count and worst-frame time; keep the scene fixed and compare the result with an external frame-time capture.
 6. Verify Reload UI appears after a successful apply, stays disabled during measurement, then becomes enabled. Confirm its popup and successful reload.
 7. Use Undo graphics changes and verify the latest graphics backup is restored and a safety backup is created. Repeat after combat queuing.
 8. Save more than five graphics profiles and backups. Verify Save Graphics accepts Enter, rejects whitespace-only names, shows success/failure, and all items remain selectable through scrolling. Apply/export/rename/delete profiles and restore/delete backups; verify every action reports a result.

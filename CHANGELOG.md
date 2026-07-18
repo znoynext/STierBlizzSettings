@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.3-alpha
+
+- Nested the complete Zone Graphics Switcher under Graphics using native Blizzard panel tabs and removed its duplicate left-navigation entry.
+- Added a dedicated top-level Test FPS page with one clear 20-second frame-time capture instead of exposing two measurement modes in Graphics.
+- Added a responsive four-card FPS dashboard with live FPS, average, correctly derived 1% Low and stability, plus adaptive frame-spike count and worst-frame time stored per character.
+- Kept the automatic five-second before/after comparison in the apply flow and moved the optional FPS/ping indicator control to Test FPS.
+
 ## 0.4.2-alpha
 
 - Fixed boolean controls by keeping Blizzard's native checkbox art at its intended square size while making the full labelled row clickable.
