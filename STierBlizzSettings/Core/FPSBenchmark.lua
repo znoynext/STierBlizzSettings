@@ -2,7 +2,6 @@ local _, STBS = ...
 
 local QUICK_INTERVAL=0.25
 local QUICK_SAMPLES=20
-local ACCURATE_PHASE_SECONDS=10
 local STANDALONE_TEST_SECONDS=20
 local PRESET_COMPARE_PHASE_SECONDS=20
 
@@ -39,7 +38,7 @@ function STBS:CalculateFPSMetric(beforeSamples,afterSamples,beforeFrameTimes,aft
   if beforeStats then before,beforeCount=beforeStats.average,beforeStats.frames end;if afterStats then after,afterCount=afterStats.average,afterStats.frames end
   if not before or not after then return nil end
   local delta=after-before
-  return {before=before,after=after,delta=delta,percent=before>0 and delta/before*100 or 0,beforeSamples=beforeCount,afterSamples=afterCount,beforeOnePercentLow=beforeStats and beforeStats.onePercentLow or nil,afterOnePercentLow=afterStats and afterStats.onePercentLow or nil,beforeStats=beforeStats,afterStats=afterStats,mode=beforeStats and self.BENCHMARK_ACCURATE or self.BENCHMARK_QUICK,measuredAt=time and time() or 0}
+  return {before=before,after=after,delta=delta,percent=before>0 and delta/before*100 or 0,beforeSamples=beforeCount,afterSamples=afterCount,beforeOnePercentLow=beforeStats and beforeStats.onePercentLow or nil,afterOnePercentLow=afterStats and afterStats.onePercentLow or nil,beforeStats=beforeStats,afterStats=afterStats,measuredAt=time and time() or 0}
 end
 
 function STBS:FormatFPSMetric(metric)
@@ -84,14 +83,11 @@ function STBS:FinalizeFPSComparisonRestore(result,sessionId)
   self:CloseFPSComparisonSession(sessionId)
   if not self:HasDeferredFPSComparisonBackups() then self:FinalizeBackupLimit() end;return self:Result(false,"restore-not-successful",{sessionId=sessionId})
 end
-function STBS:GetBenchmarkMode() return self:InitializeDatabase().preferences.benchmarkMode end
-function STBS:SetBenchmarkMode(mode) if mode~=self.BENCHMARK_QUICK and mode~=self.BENCHMARK_ACCURATE then return false,"mode" end;local db,databaseFailure=self:RequireWritableDatabase();if not db then return false,databaseFailure.code end;db.preferences.benchmarkMode=mode;return true end
-
 function STBS:SetLiveFPSCallback(callback) self.liveFPSCallback=type(callback)=="function" and callback or nil;if self.liveFPSCallback then self.liveFPSCallback(self:ReadFramerate()) end end
 function STBS:NotifyLiveFPS(value) if self.liveFPSCallback then self.liveFPSCallback(value) end end
 function STBS:StopFPSBaselineSampling() if self.fpsBaselineTicker and self.fpsBaselineTicker.Cancel then self.fpsBaselineTicker:Cancel() end;self.fpsBaselineTicker=nil end
 function STBS:StartFPSBaselineSampling()
-  if self.fpsAfterMeasurement or self.fpsAccurateMeasurement or self.fpsTestMeasurement or self.fpsBaselineTicker then return end;self.fpsBaselineSamples={}
+  if self.fpsAfterMeasurement or self.fpsTestMeasurement or self.fpsBaselineTicker then return end;self.fpsBaselineSamples={}
   local function sample()local value=self:ReadFramerate();self:NotifyLiveFPS(value);if value then table.insert(self.fpsBaselineSamples,value);while #self.fpsBaselineSamples>QUICK_SAMPLES do table.remove(self.fpsBaselineSamples,1) end end end
   sample();if C_Timer and type(C_Timer.NewTicker)=="function" then self.fpsBaselineTicker=C_Timer.NewTicker(QUICK_INTERVAL,sample) end
 end
@@ -110,7 +106,7 @@ end
 
 function STBS:CaptureFrameTimes(duration,phase,callback)
   if type(_G.CreateFrame)~="function" then return false end
-  local frame=CreateFrame("Frame");local elapsedTotal,displayElapsed,frameTimes=0,0,{};local isUserTest=phase=="standalone" or phase=="comparison-current" or phase=="comparison-preset";self.fpsAccuratePhase=phase;if isUserTest then self.fpsTestFrame=frame end
+  local frame=CreateFrame("Frame");local elapsedTotal,displayElapsed,frameTimes=0,0,{};local isUserTest=phase=="standalone" or phase=="comparison-current" or phase=="comparison-preset";if isUserTest then self.fpsTestFrame=frame end
   if self.ui and self.ui:IsShown() and self.ui.currentPageKey=="graphics" then self:ShowGraphics() end
   frame:SetScript("OnUpdate",function(self,elapsed)
     if finitePositive(elapsed) then frameTimes[#frameTimes+1]=elapsed;elapsedTotal=elapsedTotal+elapsed;displayElapsed=displayElapsed+elapsed;if isUserTest then STBS.fpsTestElapsed=elapsedTotal end end
@@ -120,19 +116,19 @@ function STBS:CaptureFrameTimes(duration,phase,callback)
 end
 
 function STBS:StartStandaloneFPSTest(doneCallback)
-  if self.fpsTestMeasurement or self.fpsAfterMeasurement or self.fpsAccurateMeasurement then return false,"busy" end
+  if self.fpsTestMeasurement or self.fpsAfterMeasurement then return false,"busy" end
   self:StopFPSBaselineSampling();self.fpsTestMeasurement=true;self.fpsTestElapsed=0;self.fpsTestRun={kind="standalone"}
   local started=self:CaptureFrameTimes(STANDALONE_TEST_SECONDS,"standalone",function(frameTimes)
     if not self.fpsTestRun or self.fpsTestRun.kind~="standalone" then return end
-    self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsAccuratePhase=nil;self.fpsTestRun=nil;local result=self:FrametimeStats(frameTimes);self:StoreStandaloneFPSTest(result)
+    self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsTestRun=nil;local result=self:FrametimeStats(frameTimes);self:StoreStandaloneFPSTest(result)
     if doneCallback then doneCallback(result) end
   end)
-  if not started then self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsAccuratePhase=nil;self.fpsTestRun=nil;return false,"unavailable" end
+  if not started then self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsTestRun=nil;return false,"unavailable" end
   return true
 end
 
 function STBS:StartPresetFPSComparison(preset,doneCallback)
-  if self.fpsTestMeasurement or self.fpsAfterMeasurement or self.fpsAccurateMeasurement then return false,"busy" end
+  if self.fpsTestMeasurement or self.fpsAfterMeasurement then return false,"busy" end
   if self:GetPendingOperation() then return false,"pending" end
   if type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown() then return false,"combat" end
   if not self:IsGraphicsPreset(preset) then return false,"preset" end
@@ -142,7 +138,7 @@ function STBS:StartPresetFPSComparison(preset,doneCallback)
   local state={kind="comparison",preset=preset,original=original,candidate=candidate,candidateApplied=false,sessionId=sessionId};self.fpsTestRun=state;self.fpsPresetComparison=state;self.fpsTestMeasurement=true;self.fpsTestElapsed=0;self:StopFPSBaselineSampling()
   local function finish(comparison,restoreResult,errorResult)
     if self.fpsTestRun~=state then return end
-    self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsAccuratePhase=nil;self.fpsTestFrame=nil;self.fpsTestRun=nil;self.fpsPresetComparison=nil
+    self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsTestFrame=nil;self.fpsTestRun=nil;self.fpsPresetComparison=nil
     if comparison then comparison.preset=preset;comparison.mode=mode;comparison.sessionId=sessionId;comparison.restoreQueued=restoreResult and restoreResult.code=="queued" or false;comparison.restoreFailed=restoreResult and not restoreResult.ok and restoreResult.code~="queued" or false;self:StoreStandaloneFPSTest(comparison.beforeStats);self:StorePresetFPSComparison(comparison) end
     if doneCallback then doneCallback(comparison,restoreResult,errorResult) end
   end
@@ -165,7 +161,7 @@ function STBS:StartPresetFPSComparison(preset,doneCallback)
     end
     if C_Timer and type(C_Timer.After)=="function" then C_Timer.After(0.75,captureCandidate) else captureCandidate() end
   end)
-  if not started then self:FinalizeFPSComparisonRestore(nil,sessionId);self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsAccuratePhase=nil;self.fpsTestRun=nil;self.fpsPresetComparison=nil;return false,"unavailable" end
+  if not started then self:FinalizeFPSComparisonRestore(nil,sessionId);self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsTestRun=nil;self.fpsPresetComparison=nil;return false,"unavailable" end
   return true
 end
 
@@ -173,18 +169,6 @@ function STBS:CancelFPSTest()
   local state=self.fpsTestRun;if not state then return self:Result(false,"no-test") end
   state.cancelled=true;if self.fpsTestFrame then self.fpsTestFrame:SetScript("OnUpdate",nil) end;self.fpsTestFrame=nil
   local restored=nil;if state.kind=="comparison" and state.candidateApplied then restored=self:ApplySettings(state.original,{graphics=true},"fps-compare-cancel-restore",{deferBackupTrim=true,backupSource="fps-comparison-temp",backupSessionId=state.sessionId},{kind="recovery",context={reason="fps-compare-cancel-restore",comparisonSessionId=state.sessionId}});if restored.code=="queued" then self.fpsPresetRestorePending=true else self:FinalizeFPSComparisonRestore(restored,state.sessionId) end elseif state.kind=="comparison" then self:FinalizeFPSComparisonRestore(nil,state.sessionId) end
-  self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsAccuratePhase=nil;self.fpsTestRun=nil;self.fpsPresetComparison=nil
+  self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsTestRun=nil;self.fpsPresetComparison=nil
   return self:Result(true,restored and restored.code=="queued" and "cancelled-restore-queued" or restored and not restored.ok and "cancelled-restore-failed" or "cancelled",{restore=restored})
-end
-
-function STBS:StartAccurateFPSComparison(applyCallback,doneCallback)
-  if self.fpsAccurateMeasurement or type(applyCallback)~="function" then return false end
-  self:StopFPSBaselineSampling();self.fpsAccurateMeasurement=true
-  local started=self:CaptureFrameTimes(ACCURATE_PHASE_SECONDS,"before",function(beforeTimes)
-    local result=applyCallback();if not result or not result.ok then self.fpsAccurateMeasurement=nil;self.fpsAccuratePhase=nil;if doneCallback then doneCallback(nil,result) end;return end
-    self:CaptureFrameTimes(ACCURATE_PHASE_SECONDS,"after",function(afterTimes)
-      self.fpsAccurateMeasurement=nil;self.fpsAccuratePhase=nil;local metric=self:CalculateFPSMetric(nil,nil,beforeTimes,afterTimes);self:StoreFPSMetric(metric);if doneCallback then doneCallback(metric,result) end;self:StartFPSBaselineSampling()
-    end)
-  end)
-  if not started then self.fpsAccurateMeasurement=nil;self.fpsAccuratePhase=nil end;return started
 end

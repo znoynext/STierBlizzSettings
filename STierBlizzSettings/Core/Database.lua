@@ -123,10 +123,16 @@ local function addBackupSources(self,db)
   return true
 end
 
+local function removeLegacyBenchmarkMode(_,db)
+  if type(db.preferences)=="table" then db.preferences.benchmarkMode=nil end
+  return true
+end
+
 -- Migrations are keyed by their real source schema and advance exactly one step.
 migrations[2]=separateLegacyGraphicsState
 migrations[3]=addStableBackupIds
 migrations[4]=addBackupSources
+migrations[5]=removeLegacyBenchmarkMode
 
 function STBS:MigrateDatabase(db)
   if type(db)~="table" then db={} end
@@ -135,11 +141,11 @@ function STBS:MigrateDatabase(db)
     return self:Result(false,"future-schema",{schemaVersion=rawVersion})
   end
   if rawVersion==nil and next(db)==nil then
-    separateLegacyGraphicsState(self,db);addStableBackupIds(self,db);addBackupSources(self,db);db.schemaVersion=self.DB_SCHEMA
+    separateLegacyGraphicsState(self,db);addStableBackupIds(self,db);addBackupSources(self,db);removeLegacyBenchmarkMode(self,db);db.schemaVersion=self.DB_SCHEMA
     return self:Result(true,"fresh",db)
   end
   if type(rawVersion)~="number" or rawVersion~=rawVersion or rawVersion~=math.floor(rawVersion) or rawVersion<2 then
-    separateLegacyGraphicsState(self,db);addStableBackupIds(self,db);addBackupSources(self,db);db.schemaVersion=self.DB_SCHEMA
+    separateLegacyGraphicsState(self,db);addStableBackupIds(self,db);addBackupSources(self,db);removeLegacyBenchmarkMode(self,db);db.schemaVersion=self.DB_SCHEMA
     return self:Result(true,"recovered-unversioned",db)
   end
   local version=rawVersion
@@ -161,7 +167,6 @@ local function normalizeDatabase(self,db)
   local presets,modes=validPresets(self),validModes(self)
   if not presets[db.preferences.graphicsPreset] and db.preferences.graphicsPreset~=self.GRAPHICS_PRESET_CUSTOM then db.preferences.graphicsPreset=self.GRAPHICS_PRESET_CUSTOM end
   if not modes[db.preferences.graphicsMode] then db.preferences.graphicsMode=self.GRAPHICS_MODE_SPLIT end
-  if db.preferences.benchmarkMode~=self.BENCHMARK_QUICK and db.preferences.benchmarkMode~=self.BENCHMARK_ACCURATE then db.preferences.benchmarkMode=self.BENCHMARK_QUICK end
   db.preferences.performanceWidgetEnabled=db.preferences.performanceWidgetEnabled==true
   local widgetPosition=db.preferences.performanceWidgetPosition
   if type(widgetPosition)~="table" or type(widgetPosition.x)~="number" or type(widgetPosition.y)~="number" or widgetPosition.x~=widgetPosition.x or widgetPosition.y~=widgetPosition.y or widgetPosition.x<0 or widgetPosition.x>1 or widgetPosition.y<0 or widgetPosition.y>1 then db.preferences.performanceWidgetPosition=nil end

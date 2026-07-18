@@ -3,7 +3,7 @@ STBS = STBS or {}
 _G[ADDON] = STBS
 STBS.ADDON = ADDON
 STBS.VERSION = "0.4.20-alpha"
-STBS.DB_SCHEMA = 5
+STBS.DB_SCHEMA = 6
 STBS.PROFILE_SCHEMA = 1
 STBS.EXPORT_PREFIX = "STBS1:"
 STBS.EXPORT_VERSION = 1
@@ -38,8 +38,6 @@ STBS.GRAPHICS_PRESET_PRO = "pro"
 STBS.GRAPHICS_PRESET_OPTIMIZED = "optimized"
 STBS.GRAPHICS_PRESET_QUALITY = "quality"
 STBS.GRAPHICS_PRESET_CUSTOM = "custom"
-STBS.BENCHMARK_QUICK = "quick"
-STBS.BENCHMARK_ACCURATE = "accurate"
 STBS.Modules = { graphics = true, interfaceGameplay = true, uiTweaks = true }
 function STBS:IsBackupSource(value) return type(value) == "string" and self.BackupSources[value] == true end
 function STBS:Result(ok, code, data) return { ok = ok, code = code, data = data } end

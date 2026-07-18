@@ -36,7 +36,8 @@ function STBS:ImportAddonBundle(text)
   if not onlyKeys(preferences,{graphicsPreset=true,graphicsMode=true,benchmarkMode=true,performanceWidgetEnabled=true,zoneGraphics=true}) then return nil,"preferences" end
   local validPreset={ [self.GRAPHICS_PRESET_PRO]=true,[self.GRAPHICS_PRESET_OPTIMIZED]=true,[self.GRAPHICS_PRESET_QUALITY]=true }
   local validAppliedPreset=self:Copy(validPreset);validAppliedPreset[self.GRAPHICS_PRESET_CUSTOM]=true
-  if not validAppliedPreset[preferences.graphicsPreset] or (preferences.graphicsMode~=self.GRAPHICS_MODE_UNIFIED and preferences.graphicsMode~=self.GRAPHICS_MODE_SPLIT) or (preferences.benchmarkMode~=self.BENCHMARK_QUICK and preferences.benchmarkMode~=self.BENCHMARK_ACCURATE) or type(preferences.performanceWidgetEnabled)~="boolean" then return nil,"preferences" end
+  local legacyBenchmarkMode=preferences.benchmarkMode
+  if not validAppliedPreset[preferences.graphicsPreset] or (preferences.graphicsMode~=self.GRAPHICS_MODE_UNIFIED and preferences.graphicsMode~=self.GRAPHICS_MODE_SPLIT) or (legacyBenchmarkMode~=nil and legacyBenchmarkMode~="quick" and legacyBenchmarkMode~="accurate") or type(preferences.performanceWidgetEnabled)~="boolean" then return nil,"preferences" end
   local zone=preferences.zoneGraphics
   if not onlyKeys(zone,{enabled=true,assignments=true}) or type(zone.enabled)~="boolean" or not onlyKeys(zone.assignments,{world=true,party=true,raid=true,pvp=true,scenario=true}) then return nil,"zone" end
   for _,category in ipairs({"world","party","raid","pvp","scenario"}) do if not validPreset[zone.assignments[category]] then return nil,"zone" end end
@@ -70,7 +71,6 @@ function STBS:ApplyAddonBundle(payload)
   local db=self:InitializeDatabase();local preferences=db.preferences;local imported=payload.preferences
   -- Patch only the shared STBSA1 contract. Applied graphics state is committed below
   -- from verified client values; every other preference remains local to this device.
-  preferences.benchmarkMode=imported.benchmarkMode
   preferences.performanceWidgetEnabled=imported.performanceWidgetEnabled
   preferences.zoneGraphics=self:Copy(imported.zoneGraphics)
   db.profiles=self:Copy(payload.profiles);local sequence=db.profileSequence

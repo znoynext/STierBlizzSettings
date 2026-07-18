@@ -24,7 +24,6 @@ function STBS:ExportAddonBundle()
   local preferences={
     graphicsPreset=db.preferences.graphicsPreset,
     graphicsMode=db.preferences.graphicsMode,
-    benchmarkMode=db.preferences.benchmarkMode,
     performanceWidgetEnabled=db.preferences.performanceWidgetEnabled,
     zoneGraphics=self:Copy(db.preferences.zoneGraphics),
   }

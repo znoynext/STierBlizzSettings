@@ -349,7 +349,7 @@ end
 function STBS:ShowGraphics()
   self:StartFPSBaselineSampling()
   local preset=self:GetSelectedPreset()
-  local metric=self:GetLastFPSMetric();local measuring=self.fpsAfterMeasurement or self.fpsAccurateMeasurement or self.fpsTestMeasurement;local dashboard=self:BuildGraphicsFPSDashboard(metric,self:ReadFramerate(),measuring)
+  local metric=self:GetLastFPSMetric();local measuring=self.fpsAfterMeasurement or self.fpsTestMeasurement;local dashboard=self:BuildGraphicsFPSDashboard(metric,self:ReadFramerate(),measuring)
   local text="|cffffd36b"..self:L("QUICK_START").."|r\n"..self:L("QUICK_START_TEXT").."\n\n|cffffd36b"..self:L("SAVE_OWN_TITLE").."|r\n"..self:L("SAVE_OWN_TEXT").."\n\n|cff9aa7b8"..self:L("GRAPHICS_SELECTION_SUMMARY").."|r"
   local latest=self:GetLatestUndoableBackup("graphics")
   local actions={
@@ -360,8 +360,7 @@ function STBS:ShowGraphics()
   }
   table.insert(actions,{label=self:L("UNDO"),fn=function()STBS:ConfirmUndoGraphics()end,disabled=not latest})
   table.insert(actions,{label=self:L("PROFILES"),fn=function()STBS:ShowProfiles()end})
-  local phase=self.fpsAccuratePhase=="before" and self:L("FPS_MEASURING_BEFORE") or self.fpsAccuratePhase=="after" and self:L("FPS_MEASURING_AFTER") or self:L("FPS_MEASURING")
-  local status=self.flashMessage or (measuring and phase or self:L("READY"));local statusKind=self.flashKind or (measuring and "warning" or nil);self.flashMessage=nil;self.flashKind=nil
+  local status=self.flashMessage or (measuring and self:L("FPS_MEASURING") or self:L("READY"));local statusKind=self.flashKind or (measuring and "warning" or nil);self.flashMessage=nil;self.flashKind=nil
   self:SetPage(self:L("GRAPHICS_TITLE"),text,actions,status,{pageKey="graphics",graphicsSection="settings",fpsDashboard=dashboard,fpsLegend=self:L("FPS_GRAPHICS_DASH_LEGEND"),statusKind=statusKind})
   self:SetLiveFPSCallback(function(value)
     if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="graphics" then STBS.ui.fpsDashboardCards[1].value:SetText(value and string.format(STBS:L("LIVE_FPS_FORMAT"),math.floor(value+0.5)) or "—") end
