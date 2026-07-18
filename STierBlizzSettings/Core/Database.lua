@@ -149,7 +149,7 @@ local function normalizeDatabase(self,db)
   if type(db.profiles)~="table" then db.profiles={} end
   if type(db.backups)~="table" then db.backups={} end
   local backupIds={};for index=#db.backups,1,-1 do local backup=db.backups[index];if type(backup)~="table" or not validBackupId(backup.id) or backupIds[backup.id] or type(backup.timestamp)~="number" or type(backup.values)~="table" or type(backup.affectedModules)~="table" then table.remove(db.backups,index) else backupIds[backup.id]=true;backup.source=self:IsBackupSource(backup.source) and backup.source or "legacy" end end
-  while #db.backups>db.preferences.backupLimit do table.remove(db.backups) end
+  if not (type(self.HasDeferredFPSComparisonBackups)=="function" and self:HasDeferredFPSComparisonBackups()) then while #db.backups>db.preferences.backupLimit do table.remove(db.backups) end end
   db.backupSequence=normalizedBackupSequence(db.backupSequence)
   if type(db.log)~="table" then db.log={} end
   if type(db.transactions)~="table" then db.transactions={} end

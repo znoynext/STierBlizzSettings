@@ -13,6 +13,7 @@ Entries below are version-scoped historical records, not a description of the cu
 - Added stable persistent backup IDs through the explicit schema `3 -> 4` migration. Restore, delete, Undo confirmations, queued recovery and temporary FPS cleanup now keep exact backup identity even when newer history entries shift presentation indexes.
 - Added normalized backup provenance through schema `4 -> 5`. New backups explicitly distinguish manual presets, profiles, Zone Graphics, imports, FPS temporary work, restore safety, manual snapshots and UI Tweaks while retaining diagnostic triggers; unknown legacy data fails safe as `legacy`.
 - Corrected Graphics Undo to select the latest retained user-initiated graphics change by stable backup ID. Automatic Zone Graphics, FPS temporary, restore-safety, manual snapshots, legacy and unknown records are skipped, while explicit Backup History restore remains independent.
+- Scoped temporary FPS comparison backups by a collision-safe session ID. Successful and cancelled comparisons now remove only their own temporary records after verified restoration, queued restores wait for actual completion, and restore/rollback failures retain recovery data without deleting user or unrelated-session backups.
 
 ## 0.4.19-alpha
 

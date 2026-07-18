@@ -50,6 +50,8 @@ function STBS:ApplySettings(settings, modules, trigger, options, pending)
   options = options == true and { skipBackup = true } or options or {}
   local _,databaseFailure=self:RequireWritableDatabase();if databaseFailure then return databaseFailure end
   if not options.skipBackup and options.backupSource~=nil and not self:IsBackupSource(options.backupSource) then return self:Result(false,"backup-source") end
+  if not options.skipBackup and options.backupSource=="fps-comparison-temp" and not self:IsFPSComparisonSessionId(options.backupSessionId) then return self:Result(false,"backup-session") end
+  if options.backupSessionId~=nil and options.backupSource~="fps-comparison-temp" then return self:Result(false,"backup-session") end
   local validModules, modulesWhy=self:ValidateModules(modules);if not validModules then return self:Result(false,modulesWhy) end
   local valid, why=self:ValidateSettings(settings,false);if not valid then return self:Result(false,why) end
   local selectedSettings=0;for key in pairs(settings)do local setting=self.RegistryByKey[key];if setting and modules[setting.module]then selectedSettings=selectedSettings+1 end end;if selectedSettings==0 then return self:Result(false,"no-settings") end
@@ -57,7 +59,7 @@ function STBS:ApplySettings(settings, modules, trigger, options, pending)
     pending=type(pending)=="table" and pending or {};local kind=pending.kind or self:InferPendingOperationKind(trigger,modules);local queued=self:QueuePendingOperation(kind,settings,modules,trigger,options,type(pending.context)=="table" and pending.context or {})
     return self:Result(false,queued.ok and "queued" or queued.code,queued.data)
   end
-  local plan=self:BuildDiff(settings);local backup = options.skipBackup and self:Result(true,"skipped") or self:CreateBackup(modules,trigger,options.backupSource or "legacy",options.deferBackupTrim==true);if not backup.ok then return backup end
+  local plan=self:BuildDiff(settings);local backup = options.skipBackup and self:Result(true,"skipped") or self:CreateBackup(modules,trigger,options.backupSource or "legacy",options.deferBackupTrim==true,options.backupSessionId);if not backup.ok then return backup end
   local result={backup=backup.data}
   for module,selected in pairs(modules) do if selected then result[module]={changed=0,identical=0,skipped=0,failed=0,unavailable=0,categories={}} end end
   local attempted={}

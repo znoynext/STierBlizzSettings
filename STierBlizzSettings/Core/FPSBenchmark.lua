@@ -55,7 +55,33 @@ function STBS:GetLastStandaloneFPSTest() local db=type(_G.STierBlizzSettingsChar
 function STBS:StoreStandaloneFPSTest(result) if not result then return end;local db=type(_G.STierBlizzSettingsCharDB)=="table" and _G.STierBlizzSettingsCharDB or {};_G.STierBlizzSettingsCharDB=db;result.measuredAt=time and time() or 0;db.lastStandaloneFPSTest=result end
 function STBS:GetLastPresetFPSComparison() local db=type(_G.STierBlizzSettingsCharDB)=="table" and _G.STierBlizzSettingsCharDB or nil;return db and type(db.lastPresetFPSComparison)=="table" and db.lastPresetFPSComparison or nil end
 function STBS:StorePresetFPSComparison(result) if not result then return end;local db=type(_G.STierBlizzSettingsCharDB)=="table" and _G.STierBlizzSettingsCharDB or {};_G.STierBlizzSettingsCharDB=db;result.measuredAt=time and time() or 0;db.lastPresetFPSComparison=result end
-function STBS:DiscardTemporaryFPSRestoreBackup(backupId) local result=self:DeleteBackupById(backupId);self:FinalizeBackupLimit();return result.ok,result.code end
+function STBS:IsFPSComparisonSessionId(value) return type(value)=="string" and value:match("^fps%-comparison%-backup%-%d+$")~=nil end
+function STBS:HasDeferredFPSComparisonBackups() return type(self.deferredFPSComparisonSessions)=="table" and next(self.deferredFPSComparisonSessions)~=nil end
+function STBS:CloseFPSComparisonSession(sessionId)
+  if not self:IsFPSComparisonSessionId(sessionId) then return end
+  if type(self.deferredFPSComparisonSessions)=="table" then self.deferredFPSComparisonSessions[sessionId]=nil;if not next(self.deferredFPSComparisonSessions) then self.deferredFPSComparisonSessions=nil end end
+end
+function STBS:CreateFPSComparisonSessionId()
+  local db,databaseFailure=self:RequireWritableDatabase();if not db then return nil,databaseFailure.code end
+  local seen={};for _,backup in ipairs(db.backups) do if type(backup)=="table" and self:IsFPSComparisonSessionId(backup.sessionId) then seen[backup.sessionId]=true end end
+  for sessionId in pairs(type(self.deferredFPSComparisonSessions)=="table" and self.deferredFPSComparisonSessions or {}) do seen[sessionId]=true end
+  local sessionId;repeat sessionId="fps-comparison-"..self:AllocateBackupId(db) until not seen[sessionId]
+  self.deferredFPSComparisonSessions=self.deferredFPSComparisonSessions or {};self.deferredFPSComparisonSessions[sessionId]=true
+  return sessionId
+end
+function STBS:CleanupFPSComparisonSession(sessionId)
+  local db,databaseFailure=self:RequireWritableDatabase();if not db then return databaseFailure end
+  if not self:IsFPSComparisonSessionId(sessionId) then return self:Result(false,"backup-session") end
+  local removed={};for index=#db.backups,1,-1 do local backup=db.backups[index];if backup.source=="fps-comparison-temp" and backup.sessionId==sessionId then table.insert(removed,1,table.remove(db.backups,index)) end end
+  self:CloseFPSComparisonSession(sessionId)
+  if not self:HasDeferredFPSComparisonBackups() then local finalized=self:FinalizeBackupLimit();if not finalized.ok then return finalized end end
+  return self:Result(true,"cleaned",{removed=removed,count=#removed,sessionId=sessionId})
+end
+function STBS:FinalizeFPSComparisonRestore(result,sessionId)
+  if type(result)=="table" and result.ok then return self:CleanupFPSComparisonSession(sessionId) end
+  self:CloseFPSComparisonSession(sessionId)
+  if not self:HasDeferredFPSComparisonBackups() then self:FinalizeBackupLimit() end;return self:Result(false,"restore-not-successful",{sessionId=sessionId})
+end
 function STBS:GetBenchmarkMode() return self:InitializeDatabase().preferences.benchmarkMode end
 function STBS:SetBenchmarkMode(mode) if mode~=self.BENCHMARK_QUICK and mode~=self.BENCHMARK_ACCURATE then return false,"mode" end;local db,databaseFailure=self:RequireWritableDatabase();if not db then return false,databaseFailure.code end;db.preferences.benchmarkMode=mode;return true end
 
@@ -110,40 +136,41 @@ function STBS:StartPresetFPSComparison(preset,doneCallback)
   if not self:IsGraphicsPreset(preset) then return false,"preset" end
   local original,failures=self:CaptureModules({graphics=true});if next(failures or {}) or not next(original or {}) then return false,"capture" end
   local mode=self.GRAPHICS_MODE_UNIFIED;local candidate=self:FlattenProfile(self:GetOfficialGraphics(mode,preset),{graphics=true});local valid,why=self:ValidateSettings(candidate,true);if not valid then return false,why end
-  local state={kind="comparison",preset=preset,original=original,candidate=candidate,candidateApplied=false};self.fpsTestRun=state;self.fpsPresetComparison=state;self.fpsTestMeasurement=true;self.fpsTestElapsed=0;self:StopFPSBaselineSampling()
+  local sessionId,sessionWhy=self:CreateFPSComparisonSessionId();if not sessionId then return false,sessionWhy end
+  local state={kind="comparison",preset=preset,original=original,candidate=candidate,candidateApplied=false,sessionId=sessionId};self.fpsTestRun=state;self.fpsPresetComparison=state;self.fpsTestMeasurement=true;self.fpsTestElapsed=0;self:StopFPSBaselineSampling()
   local function finish(comparison,restoreResult,errorResult)
     if self.fpsTestRun~=state then return end
     self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsAccuratePhase=nil;self.fpsTestFrame=nil;self.fpsTestRun=nil;self.fpsPresetComparison=nil
-    if comparison then comparison.preset=preset;comparison.mode=mode;comparison.restoreQueued=restoreResult and restoreResult.code=="queued" or false;comparison.restoreFailed=restoreResult and not restoreResult.ok and restoreResult.code~="queued" or false;self:StoreStandaloneFPSTest(comparison.beforeStats);self:StorePresetFPSComparison(comparison) end
+    if comparison then comparison.preset=preset;comparison.mode=mode;comparison.sessionId=sessionId;comparison.restoreQueued=restoreResult and restoreResult.code=="queued" or false;comparison.restoreFailed=restoreResult and not restoreResult.ok and restoreResult.code~="queued" or false;self:StoreStandaloneFPSTest(comparison.beforeStats);self:StorePresetFPSComparison(comparison) end
     if doneCallback then doneCallback(comparison,restoreResult,errorResult) end
   end
   local started=self:CaptureFrameTimes(PRESET_COMPARE_PHASE_SECONDS,"comparison-current",function(beforeTimes)
     if self.fpsTestRun~=state then return end
-    if type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown() then finish(nil,nil,self:Result(false,"combat"));return end
+    if type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown() then self:FinalizeFPSComparisonRestore(nil,sessionId);finish(nil,nil,self:Result(false,"combat"));return end
     if type(self.UpdateFPSTestModal)=="function" then self:UpdateFPSTestModal("comparison-switch",0,1,preset) end
-    local applied=self:ApplySettings(candidate,{graphics=true},"fps-compare-"..preset,{backupSource="fps-comparison-temp"},{kind="graphics-user",context={reason="fps-compare-candidate",preset=preset,mode=mode}})
-    if not applied.ok then if applied.code=="queued" then self:CancelPendingOperation("graphics-user") end;finish(nil,nil,applied);return end
+    local applied=self:ApplySettings(candidate,{graphics=true},"fps-compare-"..preset,{backupSource="fps-comparison-temp",backupSessionId=sessionId,deferBackupTrim=true},{kind="graphics-user",context={reason="fps-compare-candidate",preset=preset,mode=mode,comparisonSessionId=sessionId}})
+    if not applied.ok then if applied.code=="queued" then self:CancelPendingOperation("graphics-user") end;if applied.code=="rolled-back" then self:CleanupFPSComparisonSession(sessionId) else self:FinalizeFPSComparisonRestore(nil,sessionId) end;finish(nil,nil,applied);return end
     state.candidateApplied=true
     local function captureCandidate()
       if self.fpsTestRun~=state then return end
       local captured=self:CaptureFrameTimes(PRESET_COMPARE_PHASE_SECONDS,"comparison-preset",function(afterTimes)
         if self.fpsTestRun~=state then return end
         if type(self.UpdateFPSTestModal)=="function" then self:UpdateFPSTestModal("comparison-restore",1,1,preset) end
-        local comparison=self:CalculateFPSMetric(nil,nil,beforeTimes,afterTimes);local restored=self:ApplySettings(original,{graphics=true},"fps-compare-restore",{deferBackupTrim=true,backupSource="fps-comparison-temp"},{kind="recovery",context={reason="fps-compare-restore"}});local restoreBackup=restored.ok and restored.data and restored.data.backup;if restored.ok and restoreBackup then self:DiscardTemporaryFPSRestoreBackup(restoreBackup.id) elseif restored.code~="queued" then self:FinalizeBackupLimit() end
+        local comparison=self:CalculateFPSMetric(nil,nil,beforeTimes,afterTimes);local restored=self:ApplySettings(original,{graphics=true},"fps-compare-restore",{deferBackupTrim=true,backupSource="fps-comparison-temp",backupSessionId=sessionId},{kind="recovery",context={reason="fps-compare-restore",comparisonSessionId=sessionId}});if restored.code~="queued" then self:FinalizeFPSComparisonRestore(restored,sessionId) end
         if restored.code=="queued" then self.fpsPresetRestorePending=true end;finish(comparison,restored,nil)
       end)
-      if not captured then local restored=self:ApplySettings(original,{graphics=true},"fps-compare-restore",{deferBackupTrim=true,backupSource="fps-comparison-temp"},{kind="recovery",context={reason="fps-compare-restore"}});local restoreBackup=restored.ok and restored.data and restored.data.backup;if restored.ok and restoreBackup then self:DiscardTemporaryFPSRestoreBackup(restoreBackup.id) elseif restored.code~="queued" then self:FinalizeBackupLimit() end;finish(nil,restored,self:Result(false,"unavailable")) end
+      if not captured then local restored=self:ApplySettings(original,{graphics=true},"fps-compare-restore",{deferBackupTrim=true,backupSource="fps-comparison-temp",backupSessionId=sessionId},{kind="recovery",context={reason="fps-compare-restore",comparisonSessionId=sessionId}});if restored.code~="queued" then self:FinalizeFPSComparisonRestore(restored,sessionId) end;finish(nil,restored,self:Result(false,"unavailable")) end
     end
     if C_Timer and type(C_Timer.After)=="function" then C_Timer.After(0.75,captureCandidate) else captureCandidate() end
   end)
-  if not started then self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsAccuratePhase=nil;self.fpsTestRun=nil;self.fpsPresetComparison=nil;return false,"unavailable" end
+  if not started then self:FinalizeFPSComparisonRestore(nil,sessionId);self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsAccuratePhase=nil;self.fpsTestRun=nil;self.fpsPresetComparison=nil;return false,"unavailable" end
   return true
 end
 
 function STBS:CancelFPSTest()
   local state=self.fpsTestRun;if not state then return self:Result(false,"no-test") end
   state.cancelled=true;if self.fpsTestFrame then self.fpsTestFrame:SetScript("OnUpdate",nil) end;self.fpsTestFrame=nil
-  local restored=nil;if state.kind=="comparison" and state.candidateApplied then restored=self:ApplySettings(state.original,{graphics=true},"fps-compare-cancel-restore",{deferBackupTrim=true,backupSource="fps-comparison-temp"},{kind="recovery",context={reason="fps-compare-cancel-restore"}});local restoreBackup=restored.ok and restored.data and restored.data.backup;if restored.ok and restoreBackup then self:DiscardTemporaryFPSRestoreBackup(restoreBackup.id) elseif restored.code=="queued" then self.fpsPresetRestorePending=true else self:FinalizeBackupLimit() end end
+  local restored=nil;if state.kind=="comparison" and state.candidateApplied then restored=self:ApplySettings(state.original,{graphics=true},"fps-compare-cancel-restore",{deferBackupTrim=true,backupSource="fps-comparison-temp",backupSessionId=state.sessionId},{kind="recovery",context={reason="fps-compare-cancel-restore",comparisonSessionId=state.sessionId}});if restored.code=="queued" then self.fpsPresetRestorePending=true else self:FinalizeFPSComparisonRestore(restored,state.sessionId) end elseif state.kind=="comparison" then self:FinalizeFPSComparisonRestore(nil,state.sessionId) end
   self.fpsTestMeasurement=nil;self.fpsTestElapsed=nil;self.fpsAccuratePhase=nil;self.fpsTestRun=nil;self.fpsPresetComparison=nil
   return self:Result(true,restored and restored.code=="queued" and "cancelled-restore-queued" or restored and not restored.ok and "cancelled-restore-failed" or "cancelled",{restore=restored})
 end

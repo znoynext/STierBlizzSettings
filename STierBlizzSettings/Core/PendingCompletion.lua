@@ -51,8 +51,7 @@ handlers.recovery=function(self,operation,result)
   local context=type(operation.context)=="table" and operation.context or {};local reason=context.reason or operation.trigger
   local fpsRestore=reason=="fps-compare-restore" or reason=="fps-compare-cancel-restore"
   if fpsRestore then
-    local restoreBackup=result.ok and type(result.data)=="table" and type(result.data.backup)=="table" and result.data.backup or nil
-    if restoreBackup then self:DiscardTemporaryFPSRestoreBackup(restoreBackup.id) else self:FinalizeBackupLimit() end
+    self:FinalizeFPSComparisonRestore(result,context.comparisonSessionId)
     if result.ok and operation.modules and operation.modules.graphics then self:SyncAppliedGraphicsState() end
     if reason=="fps-compare-restore" then local comparison=self:GetLastPresetFPSComparison();if comparison then comparison.restoreQueued=false;comparison.restoreFailed=not result.ok;self:StorePresetFPSComparison(comparison) end end
     self.fpsPresetRestorePending=nil;self.flashMessage=result.ok and self:L("FPS_COMPARE_RESTORED") or self:L("FPS_COMPARE_RESTORE_FAILED");self.flashKind=result.ok and "success" or "error"

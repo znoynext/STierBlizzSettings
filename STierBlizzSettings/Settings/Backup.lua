@@ -7,14 +7,16 @@ local undoableBackupSources={
   ["addon-import"]=true,
 }
 
-function STBS:CreateBackup(modules, trigger, source, deferTrim)
+function STBS:CreateBackup(modules, trigger, source, deferTrim, sessionId)
   local db,databaseFailure=self:RequireWritableDatabase();if not db then return databaseFailure end
   if type(source)=="boolean" and deferTrim==nil then deferTrim=source;source=nil end
   if source~=nil and not self:IsBackupSource(source) then return self:Result(false,"backup-source") end
   source=source or "legacy"
+  if source=="fps-comparison-temp" then if not self:IsFPSComparisonSessionId(sessionId) then return self:Result(false,"backup-session") end
+  elseif sessionId~=nil then return self:Result(false,"backup-session") end
   local validModules, modulesWhy = self:ValidateModules(modules); if not validModules then return self:Result(false,modulesWhy) end
   local values, failures = self:CaptureModules(modules)
-  local build = self:GetBuild(); local backup = { id=self:AllocateBackupId(db),timestamp=time(), addonVersion=self.VERSION, clientBuild=build, trigger=trigger, source=source, affectedModules=self:Copy(modules), values=values, readFailures=failures }
+  local build = self:GetBuild(); local backup = { id=self:AllocateBackupId(db),timestamp=time(), addonVersion=self.VERSION, clientBuild=build, trigger=trigger, source=source, sessionId=sessionId, affectedModules=self:Copy(modules), values=values, readFailures=failures }
   table.insert(db.backups, 1, backup); if not deferTrim then while #db.backups > db.preferences.backupLimit do table.remove(db.backups) end end
   return self:Result(true,"created",backup)
 end
