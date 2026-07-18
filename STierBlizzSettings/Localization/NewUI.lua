@@ -140,6 +140,8 @@ local experience = {
   RELOAD_FAILED="WoW could not reload the interface.",
   SETTINGS_APPLIED_NO_MEASURE="Graphics applied. Reload UI confirmation is ready.",
   SETTINGS_APPLIED_DELAYED_NO_MEASURE="Graphics applied after combat. Automatic FPS comparison was skipped because the old baseline is no longer comparable. Run Test FPS for a fresh measurement.",
+  PENDING_GRAPHICS_FAILED="Queued graphics were not applied (%s). Your previous graphics remain active.",
+  PENDING_RECOVERY_FAILED="Queued restore failed (%s). Use the latest backup in Profiles if needed.",
   ACTION_FAILED="The action was not completed.",
   ABOUT_TITLE="About S-Tier Blizz Settings",
   ABOUT_STATUS="Transparent by design - local only, reversible and documented",
@@ -193,5 +195,7 @@ end
 for key, value in pairs(russianExperience) do STBS.Locale.ruRU[key]=value end
 STBS.Locale.enUS.SETTINGS_APPLIED="Graphics applied. Measuring FPS for 5 seconds; then Reload UI confirmation will open."
 STBS.Locale.ruRU.SETTINGS_APPLIED_DELAYED_NO_MEASURE="Графика применена после боя. Автоматическое сравнение FPS пропущено: старый замер уже нельзя сравнивать. Запустите «Тест FPS» для нового замера."
+STBS.Locale.ruRU.PENDING_GRAPHICS_FAILED="Отложенные настройки графики не применены (%s). Предыдущая графика сохранена."
+STBS.Locale.ruRU.PENDING_RECOVERY_FAILED="Отложенное восстановление не выполнено (%s). При необходимости используйте последний бэкап в «Профилях»."
 STBS.Locale.ruRU.LIVE_FPS_FORMAT="%d FPS"
 STBS.Locale.ruRU.FPS_READING="-- FPS"

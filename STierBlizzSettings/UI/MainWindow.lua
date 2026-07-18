@@ -538,8 +538,6 @@ function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode,selectedPreset)
     self.flashMessage=measuring and self:L("SETTINGS_APPLIED") or self:L("SETTINGS_APPLIED_NO_MEASURE");self.flashKind="success"
     self:ShowGraphics()
   elseif result.code=="queued" then
-    if selectedMode then self:SetSelectedMode(selectedMode) end
-    if selectedPreset then self:SetSelectedPreset(selectedPreset) end
     self:StartFPSBaselineSampling();self.flashMessage=self:L("PENDING_FPS");self.flashKind="warning";self:ShowGraphics()
   else self:ResetFPSBaselineSampling();self:ShowReport(result) end
   return result

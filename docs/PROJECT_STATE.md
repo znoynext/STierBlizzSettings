@@ -61,6 +61,7 @@ The registry is the source for exact CVar names and value ranges; this snapshot 
 - A write or read-back failure rolls back attempted writes in reverse order. The result and rollback outcome are stored in a transaction history capped at 20 entries.
 - Unsupported values are skipped and unavailable entries are reported; the UI receives changed, identical, skipped, unavailable, and failed counts.
 - Combat work is copied into one typed in-memory pending slot and re-enters the same validation/transaction path on `PLAYER_REGEN_ENABLED`. Recovery can replace explicit or automatic work; explicit work can replace automatic Zone Graphics; automatic Zone Graphics can replace only an older `zone-auto`. Other equal/lower priority work is rejected with `pending-exists`.
+- One post-combat dispatcher handles the final result for `graphics-user`, `zone-auto`, `zone-manual`, `ui-tweaks`, and `recovery`. It clears Pending UI state and applies kind-specific state/feedback for success, no-op, failure, rollback, and rollback failure. Queued Graphics commits a requested built-in preset only after verified success; failures keep the previous applied state and never start FPS measurement.
 - Backups store timestamp, addon/client build, trigger, affected modules, captured values, and read failures. The default history limit is 10 and is normalized to 1–50.
 - Restore filters removed registry keys, creates a safety backup, then applies the selected saved values transactionally.
 

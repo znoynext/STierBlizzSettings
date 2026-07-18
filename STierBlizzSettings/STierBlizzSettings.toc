@@ -49,4 +49,5 @@ Core/Diagnostics.lua
 UI/MainWindow.lua
 UI/PerformanceWidget.lua
 Core/MinimapButton.lua
+Core/PendingCompletion.lua
 Core/Events.lua

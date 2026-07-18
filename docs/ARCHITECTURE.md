@@ -29,11 +29,11 @@ The production pipeline in `Settings/Transaction.lua` is:
 4. Unless `skipBackup` is set, capture a snapshot of all readable values in the selected modules and insert it into backup history.
 5. Write only `changed` entries through `Settings/Writer.lua`; each write is immediately read back and compared with registry-aware equality.
 6. If a write or read-back fails, restore attempted entries in reverse order from the values captured by the diff and record `rolled-back` or `rollback-failed` in the transaction log.
-7. If writes complete, record an `applied` transaction result. Callers, not the transaction layer, update persistent selection/applied-state fields.
+7. If writes complete, record an `applied` transaction result. Immediate callers update their own persistent selection/applied-state fields; combat-delayed work delegates that commit to the typed completion handler after the transaction result is known.
 
 This approximates the desired `Validate -> Diff -> Snapshot/Backup -> Write -> Read-back Verify -> Rollback on Failure -> Commit Applied State` invariant, with current gaps:
 
-- Commit of applied state is not centralized. Most callers update state after success, but a combat-queued graphics/profile apply records the selected mode and preset before the queued transaction succeeds.
+- Commit of immediate applied state is not centralized across every caller. Queued operations are centralized and do not commit their selection/applied state until their completion handler receives a successful result.
 - A backup is created before the transaction knows whether the plan contains any actual writes, so identical, skipped, or unavailable-only operations can create no-op history entries.
 - Snapshot read failures are stored in the backup but do not abort the transaction. Rollback uses the diff's per-setting current values for attempted writes, not the backup record.
 - Unsupported, unreadable, and non-writable entries do not fail the whole transaction; they are reported and the remaining changed entries may still apply.
@@ -61,7 +61,9 @@ The pending API consists of `QueuePendingOperation`, `GetPendingOperation`, `Can
 
 Replacement is deliberately priority-based rather than FIFO: recovery/restore work outranks explicit user work; `graphics-user`, `zone-manual`, and `ui-tweaks` share the explicit-user priority; automatic `zone-auto` work is lowest. A strictly higher-priority operation may replace the current item. The one same-priority exception is `zone-auto` replacing an older `zone-auto`, which coalesces automatic zone requests to the latest observed state. Other equal- or lower-priority work receives `pending-exists`. Replaced lower-priority work is discarded rather than deferred because there is still no queue.
 
-On `PLAYER_REGEN_ENABLED`, a pending `zone-auto` snapshot is discarded and Zone Graphics resolves the current category and its current assignment again before deciding whether to transact. Explicit user and recovery operations continue through normal typed completion and cannot be replaced by an automatic request. A queued graphics FPS baseline is not revalidated for scene/context drift; that remains a current limitation.
+On `PLAYER_REGEN_ENABLED`, `Events.lua` makes one call to `CompletePendingAfterCombat`. That workflow re-resolves the live category and assignment for `zone-auto`, completes every other operation through the normal validated transaction path, and passes the operation plus result to `HandlePendingOperationCompletion`. Kind handlers for `graphics-user`, `zone-auto`, `zone-manual`, `ui-tweaks`, and `recovery` own final UI feedback and state cleanup for `applied`, `unchanged`, `failed`, `rolled-back`, and `rollback-failed`. Trigger inspection is confined to recovery subtypes such as FPS comparison restore; event routing does not branch on triggers.
+
+Queued Graphics operations never retain or consume a pre-combat FPS baseline. A successful delayed apply reports that automatic comparison was skipped, commits the requested built-in mode/preset when present, refreshes the rolling baseline, and offers Reload UI. A failed delayed apply reports a final error, preserves the previously applied selection, and never starts FPS measurement.
 
 ## Backup architecture
 
