@@ -257,10 +257,25 @@ end
 function STBS:ShowHome() return self:ShowGraphics() end
 function STBS:ShowInterface() return self:ShowGraphics() end
 
+function STBS:BuildGraphicsFPSDashboard(metric,live,measuring)
+  local neutral={0.72,0.78,0.82};local gold={1,0.82,0.2};local green={0.35,1,0.62};local red={1,0.38,0.3};local muted={0.58,0.43,0.2}
+  local function rounded(value)return math.floor((tonumber(value) or 0)+0.5)end
+  local hasMetric=not measuring and type(metric)=="table" and tonumber(metric.before) and tonumber(metric.after) and tonumber(metric.before)>0 and tonumber(metric.after)>0
+  local before,after,delta,percent
+  if hasMetric then before=rounded(metric.before);after=rounded(metric.after);delta=rounded(metric.delta or (metric.after-metric.before));percent=rounded(metric.percent or ((metric.after-metric.before)/metric.before*100)) end
+  local resultColor=not hasMetric and neutral or delta>0 and green or delta<0 and red or gold
+  return {
+    {label=self:L("FPS_DASH_LIVE"),value=live and string.format(self:L("LIVE_FPS_FORMAT"),rounded(live)) or "—",subtitle=self:L("FPS_DASH_LIVE_NOTE"),color={0.45,1,0.72}},
+    {label=self:L("FPS_DASH_BEFORE"),value=hasMetric and string.format(self:L("LIVE_FPS_FORMAT"),before) or "—",subtitle=self:L("FPS_DASH_BEFORE_NOTE"),color=neutral,borderColor=muted},
+    {label=self:L("FPS_DASH_AFTER"),value=hasMetric and string.format(self:L("LIVE_FPS_FORMAT"),after) or "—",subtitle=self:L("FPS_DASH_AFTER_NOTE"),color=resultColor,borderColor=hasMetric and resultColor or muted},
+    {label=self:L("FPS_DASH_CHANGE"),value=hasMetric and string.format("%+d FPS",delta) or "—",subtitle=hasMetric and string.format("%+d%%",percent) or self:L("FPS_DASH_CHANGE_NOTE"),color=resultColor,borderColor=hasMetric and resultColor or muted},
+  }
+end
+
 function STBS:ShowGraphics()
   self:StartFPSBaselineSampling()
   local mode=self:GetSelectedMode();local preset=self:GetSelectedPreset()
-  local metric=self:GetLastFPSMetric();local measuring=self.fpsAfterMeasurement or self.fpsAccurateMeasurement or self.fpsTestMeasurement;local metricText=measuring and self:L("FPS_MEASURING") or self:FormatFPSMetric(metric)
+  local metric=self:GetLastFPSMetric();local measuring=self.fpsAfterMeasurement or self.fpsAccurateMeasurement or self.fpsTestMeasurement;local dashboard=self:BuildGraphicsFPSDashboard(metric,self:ReadFramerate(),measuring)
   local text="|cffffd36b"..self:L("QUICK_START").."|r\n"..self:L("QUICK_START_TEXT").."\n\n|cffffd36b"..self:L("SAVE_OWN_TITLE").."|r\n"..self:L("SAVE_OWN_TEXT").."\n\n|cff9aa7b8"..self:L("GRAPHICS_SELECTION_SUMMARY").."|r"
   local latest=self:GetLatestBackupIndex("graphics")
   local actions={
@@ -275,9 +290,9 @@ function STBS:ShowGraphics()
   table.insert(actions,{label=self:L("PROFILES"),fn=function()STBS:ShowProfiles()end})
   local phase=self.fpsAccuratePhase=="before" and self:L("FPS_MEASURING_BEFORE") or self.fpsAccuratePhase=="after" and self:L("FPS_MEASURING_AFTER") or self:L("FPS_MEASURING")
   local status=self.flashMessage or (measuring and phase or self:L("READY"));local statusKind=self.flashKind or (measuring and "warning" or nil);self.flashMessage=nil;self.flashKind=nil
-  self:SetPage(self:L("GRAPHICS_TITLE"),text,actions,status,{pageKey="graphics",graphicsSection="settings",metric=true,metricText=metricText,metricPositive=not metric or (metric.delta or 0)>=0,statusKind=statusKind})
+  self:SetPage(self:L("GRAPHICS_TITLE"),text,actions,status,{pageKey="graphics",graphicsSection="settings",fpsDashboard=dashboard,fpsLegend=self:L("FPS_GRAPHICS_DASH_LEGEND"),statusKind=statusKind})
   self:SetLiveFPSCallback(function(value)
-    if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="graphics" then STBS.ui.metricValue:SetText(value and string.format(STBS:L("LIVE_FPS_FORMAT"),math.floor(value+0.5)) or STBS:L("FPS_READING")) end
+    if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="graphics" then STBS.ui.fpsDashboardCards[1].value:SetText(value and string.format(STBS:L("LIVE_FPS_FORMAT"),math.floor(value+0.5)) or "—") end
   end)
   if not self.settingsRegistered then self.settingsRegistered=self:RegisterBlizzardSettings() end
 end

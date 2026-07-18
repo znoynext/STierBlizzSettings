@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.12-alpha
+
+- Replaced the wide Graphics FPS strip with four responsive native-style cards for live FPS, before apply, after apply and the signed change.
+- Added clear positive, negative and neutral result colors plus a compact before/after legend.
+- Hidden stale comparison values while a new measurement is running.
+
 ## 0.4.11-alpha
 
 - Added an always-visible header label that detects the actual active PRO, Optimized or Quality graphics preset and falls back to Custom after manual differences.
