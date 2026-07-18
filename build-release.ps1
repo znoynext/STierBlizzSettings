@@ -1,4 +1,4 @@
-param([string]$Version = '0.4.9-alpha')
+param([string]$Version = '0.4.10-alpha')
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $out = Join-Path $root "dist\STierBlizzSettings-v$Version.zip"

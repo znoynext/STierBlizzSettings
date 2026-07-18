@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.10-alpha
+
+- Added smooth interpolation and subtle native highlight/shadow layers to the FPS test progress bar while preserving its existing gold color.
+- Replaced raw preset-comparison text with four visual cards for the tested preset, average FPS, 1% Low and stability; each metric now shows before/after values and a signed color-coded delta.
+
 ## 0.4.9-alpha
 
 - Removed the height-dependent upward offset so the main addon window now opens at the exact center of the screen.

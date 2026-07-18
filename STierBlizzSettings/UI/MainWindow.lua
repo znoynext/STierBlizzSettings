@@ -73,6 +73,12 @@ end
 
 local function clamp(value,minimum,maximum)return math.max(minimum,math.min(maximum,value))end
 
+local function updateSmoothProgress(bar,elapsed)
+  local current=bar.displayValue or 0;local target=bar.targetValue or current;local difference=target-current
+  if math.abs(difference)<0.002 then current=target else current=current+difference*math.min(1,(tonumber(elapsed) or 0)*10) end
+  bar.displayValue=current;bar:SetValue(current)
+end
+
 local function layoutActionButtons(f)
   local available=math.max(360,math.floor(f.actionContent:GetWidth()+0.5));local row,col,columns=0,0,2
   for _,created in ipairs(f.pageButtons) do
@@ -88,7 +94,7 @@ local function layoutActionButtons(f)
 end
 
 local function layoutFPSDashboard(f,width)
-  local available=math.max(320,width-19);local columns=available>=650 and 4 or 2;local gap=10;local cardHeight=86;local cardWidth=math.floor((available-gap*(columns-1))/columns);local rows=math.ceil(#f.fpsDashboardCards/columns)
+  local available=math.max(320,width-19);local columns=available>=650 and 4 or 2;local gap=10;local cardHeight=104;local cardWidth=math.floor((available-gap*(columns-1))/columns);local rows=math.ceil(#f.fpsDashboardCards/columns)
   f.fpsDashboard:SetSize(available,rows*cardHeight+(rows-1)*gap)
   for index,card in ipairs(f.fpsDashboardCards) do local row=math.floor((index-1)/columns);local column=(index-1)%columns;card:ClearAllPoints();card:SetPoint("TOPLEFT",column*(cardWidth+gap),-row*(cardHeight+gap));card:SetSize(cardWidth,cardHeight) end
 end
@@ -156,7 +162,7 @@ function STBS:CreateUI()
   f.metricValue=f.metricCard:CreateFontString(nil,"OVERLAY","GameFontNormalHuge2");f.metricValue:SetPoint("TOPRIGHT",-16,-14);f.metricValue:SetTextColor(0.45,1,0.72)
   f.metricSub=f.metricCard:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge");f.metricSub:SetPoint("BOTTOMLEFT",14,14);f.metricSub:SetJustifyH("LEFT");f.metricSub:SetTextColor(0.82,0.82,0.75)
   f.fpsDashboard=CreateFrame("Frame",nil,content);f.fpsDashboard:SetPoint("TOPLEFT",5,-2);f.fpsDashboard:Hide();f.fpsDashboardCards={}
-  for index=1,4 do local card=CreateFrame("Frame",nil,f.fpsDashboard,"BackdropTemplate");card:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=12,insets={left=3,right=3,top=3,bottom=3}});card:SetBackdropColor(0.045,0.038,0.022,0.98);card:SetBackdropBorderColor(0.58,0.43,0.2,0.95);card.title=card:CreateFontString(nil,"OVERLAY","GameFontNormal");card.title:SetPoint("TOPLEFT",12,-12);card.title:SetPoint("TOPRIGHT",-10,-12);card.title:SetJustifyH("LEFT");card.title:SetTextColor(1,0.82,0);card.value=card:CreateFontString(nil,"OVERLAY","GameFontNormalHuge2");card.value:SetPoint("BOTTOMLEFT",12,12);card.value:SetPoint("BOTTOMRIGHT",-10,12);card.value:SetJustifyH("LEFT");f.fpsDashboardCards[index]=card end
+  for index=1,4 do local card=CreateFrame("Frame",nil,f.fpsDashboard,"BackdropTemplate");card:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=12,insets={left=3,right=3,top=3,bottom=3}});card:SetBackdropColor(0.045,0.038,0.022,0.98);card:SetBackdropBorderColor(0.58,0.43,0.2,0.95);card.title=card:CreateFontString(nil,"OVERLAY","GameFontNormal");card.title:SetPoint("TOPLEFT",12,-11);card.title:SetPoint("TOPRIGHT",-10,-11);card.title:SetJustifyH("LEFT");card.title:SetTextColor(1,0.82,0);card.value=card:CreateFontString(nil,"OVERLAY","GameFontNormalHuge2");card.value:SetJustifyH("LEFT");card.subtitle=card:CreateFontString(nil,"OVERLAY","GameFontHighlight");card.subtitle:SetPoint("BOTTOMLEFT",12,10);card.subtitle:SetPoint("BOTTOMRIGHT",-10,10);card.subtitle:SetJustifyH("LEFT");card.subtitle:SetWordWrap(false);f.fpsDashboardCards[index]=card end
   f.body=content:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge");f.body:SetJustifyH("LEFT");f.body:SetJustifyV("TOP");f.body:SetSpacing(6)
 
   local rule=panel:CreateTexture(nil,"ARTWORK");rule:SetColorTexture(0.55,0.4,0.18,0.75);rule:SetHeight(1);f.rule=rule
@@ -180,7 +186,8 @@ function STBS:CreateFPSTestModal()
   dialog.title=dialog:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");dialog.title:SetPoint("TOP",0,-28);dialog.title:SetTextColor(1,0.82,0)
   dialog.message=dialog:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge");dialog.message:SetPoint("TOPLEFT",34,-67);dialog.message:SetPoint("TOPRIGHT",-34,-67);dialog.message:SetJustifyH("CENTER");dialog.message:SetJustifyV("TOP");dialog.message:SetSpacing(5)
   dialog.phase=dialog:CreateFontString(nil,"OVERLAY","GameFontNormal");dialog.phase:SetPoint("TOP",dialog.message,"BOTTOM",0,-15);dialog.phase:SetTextColor(0.4,0.82,1)
-  dialog.progress=CreateFrame("StatusBar",nil,dialog,"BackdropTemplate");dialog.progress:SetPoint("TOPLEFT",44,-145);dialog.progress:SetPoint("TOPRIGHT",-44,-145);dialog.progress:SetHeight(19);dialog.progress:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar");dialog.progress:SetStatusBarColor(0.78,0.52,0.08);dialog.progress:SetMinMaxValues(0,1);dialog.progress:SetValue(0);dialog.progress:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=9,insets={left=2,right=2,top=2,bottom=2}});dialog.progress:SetBackdropColor(0.025,0.02,0.015,1)
+  dialog.progress=CreateFrame("StatusBar",nil,dialog,"BackdropTemplate");dialog.progress:SetPoint("TOPLEFT",44,-145);dialog.progress:SetPoint("TOPRIGHT",-44,-145);dialog.progress:SetHeight(19);dialog.progress:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar");dialog.progress:SetStatusBarColor(0.78,0.52,0.08);dialog.progress:SetMinMaxValues(0,1);dialog.progress:SetValue(0);dialog.progress.displayValue=0;dialog.progress.targetValue=0;dialog.progress:SetScript("OnUpdate",updateSmoothProgress);dialog.progress:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=9,insets={left=2,right=2,top=2,bottom=2}});dialog.progress:SetBackdropColor(0.025,0.02,0.015,1)
+  local fill=dialog.progress:GetStatusBarTexture();fill:SetHorizTile(false);fill:SetVertTile(false);dialog.progressSheen=dialog.progress:CreateTexture(nil,"ARTWORK",nil,1);dialog.progressSheen:SetColorTexture(1,1,1,0.14);dialog.progressSheen:SetPoint("TOPLEFT",fill,"TOPLEFT",0,-1);dialog.progressSheen:SetPoint("BOTTOMRIGHT",fill,"RIGHT",0,0);dialog.progressShade=dialog.progress:CreateTexture(nil,"ARTWORK",nil,1);dialog.progressShade:SetColorTexture(0,0,0,0.16);dialog.progressShade:SetPoint("TOPLEFT",fill,"LEFT",0,0);dialog.progressShade:SetPoint("BOTTOMRIGHT",fill,"BOTTOMRIGHT",0,1)
   dialog.progressText=dialog.progress:CreateFontString(nil,"OVERLAY","GameFontHighlight");dialog.progressText:SetPoint("CENTER")
   dialog.cancel=CreateFrame("Button",nil,dialog,"UIPanelButtonTemplate");dialog.cancel:SetSize(190,30);dialog.cancel:SetPoint("BOTTOM",0,23);dialog.cancel:SetText(self:L("FPS_TEST_CANCEL"));dialog.cancel:GetFontString():SetFontObject(GameFontNormalLarge);dialog.cancel:SetScript("OnClick",function()
     local result=STBS:CancelFPSTest();shade:Hide();STBS.flashMessage=result.code=="cancelled-restore-queued" and STBS:L("FPS_TEST_CANCELLED_QUEUED") or result.code=="cancelled-restore-failed" and STBS:L("FPS_TEST_CANCELLED_FAILED") or STBS:L("FPS_TEST_CANCELLED");STBS.flashKind=result.ok and (result.code=="cancelled" and "warning" or "error") or "error";if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS:ShowFPSTest() end
@@ -196,7 +203,7 @@ function STBS:UpdateFPSTestModal(phase,elapsed,duration,preset)
   local modal=self.fpsTestModal;if not modal or not modal:IsShown() then return end
   local dialog=modal.dialog;local key=phase=="comparison-current" and "FPS_COMPARE_CURRENT" or phase=="comparison-switch" and "FPS_COMPARE_SWITCH" or phase=="comparison-preset" and "FPS_COMPARE_PRESET" or phase=="comparison-restore" and "FPS_COMPARE_RESTORE" or "FPS_TEST_MODAL_PHASE"
   dialog.phase:SetText(string.format(self:L(key),self:GetPresetLabel(preset)))
-  local maximum=(phase=="comparison-current" or phase=="comparison-preset") and 20 or (duration or 20);maximum=tonumber(maximum) or 20;local value=math.max(0,math.min(maximum,tonumber(elapsed) or 0));dialog.progress:SetMinMaxValues(0,maximum);dialog.progress:SetValue(value);dialog.progressText:SetText(string.format(self:L("FPS_TEST_MODAL_PROGRESS"),math.floor(value+0.5),math.floor(maximum+0.5)))
+  local maximum=(phase=="comparison-current" or phase=="comparison-preset") and 20 or (duration or 20);maximum=tonumber(maximum) or 20;local value=math.max(0,math.min(maximum,tonumber(elapsed) or 0));local reset=dialog.progressPhase~=phase or dialog.progressMaximum~=maximum;dialog.progressPhase=phase;dialog.progressMaximum=maximum;dialog.progress:SetMinMaxValues(0,maximum);dialog.progress.targetValue=value;if reset then dialog.progress.displayValue=value;dialog.progress:SetValue(value) end;dialog.progressText:SetText(string.format(self:L("FPS_TEST_MODAL_PROGRESS"),math.floor(value+0.5),math.floor(maximum+0.5)))
 end
 
 function STBS:HideFPSTestModal() if self.fpsTestModal then self.fpsTestModal:Hide() end end
@@ -219,7 +226,7 @@ function STBS:SetPage(title,text,actions,status,options)
   end
   if options.fpsDashboard then
     f.fpsDashboard:Show();bodyY=-110
-    for index,card in ipairs(f.fpsDashboardCards) do local data=options.fpsDashboard[index] or {};local color=data.color or {0.45,1,0.72};card.title:SetText(data.label or "");card.value:SetText(data.value or "—");card.value:SetTextColor(color[1],color[2],color[3]) end
+    for index,card in ipairs(f.fpsDashboardCards) do local data=options.fpsDashboard[index] or {};local color=data.color or {0.45,1,0.72};local border=data.borderColor or {0.58,0.43,0.2};card.title:SetText(data.label or "");card.value:SetText(data.value or "—");card.value:SetFontObject(data.compact and GameFontNormalLarge or GameFontNormalHuge2);card.value:SetTextColor(color[1],color[2],color[3]);card.value:ClearAllPoints();if data.subtitle and data.subtitle~="" then card.value:SetPoint("TOPLEFT",12,-36);card.value:SetPoint("TOPRIGHT",-10,-36);card.subtitle:SetText(data.subtitle);card.subtitle:SetTextColor(color[1],color[2],color[3]);card.subtitle:Show() else card.value:SetPoint("BOTTOMLEFT",12,12);card.value:SetPoint("BOTTOMRIGHT",-10,12);card.subtitle:Hide() end;card:SetBackdropBorderColor(border[1],border[2],border[3],0.95) end
   end
   f.bodyY=bodyY;f.body:ClearAllPoints();f.body:SetPoint("TOPLEFT",7,bodyY);f.body:SetText(text or "")
   for _,nav in ipairs(f.navButtons) do nav:SetActive(nav.pageKey==options.pageKey) end
@@ -284,18 +291,31 @@ function STBS:FormatStandaloneFPSTest(result)
   return string.format(self:L("FPS_TEST_STABILITY_EXPLAIN"),stability).."\n"..string.format(self:L("FPS_TEST_SPIKES"),spikes).." · "..string.format(self:L("FPS_TEST_WORST"),worst).."\n\n|cffffd36b"..self:L("FPS_TEST_ADVICE").."|r\n"..diagnosis.."\n|cff9aa7b8"..self:L("FPS_DIAG_LIMIT").."|r"
 end
 
-function STBS:FormatPresetFPSComparison(comparison)
+function STBS:BuildPresetFPSComparisonDashboard(comparison)
   if type(comparison)~="table" or type(comparison.beforeStats)~="table" or type(comparison.afterStats)~="table" then return nil end
-  local beforeAverage=math.floor(comparison.beforeStats.average+0.5);local afterAverage=math.floor(comparison.afterStats.average+0.5);local beforeLow=math.floor(comparison.beforeStats.onePercentLow+0.5);local afterLow=math.floor(comparison.afterStats.onePercentLow+0.5)
-  local averagePercent=beforeAverage>0 and math.floor((afterAverage-beforeAverage)/beforeAverage*100+0.5) or 0;local lowPercent=beforeLow>0 and math.floor((afterLow-beforeLow)/beforeLow*100+0.5) or 0
-  local verdict=averagePercent>=5 and self:L("FPS_COMPARE_BETTER") or averagePercent<=-5 and self:L("FPS_COMPARE_WORSE") or self:L("FPS_COMPARE_SIMILAR")
-  local restore=comparison.restoreQueued and self:L("FPS_COMPARE_RESTORE_QUEUED") or comparison.restoreFailed and self:L("FPS_COMPARE_RESTORE_FAILED") or self:L("FPS_COMPARE_RESTORED")
-  return "|cffffd36b"..string.format(self:L("FPS_COMPARE_RESULT_TITLE"),self:GetPresetLabel(comparison.preset)).."|r\n"..string.format(self:L("FPS_COMPARE_AVERAGE"),beforeAverage,afterAverage,averagePercent).."\n"..string.format(self:L("FPS_COMPARE_LOW"),beforeLow,afterLow,lowPercent).."\n|cff35e6ad"..verdict.."|r\n|cff9aa7b8"..restore.."|r"
+  local function rounded(value)return math.floor((tonumber(value) or 0)+0.5)end
+  local function percent(before,after)return before>0 and math.floor((after-before)/before*100+0.5) or 0 end
+  local function color(delta)if delta>0 then return {0.35,1,0.62} elseif delta<0 then return {1,0.38,0.3} end;return {1,0.82,0.2} end
+  local beforeAverage,afterAverage=rounded(comparison.beforeStats.average),rounded(comparison.afterStats.average);local averageDelta=afterAverage-beforeAverage;local averagePercent=percent(beforeAverage,afterAverage)
+  local beforeLow,afterLow=rounded(comparison.beforeStats.onePercentLow),rounded(comparison.afterStats.onePercentLow);local lowDelta=afterLow-beforeLow;local lowPercent=percent(beforeLow,afterLow)
+  local beforeStability,afterStability=rounded(comparison.beforeStats.stability),rounded(comparison.afterStats.stability);local stabilityDelta=afterStability-beforeStability
+  local verdictKey,verdictColor
+  if averagePercent>=5 and lowPercent>=5 then verdictKey,verdictColor="FPS_COMPARE_FASTER_SHORT",{0.35,1,0.62}
+  elseif averagePercent<=-5 and lowPercent<=-5 then verdictKey,verdictColor="FPS_COMPARE_SLOWER_SHORT",{1,0.38,0.3}
+  elseif math.abs(averagePercent)<5 and math.abs(lowPercent)<5 then verdictKey,verdictColor="FPS_COMPARE_SIMILAR_SHORT",{1,0.82,0.2}
+  else verdictKey,verdictColor="FPS_COMPARE_MIXED_SHORT",{1,0.72,0.2} end
+  return {
+    {label=self:L("FPS_COMPARE_DASH_PRESET"),value=self:GetPresetLabel(comparison.preset),subtitle=self:L(verdictKey),color=verdictColor,borderColor=verdictColor,compact=true},
+    {label=self:L("FPS_DASH_AVERAGE"),value=string.format(self:L("FPS_COMPARE_DASH_VALUE"),beforeAverage,afterAverage),subtitle=string.format(self:L("FPS_COMPARE_DASH_DELTA"),averageDelta,averagePercent),color=color(averageDelta),borderColor=color(averageDelta),compact=true},
+    {label=self:L("FPS_DASH_ONE_LOW"),value=string.format(self:L("FPS_COMPARE_DASH_VALUE"),beforeLow,afterLow),subtitle=string.format(self:L("FPS_COMPARE_DASH_DELTA"),lowDelta,lowPercent),color=color(lowDelta),borderColor=color(lowDelta),compact=true},
+    {label=self:L("FPS_DASH_STABILITY"),value=string.format(self:L("FPS_COMPARE_DASH_PERCENT_VALUE"),beforeStability,afterStability),subtitle=string.format(self:L("FPS_COMPARE_DASH_POINTS"),stabilityDelta),color=color(stabilityDelta),borderColor=color(stabilityDelta),compact=true},
+  }
 end
 
 function STBS:ShowFPSTest()
   self:StartFPSBaselineSampling();local result=self:GetLastStandaloneFPSTest();local measuring=self.fpsTestMeasurement==true;local preferences=self:InitializeDatabase().preferences
-  local resultText=self:FormatStandaloneFPSTest(result);local comparisonText=self:FormatPresetFPSComparison(self:GetLastPresetFPSComparison());local text=self:L("FPS_TEST_HELP").."\n\n|cffffd36b"..self:L("FPS_TEST_DETAILS").."|r\n"..resultText..(comparisonText and "\n\n"..comparisonText or "")
+  local comparison=self:GetLastPresetFPSComparison();local comparisonDashboard=self:BuildPresetFPSComparisonDashboard(comparison);local restoreText=comparison and (comparison.restoreQueued and self:L("FPS_COMPARE_RESTORE_QUEUED") or comparison.restoreFailed and self:L("FPS_COMPARE_RESTORE_FAILED") or self:L("FPS_COMPARE_RESTORED"));local restoreColor=comparison and (comparison.restoreFailed and "|cffff6154" or comparison.restoreQueued and "|cffffd36b" or "|cff9aa7b8") or ""
+  local resultText=self:FormatStandaloneFPSTest(result);local text=comparisonDashboard and ("|cffffd36b"..self:L("FPS_COMPARE_DASH_HELP").."|r\n\n"..restoreColor..restoreText.."|r") or (self:L("FPS_TEST_HELP").."\n\n|cffffd36b"..self:L("FPS_TEST_DETAILS").."|r\n"..resultText)
   local function startStandalone()
     local started,why=STBS:StartStandaloneFPSTest(function()STBS:HideFPSTestModal();if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS.flashMessage=STBS:L("FPS_TEST_COMPLETE");STBS.flashKind="success";STBS:ShowFPSTest()end end)
     if started then STBS:ShowFPSTestModal("standalone") else STBS.flashMessage=why=="busy" and STBS:L("FPS_TEST_BUSY") or STBS:L("FPS_TEST_UNAVAILABLE");STBS.flashKind="error";STBS:ShowFPSTest() end
@@ -314,15 +334,15 @@ function STBS:ShowFPSTest()
     {kind="check",label=self:L("WIDGET_CHECK"),checked=preferences.performanceWidgetEnabled,wide=true,fn=function(checked)STBS:SetPerformanceWidgetEnabled(checked);STBS.flashMessage=checked and STBS:L("WIDGET_ENABLED") or STBS:L("WIDGET_DISABLED");STBS.flashKind="success";STBS:ShowFPSTest()end},
   }
   local live=self:ReadFramerate();local average=result and math.floor(result.average+0.5);local low=result and math.floor(result.onePercentLow+0.5);local stability=result and math.floor(result.stability+0.5);local stabilityColor=stability and (stability>=85 and {0.35,1,0.62} or stability>=70 and {1,0.82,0.2} or {1,0.38,0.3}) or {0.65,0.65,0.6}
-  local dashboard={
+  local dashboard=comparisonDashboard or {
     {label=self:L("FPS_DASH_LIVE"),value=live and string.format(self:L("LIVE_FPS_FORMAT"),math.floor(live+0.5)) or "—",color={0.45,1,0.72}},
     {label=self:L("FPS_DASH_AVERAGE"),value=average and string.format(self:L("LIVE_FPS_FORMAT"),average) or "—",color={0.45,1,0.72}},
     {label=self:L("FPS_DASH_ONE_LOW"),value=low and string.format(self:L("LIVE_FPS_FORMAT"),low) or "—",color={0.4,0.8,1}},
     {label=self:L("FPS_DASH_STABILITY"),value=stability and string.format("%d%%",stability) or "—",color=stabilityColor},
   }
   local status=self.flashMessage or (measuring and self:L("FPS_TEST_RUNNING") or self:L("FPS_TEST_READY"));local statusKind=self.flashKind or (measuring and "warning" or nil);self.flashMessage=nil;self.flashKind=nil
-  self:SetPage(self:L("FPS_TEST_TITLE"),text,actions,status,{pageKey="fpsTest",fpsDashboard=dashboard,statusKind=statusKind})
-  self:SetLiveFPSCallback(function(value)if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS.ui.fpsDashboardCards[1].value:SetText(value and string.format(STBS:L("LIVE_FPS_FORMAT"),math.floor(value+0.5)) or "—") end end)
+  self:SetPage(self:L("FPS_TEST_TITLE"),text,actions,status,{pageKey="fpsTest",fpsDashboard=dashboard,fpsComparison=comparisonDashboard~=nil,statusKind=statusKind})
+  self:SetLiveFPSCallback(function(value)if not comparisonDashboard and STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="fpsTest" then STBS.ui.fpsDashboardCards[1].value:SetText(value and string.format(STBS:L("LIVE_FPS_FORMAT"),math.floor(value+0.5)) or "—") end end)
 end
 
 function STBS:ShowOfficialPreview()
