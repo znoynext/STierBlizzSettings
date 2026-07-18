@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.2-alpha
+
+- Fixed boolean controls by keeping Blizzard's native checkbox art at its intended square size while making the full labelled row clickable.
+- Shortened the FPS/ping tooltip and removed the latency unit from the compact indicator.
+- Anchored both live values to independent halves of the widget and disabled word wrapping so latency stays inside the frame at different UI scales.
+
 ## 0.4.1-alpha
 
 - Replaced the static in-addon screenshot with a compact live FPS card and an honest **View result in game** flow; WoW addons cannot embed a second world render with unapplied graphics settings.

@@ -31,13 +31,17 @@ local function button(parent,text,x,y,width,callback,style)
 end
 
 local function checkBox(parent,text,callback,checked)
-  local c=CreateFrame("CheckButton",nil,parent,"UICheckButtonTemplate");c:SetSize(200,34);c:SetPoint("TOPLEFT",0,0);c:SetChecked(checked==true);c.isCheckBox=true
-  c.label=c:CreateFontString(nil,"OVERLAY","GameFontHighlightLarge");c.label:SetPoint("LEFT",30,0);c.label:SetJustifyH("LEFT");c.label:SetText(text);c.label:SetTextColor(0.92,0.84,0.68)
-  c:SetScript("OnClick",function(self)callback(self:GetChecked()==true)end)
-  c:SetScript("OnEnter",function(self)self.label:SetTextColor(1,0.82,0)end);c:SetScript("OnLeave",function(self)self.label:SetTextColor(0.92,0.84,0.68)end)
-  function c:SetActive()end
-  function c:SetDisabled(disabled)self.disabled=disabled;self:SetEnabled(not disabled);self:SetAlpha(disabled and 0.42 or 1)end
-  return c
+  local row=CreateFrame("Button",nil,parent);row:SetSize(200,34);row:SetPoint("TOPLEFT",0,0);row:RegisterForClicks("LeftButtonUp");row.isCheckBox=true
+  row.check=CreateFrame("CheckButton",nil,row,"UICheckButtonTemplate");row.check:SetSize(24,24);row.check:SetPoint("RIGHT",-2,0);row.check:SetChecked(checked==true)
+  row.label=row:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");row.label:SetPoint("LEFT",4,0);row.label:SetPoint("RIGHT",row.check,"LEFT",-10,0);row.label:SetJustifyH("LEFT");row.label:SetText(text);row.label:SetTextColor(1,0.82,0)
+  row.check:SetScript("OnClick",function(self)callback(self:GetChecked()==true)end)
+  row:SetScript("OnClick",function(self)local value=not self.check:GetChecked();self.check:SetChecked(value);callback(value)end)
+  row:SetScript("OnEnter",function(self)self.label:SetTextColor(1,0.9,0.35)end);row:SetScript("OnLeave",function(self)self.label:SetTextColor(1,0.82,0)end)
+  function row:SetChecked(value)self.check:SetChecked(value==true)end
+  function row:GetChecked()return self.check:GetChecked()end
+  function row:SetActive()end
+  function row:SetDisabled(disabled)self.disabled=disabled;self:SetEnabled(not disabled);self.check:SetEnabled(not disabled);self:SetAlpha(disabled and 0.42 or 1)end
+  return row
 end
 
 local function navButton(parent,text,icon,y,pageKey,callback)
@@ -66,7 +70,7 @@ local function layoutActionButtons(f)
     if (action.wide or wantedColumns~=columns) and col>0 then row=row+1;col=0 end
     columns=wantedColumns
     local gap=action.third and 10 or 12;local width=action.wide and available or math.floor((available-gap*(columns-1))/columns);local x=action.wide and 0 or col*(width+gap)
-    created:ClearAllPoints();created:SetPoint("TOPLEFT",x,-row*40);created:SetSize(width,34);if created.isCheckBox then created.label:SetWidth(math.max(40,width-36))end
+    created:ClearAllPoints();created:SetPoint("TOPLEFT",x,-row*40);created:SetSize(width,34)
     if action.wide then row=row+1;col=0 else col=col+1;if col==columns then row=row+1;col=0 end end
   end
   if col>0 then row=row+1 end

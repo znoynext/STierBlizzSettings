@@ -21,9 +21,9 @@ function STBS:CreatePerformanceWidget()
   local position=self:InitializeDatabase().preferences.performanceWidgetPosition
   if position then f:SetPoint("CENTER",UIParent,"BOTTOMLEFT",UIParent:GetWidth()*position.x,UIParent:GetHeight()*position.y) else f:SetPoint("BOTTOM",UIParent,"BOTTOM",0,156) end
   f:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=9,insets={left=3,right=3,top=3,bottom=3}});f:SetBackdropColor(0.025,0.02,0.012,0.9);f:SetBackdropBorderColor(0.66,0.48,0.18,0.9)
-  f.fps=f:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.fps:SetPoint("LEFT",10,0);f.fps:SetWidth(80);f.fps:SetJustifyH("LEFT")
+  f.fps=f:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.fps:SetPoint("LEFT",10,0);f.fps:SetPoint("RIGHT",f,"CENTER",-8,0);f.fps:SetJustifyH("LEFT");f.fps:SetWordWrap(false)
   f.divider=f:CreateTexture(nil,"ARTWORK");f.divider:SetColorTexture(0.55,0.42,0.22,0.7);f.divider:SetSize(1,16);f.divider:SetPoint("CENTER",0,0)
-  f.ping=f:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.ping:SetPoint("LEFT",109,0);f.ping:SetWidth(82);f.ping:SetJustifyH("LEFT")
+  f.ping=f:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.ping:SetPoint("LEFT",f,"CENTER",9,0);f.ping:SetPoint("RIGHT",-10,0);f.ping:SetJustifyH("LEFT");f.ping:SetWordWrap(false)
   f:SetScript("OnDragStart",function(self)if type(_G.IsControlKeyDown)=="function" and _G.IsControlKeyDown() then self:StartMoving() end end)
   f:SetScript("OnDragStop",function(self)
     self:StopMovingOrSizing();local x,y=self:GetCenter();local width,height=UIParent:GetWidth(),UIParent:GetHeight()

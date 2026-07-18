@@ -39,7 +39,7 @@ S-Tier now uses the same honest product principle: show concise setting outcomes
 
 The only custom bitmap is the 128×128 gold S emblem, rendered at 48 px in the header and 36 px on the minimap, so it is already sampled down rather than stretched up. The former 640×360 preview texture was removed from the addon. Window rock, dialog borders, buttons, resize handle, checkbox marks, highlights and minimap border all use Blizzard-owned textures/templates. Responsive button widths are rounded to whole UI pixels to avoid soft edges after resizing.
 
-Boolean states use `UICheckButtonTemplate`; mutually exclusive presets and zone mappings remain buttons because a checkbox would communicate the wrong interaction. All visible labels use the native `GameFontNormalLarge` / `GameFontHighlightLarge` family, preserving the selected WoW typeface and existing colors.
+Boolean states use a fixed 24x24 `UICheckButtonTemplate` inside a full-width clickable row, matching Blizzard's square control without stretching its artwork. Mutually exclusive presets and zone mappings remain buttons because a checkbox would communicate the wrong interaction. All visible labels use the native `GameFontNormalLarge` / `GameFontHighlightLarge` family, preserving the selected WoW typeface and existing colors.
 
 ## Intentionally not adopted
 
