@@ -60,12 +60,19 @@ function STBS:ImportAddonBundle(text)
   return payload
 end
 
+function STBS:PlanAddonBundle(payload)
+  if type(payload)~="table" or type(payload.graphicsSettings)~="table" or payload.uiTweaksSettings~=nil and type(payload.uiTweaksSettings)~="table" then return nil,"payload" end
+  local settings=self:Copy(payload.graphicsSettings);local modules={graphics=true}
+  for key,value in pairs(payload.uiTweaksSettings or {}) do settings[key]=value;modules.uiTweaks=true end
+  local plan,summary=self:BuildDiff(settings,modules)
+  return plan,settings,modules,summary
+end
+
 function STBS:ApplyAddonBundle(payload)
   if type(payload)~="table" then return self:Result(false,"payload") end
   local _,databaseFailure=self:RequireWritableDatabase();if databaseFailure then return databaseFailure end
   if type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown() then return self:Result(false,"combat") end
-  local settings=self:Copy(payload.graphicsSettings);local modules={graphics=true}
-  for key,value in pairs(payload.uiTweaksSettings or {}) do settings[key]=value;modules.uiTweaks=true end
+  local plan,settings,modules=self:PlanAddonBundle(payload);if not plan then return self:Result(false,settings) end
   local result=self:ApplySettings(settings,modules,"addon-bundle-import",{backupSource="addon-import"},{kind="graphics-user",context={source="addon-bundle-import"}})
   if not result.ok then return result end
   local db=self:InitializeDatabase();local preferences=db.preferences;local imported=payload.preferences

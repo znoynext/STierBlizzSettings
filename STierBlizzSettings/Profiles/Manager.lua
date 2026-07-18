@@ -80,7 +80,8 @@ function STBS:PlanImport(payload, modules, graphicsMode)
   if graphicsMode == "current" and modules.graphics and not self:GetSelectedMode() then return nil,"mode" end
   local settings = self:FlattenProfile(payload.profile, modules, graphicsMode == "current" and self:GetSelectedMode() or nil)
   if graphicsMode == "current" and modules.graphics then settings.RAIDsettingsEnabled = self:GetSelectedMode() == self.GRAPHICS_MODE_SPLIT and "1" or "0" end
-  return self:BuildDiff(settings), settings
+  local plan,summary=self:BuildDiff(settings,modules)
+  return plan,settings,summary
 end
 function STBS:SaveCurrent(name, modules)
   local db,databaseFailure=self:RequireWritableDatabase();if not db then return nil,databaseFailure.code end

@@ -61,25 +61,24 @@ function STBS:BuildTransactionSnapshot(plan,modules)
   return self:Result(true,"snapshotted",snapshot)
 end
 
-local function buildTransactionResult(self,plan,modules)
-  local result={summary={changed=0,identical=0,skipped=0,failed=0,unavailable=0}}
-  for module,selected in pairs(modules) do if selected then result[module]={changed=0,identical=0,skipped=0,failed=0,unavailable=0,categories={}} end end
+local function buildTransactionResult(self,plan,modules,summary)
+  local result={summary=self:CopyDiffSummary(summary)}
+  for module,selected in pairs(modules) do if selected then result[module]=self:NewDiffSummary();result[module].categories={} end end
   for _,entry in ipairs(plan) do
     local target=entry.setting.module
     if result[target] then
-      local status=entry.status;local category=result[target].categories[entry.setting.category] or {changed=0,identical=0,skipped=0,failed=0,unavailable=0}
+      local status=entry.status;local category=result[target].categories[entry.setting.category] or self:NewDiffSummary()
       result[target].categories[entry.setting.category]=category
-      result[target][status]=(result[target][status] or 0)+1;category[status]=(category[status] or 0)+1;result.summary[status]=(result.summary[status] or 0)+1
+      self:AddDiffSummaryCount(result[target],status);self:AddDiffSummaryCount(category,status)
     end
   end
   return result
 end
 
-local function replaceResultStatus(result,entry,fromStatus,toStatus)
+local function replaceResultStatus(self,result,entry,fromStatus,toStatus)
   if fromStatus==toStatus then return end
   local target=result[entry.setting.module];local category=target.categories[entry.setting.category]
-  target[fromStatus]=target[fromStatus]-1;category[fromStatus]=category[fromStatus]-1;result.summary[fromStatus]=result.summary[fromStatus]-1
-  target[toStatus]=(target[toStatus] or 0)+1;category[toStatus]=(category[toStatus] or 0)+1;result.summary[toStatus]=(result.summary[toStatus] or 0)+1
+  self:MoveDiffSummaryStatus(target,fromStatus,toStatus);self:MoveDiffSummaryStatus(category,fromStatus,toStatus);self:MoveDiffSummaryStatus(result.summary,fromStatus,toStatus)
 end
 
 function STBS:ApplySettings(settings, modules, trigger, options, pending)
@@ -91,7 +90,7 @@ function STBS:ApplySettings(settings, modules, trigger, options, pending)
   local validModules, modulesWhy=self:ValidateModules(modules);if not validModules then return self:Result(false,modulesWhy) end
   local valid, why=self:ValidateSettings(settings,false);if not valid then return self:Result(false,why) end
   local selectedSettings=0;for key in pairs(settings)do local setting=self.RegistryByKey[key];if setting and modules[setting.module]then selectedSettings=selectedSettings+1 end end;if selectedSettings==0 then return self:Result(false,"no-settings") end
-  local plan=self:BuildDiff(settings);local result=buildTransactionResult(self,plan,modules);local summary=result.summary
+  local plan,summary=self:BuildDiff(settings,modules);local result=buildTransactionResult(self,plan,modules,summary);summary=result.summary
   if summary.changed==0 then
     local code=summary.failed>0 and "failed" or summary.unavailable>0 and "unavailable" or "unchanged"
     return self:Result(code=="unchanged",code,result)
@@ -110,7 +109,7 @@ function STBS:ApplySettings(settings, modules, trigger, options, pending)
     local status=entry.status;if status=="changed" then
       table.insert(attempted,entry.setting)
       local ok,writeStatus=self:WriteSetting(entry.setting,snapshot.targets[entry.setting.key],snapshot.previous[entry.setting.key]);status=ok and writeStatus or "failed"
-      replaceResultStatus(result,entry,"changed",status)
+      replaceResultStatus(self,result,entry,"changed",status)
     end
     if status=="failed" then
       local rollback={attempted=#attempted,restored=0,failed=0}

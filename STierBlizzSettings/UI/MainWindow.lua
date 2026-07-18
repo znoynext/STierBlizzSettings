@@ -6,10 +6,6 @@ local categoryOrder={"graphics","raidGraphics"}
 local MIN_WINDOW_WIDTH,MIN_WINDOW_HEIGHT=900,640
 local DEFAULT_WINDOW_WIDTH,DEFAULT_WINDOW_HEIGHT=1080,760
 
-local function changedCount(plan)
-  local count=0;for _,entry in ipairs(plan or {}) do if entry.status=="changed" then count=count+1 end end;return count
-end
-
 local function button(parent,text,x,y,width,callback,style)
   local b=STBS:CreateModernButton(parent,text,width or 200,34,callback,style);b:SetPoint("TOPLEFT",x,y)
   return b
@@ -320,12 +316,9 @@ function STBS:SetPage(title,text,actions,status,options)
   f.hasActions=#f.pageButtons>0;f:Show();self:LayoutUI()
 end
 
-function STBS:FormatDiff(plan)
-  local changed,unchanged,unavailable=0,0,0
-  for _,entry in ipairs(plan or {}) do
-    if entry.status=="changed" then changed=changed+1 elseif entry.status=="identical" then unchanged=unchanged+1 else unavailable=unavailable+1 end
-  end
-  return string.format(self:L("PLAN_SUMMARY"),changed,unchanged,unavailable).."\n\n|cff35e6ad- |r"..self:L("PERFORMANCE_TUNED").."\n|cff35e6ad- |r"..self:L("QUALITY_PRESERVED").."\n|cff35e6ad- |r"..self:L("HARDWARE_UNCHANGED")
+function STBS:FormatDiff(plan,summary)
+  summary=summary and self:CopyDiffSummary(summary) or self:SummarizeDiff(plan)
+  return string.format(self:L("PLAN_SUMMARY"),summary.changed,summary.identical,summary.skipped,summary.unavailable,summary.failed).."\n\n|cff35e6ad- |r"..self:L("PERFORMANCE_TUNED").."\n|cff35e6ad- |r"..self:L("QUALITY_PRESERVED").."\n|cff35e6ad- |r"..self:L("HARDWARE_UNCHANGED")
 end
 
 function STBS:ShowHome() return self:ShowGraphics() end
@@ -402,8 +395,7 @@ function STBS:ShowUITweaks()
 end
 
 function STBS:ConfirmApplyUITweaks()
-  local settings=self:GetAvailableUITweakSettings();local plan=self:BuildDiff(settings);local changed=0
-  for _,entry in ipairs(plan) do if entry.status=="changed" then changed=changed+1 end end
+  local settings=self:GetAvailableUITweakSettings();local _,summary=self:BuildDiff(settings,{uiTweaks=true});local changed=summary.changed
   if changed==0 then self.flashMessage=self:L("UI_TWEAK_ALREADY");self.flashKind="success";self:ShowUITweaks();return end
   self:ShowAddonDialog({title=self:L("UI_TWEAK_APPLY_CONFIRM"),message=string.format(self:L("UI_TWEAK_APPLY_CONFIRM_TEXT"),changed),onAccept=function()
     local result=STBS:ApplySettings(settings,{uiTweaks=true},"ui-tweaks",{backupSource="ui-tweaks"},{kind="ui-tweaks",context={source="ui-tweaks"}})
@@ -511,18 +503,18 @@ end
 
 function STBS:ConfirmApplyFPSComparisonPreset(comparison)
   local recommendation=self:GetPresetFPSComparisonRecommendation(comparison);if not recommendation then self.flashMessage=self:L("FPS_COMPARE_RECOMMEND_EXPIRED");self.flashKind="warning";self:ShowFPSTest();return end
-  local preset=recommendation.preset;local mode=comparison.mode;local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,preset),{graphics=true});local plan=self:BuildDiff(settings);local label=self:GetPresetLabel(preset)
+  local preset=recommendation.preset;local mode=comparison.mode;local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,preset),{graphics=true});local _,summary=self:BuildDiff(settings,{graphics=true});local label=self:GetPresetLabel(preset)
   local function apply()local result=STBS:ApplyGraphicsWithFPS(settings,"fps-comparison-apply",mode,preset,"manual-preset");if result.ok or result.code=="queued" then comparison.applied=true;STBS:StorePresetFPSComparison(comparison) end end
-  local changed=changedCount(plan);if changed==0 then apply();return end
+  local changed=summary.changed;if changed==0 then apply();return end
   self:ShowAddonDialog({title=string.format(self:L("FPS_COMPARE_APPLY_CONFIRM"),label),message=string.format(self:L("FPS_COMPARE_APPLY_CONFIRM_TEXT"),changed),acceptText=string.format(self:L("FPS_COMPARE_APPLY"),label),onAccept=apply})
 end
 
 function STBS:ShowOfficialPreview()
   local mode=self.GRAPHICS_MODE_UNIFIED
-  local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,self:GetSelectedPreset()),{graphics=true});local plan=self:BuildDiff(settings)
+  local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,self:GetSelectedPreset()),{graphics=true});local plan,summary=self:BuildDiff(settings,{graphics=true})
   self:SetLiveFPSCallback(nil)
-  self:SetPage(self:L("PREVIEW"),self:FormatDiff(plan),{
-    {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ConfirmApplyGraphics(changedCount(plan))end,style="primary",wide=true},
+  self:SetPage(self:L("PREVIEW"),self:FormatDiff(plan,summary),{
+    {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ConfirmApplyGraphics(summary.changed)end,style="primary",wide=true},
     {label=self:L("BACK"),fn=function()STBS:ShowGraphics()end},
   },self:L("REVIEW_READY"),{pageKey="graphics"})
 end
@@ -671,8 +663,8 @@ function STBS:ShowProfilePreview(profile)
   local valid=self:ValidateProfile(profile);if not valid then self.flashMessage=self:L("ACTION_FAILED");self.flashKind="error";self:ShowProfiles();return end
   if self:IsLegacySplitProfile(profile) then
     local settings,why=self:GetLegacySplitProfileSettings(profile);if not settings then self.flashMessage=self:L("ACTION_FAILED").." ("..tostring(why)..")";self.flashKind="error";self:ShowProfiles();return end
-    local plan=self:BuildDiff(settings);local profileId=profile.id
-    local text="|cffffd36b"..self:SafeText(profile.displayName).."|r\n|cffffd36b"..self:L("LEGACY_SPLIT_BADGE").."|r\n\n"..self:L("LEGACY_SPLIT_PREVIEW").."\n\n|cff65cfff"..self:L("LEGACY_SPLIT_CONVERSION_TITLE").."|r\n"..self:L("LEGACY_SPLIT_CONVERSION_HELP").."\n\n|cff9aa7b8"..self:L("LEGACY_SPLIT_ADVANCED_HELP").."|r\n\n"..self:FormatDiff(plan)
+    local plan,summary=self:BuildDiff(settings,{graphics=true});local profileId=profile.id
+    local text="|cffffd36b"..self:SafeText(profile.displayName).."|r\n|cffffd36b"..self:L("LEGACY_SPLIT_BADGE").."|r\n\n"..self:L("LEGACY_SPLIT_PREVIEW").."\n\n|cff65cfff"..self:L("LEGACY_SPLIT_CONVERSION_TITLE").."|r\n"..self:L("LEGACY_SPLIT_CONVERSION_HELP").."\n\n|cff9aa7b8"..self:L("LEGACY_SPLIT_ADVANCED_HELP").."|r\n\n"..self:FormatDiff(plan,summary)
     self:SetPage(self:L("PREVIEW"),text,{
       {label=self:L("CONVERT_TO_UNIFIED"),fn=function()STBS:OpenLegacySplitConversion(profileId)end,style="primary",wide=true},
       {label=self:L("APPLY_LEGACY_SPLIT"),fn=function()STBS:ConfirmApplyLegacySplitProfile(profileId)end,wide=true},
@@ -680,8 +672,8 @@ function STBS:ShowProfilePreview(profile)
     },self:L("LEGACY_SPLIT_STATUS"),{pageKey="profiles",statusKind="warning"})
     return
   end
-  local settings=self:FlattenProfile(profile,{graphics=true});local plan=self:BuildDiff(settings)
-  self:SetPage(self:L("PREVIEW"),"|cffffd36b"..self:SafeText(profile.displayName).."|r\n\n"..self:FormatDiff(plan),{
+  local settings=self:FlattenProfile(profile,{graphics=true});local plan,summary=self:BuildDiff(settings,{graphics=true})
+  self:SetPage(self:L("PREVIEW"),"|cffffd36b"..self:SafeText(profile.displayName).."|r\n\n"..self:FormatDiff(plan,summary),{
     {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ConfirmApplyProfile(profile)end,style="primary",wide=true},
     {label=self:L("BACK"),fn=function()STBS:ShowProfiles()end},
   },self:L("STATUS")..": "..#plan.." "..self:L("SETTINGS_COUNT"),{pageKey="profiles"})
@@ -706,14 +698,14 @@ function STBS:ConfirmApplyLegacySplitProfile(profileId)
     if not currentSettings then STBS.flashMessage=STBS:L("ACTION_FAILED").." ("..tostring(currentWhy)..")";STBS.flashKind="error";STBS:ShowProfiles();return end
     STBS:ApplyGraphicsWithFPS(currentSettings,"personal-profile",STBS.GRAPHICS_MODE_SPLIT,nil,"personal-profile")
   end
-  if changedCount(self:BuildDiff(settings))==0 then apply();return end
+  local _,summary=self:BuildDiff(settings,{graphics=true});if summary.changed==0 then apply();return end
   self:ShowAddonDialog({title=self:L("APPLY_LEGACY_SPLIT_CONFIRM"),message=self:L("APPLY_LEGACY_SPLIT_CONFIRM_TEXT"),acceptText=self:L("APPLY_LEGACY_SPLIT"),onAccept=apply})
 end
 
 function STBS:ConfirmApplyProfile(profile)
   if self:IsLegacySplitProfile(profile) then return self:ConfirmApplyLegacySplitProfile(profile.id) end
   local settings=self:FlattenProfile(profile,{graphics=true});local function apply()STBS:ApplyGraphicsWithFPS(settings,"personal-profile",profile.sections.graphics.mode,nil,"personal-profile")end
-  if changedCount(self:BuildDiff(settings))==0 then apply();return end
+  local _,summary=self:BuildDiff(settings,{graphics=true});if summary.changed==0 then apply();return end
   self:ShowAddonDialog({title=self:L("PROFILE_APPLY_CONFIRM"),message=self:L("PROFILE_APPLY_CONFIRM_TEXT"),onAccept=apply})
 end
 
@@ -746,7 +738,8 @@ end
 
 function STBS:ShowAddonImportPreview(payload)
   local count=0;for _ in pairs(payload.profiles or {}) do count=count+1 end
-  local text=string.format(self:L("BUNDLE_IMPORT_SUMMARY"),count,self:GetPresetLabel(payload.preferences.graphicsPreset))
+  local plan,_,_,summary=self:PlanAddonBundle(payload);local text=string.format(self:L("BUNDLE_IMPORT_SUMMARY"),count,self:GetPresetLabel(payload.preferences.graphicsPreset))
+  if plan then text=text.."\n\n"..self:FormatDiff(plan,summary) end
   self:SetPage(self:L("IMPORT_ALL"),text,{{label=self:L("IMPORT_ALL_CONFIRM"),style="primary",wide=true,fn=function()
     local result=STBS:ApplyAddonBundle(STBS.pendingAddonBundle);STBS.pendingAddonBundle=nil
     if result.ok then STBS.flashMessage=STBS:L("BUNDLE_IMPORTED");STBS.flashKind="success" else STBS.flashMessage=STBS:L("BUNDLE_IMPORT_FAILED").." ("..tostring(result.code)..")";STBS.flashKind="error" end
@@ -764,11 +757,11 @@ function STBS:ApplyPendingImport(graphicsMode)
 end
 
 function STBS:ShowImportPreview(payload)
-  local plan=self:PlanImport(payload,{graphics=true},"profile");local changed=0;for _,entry in ipairs(plan or {}) do if entry.status=="changed" then changed=changed+1 end end
+  local plan,_,summary=self:PlanImport(payload,{graphics=true},"profile")
   local actions={{label=self:L("IMPORT_GRAPHICS")..": "..self:L("USE_PROFILE_MODE"),fn=function()STBS:ApplyPendingImport("profile")end,style="primary",wide=true}}
   if self:GetSelectedMode() then table.insert(actions,{label=self:L("IMPORT_GRAPHICS")..": "..self:L("KEEP_MODE"),fn=function()STBS:ApplyPendingImport("current")end}) end
   table.insert(actions,{label=self:L("BACK"),fn=function()STBS.pendingImport=nil;STBS:ShowProfiles()end})
-  self:SetPage(self:L("IMPORT"),"|cff65cfff"..self:L("PROFILE_SUMMARY").."|r\n"..self:SafeText(payload.profile.displayName).."\n"..self:L("CHANGED")..": "..changed.."\n\n"..self:FormatDiff(plan).."\n\n"..self:L("IMPORT_CONFIRMATION"),actions,nil,{pageKey="profiles"})
+  self:SetPage(self:L("IMPORT"),"|cff65cfff"..self:L("PROFILE_SUMMARY").."|r\n"..self:SafeText(payload.profile.displayName).."\n\n"..self:FormatDiff(plan,summary).."\n\n"..self:L("IMPORT_CONFIRMATION"),actions,nil,{pageKey="profiles"})
 end
 
 function STBS:ShowReport(result)

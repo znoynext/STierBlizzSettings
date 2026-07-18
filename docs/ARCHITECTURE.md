@@ -40,7 +40,9 @@ These gaps are technical debt, not alternative architectural invariants.
 
 ## Diff contract
 
-`Settings/Diff.lua` produces a sorted plan and counts with these current statuses:
+`Settings/Diff.lua` owns the canonical summary shape `{ changed, identical, skipped, unavailable, failed }`, plus helpers to create, copy, merge, filter, and move statuses without ad-hoc recounting. `BuildDiff` produces a sorted plan and that summary for the selected module set. The transaction reuses the same summary semantics for its total/module/category breakdown, and restore merges legacy omitted entries through the same helpers while retaining `restored` as a restore-specific alias. Profile/full-addon previews and their apply paths plan the same settings/module payload, so planned and applied counts remain directly comparable.
+
+The statuses mean:
 
 - `changed`: valid, readable, writable, and different from the current value;
 - `identical`: equal under the registry's exact or tolerance-aware comparison;
@@ -48,7 +50,7 @@ These gaps are technical debt, not alternative architectural invariants.
 - `unavailable`: the current value cannot be read or the setting is not writable;
 - `failed`: the submitted value is invalid for another reason.
 
-The transaction writes only `changed` entries. The other statuses remain part of the result so the UI and logs can explain partial or empty work.
+The transaction writes only `changed` entries. The other statuses remain distinct in previews and results so the UI and logs do not turn failed work into skipped/unavailable work or report inspected settings as writes.
 
 ## Pending and combat architecture
 

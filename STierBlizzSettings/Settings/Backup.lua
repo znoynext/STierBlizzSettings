@@ -30,8 +30,8 @@ function STBS:GetBackupById(id)
   return nil,nil
 end
 
-local function emptyRestoreSummary()
-  return {restored=0,changed=0,identical=0,skipped=0,unavailable=0,failed=0}
+local function emptyRestoreSummary(self)
+  local summary=self:NewDiffSummary();summary.restored=0;return summary
 end
 
 local function selectedBackupCoversUnknownKeys(backup,modules)
@@ -41,15 +41,15 @@ local function selectedBackupCoversUnknownKeys(backup,modules)
 end
 
 function STBS:BuildBackupRestorePayload(backup,modules)
-  local settings,omitted,counted={},emptyRestoreSummary(),{};local includeUnknown=selectedBackupCoversUnknownKeys(backup,modules)
+  local settings,omitted,counted={},emptyRestoreSummary(self),{};local includeUnknown=selectedBackupCoversUnknownKeys(backup,modules)
   for key,value in pairs(type(backup.values)=="table" and backup.values or {}) do
     local setting=self.RegistryByKey[key]
     if setting and modules[setting.module] then settings[key]=value
-    elseif not setting and includeUnknown then omitted.unavailable=omitted.unavailable+1;counted[key]=true end
+    elseif not setting and includeUnknown then self:AddDiffSummaryCount(omitted,"unavailable");counted[key]=true end
   end
   for key in pairs(type(backup.readFailures)=="table" and backup.readFailures or {}) do if not counted[key] and settings[key]==nil then
     local setting=self.RegistryByKey[key]
-    if setting and modules[setting.module] or not setting and includeUnknown then omitted.unavailable=omitted.unavailable+1;counted[key]=true end
+    if setting and modules[setting.module] or not setting and includeUnknown then self:AddDiffSummaryCount(omitted,"unavailable");counted[key]=true end
   end end
   return settings,omitted
 end
@@ -58,10 +58,8 @@ function STBS:FinalizeBackupRestoreResult(id,modules,omitted,result)
   if type(result)~="table" then result=self:Result(false,"restore-failed") end
   result.data=type(result.data)=="table" and result.data or {};result.data.backupId=id
   if result.code=="queued" then return result end
-  local transactionSummary=type(result.data.summary)=="table" and self:Copy(result.data.summary) or {};local summary=emptyRestoreSummary()
-  for _,key in ipairs({"identical","skipped","unavailable","failed"}) do summary[key]=tonumber(transactionSummary[key]) or 0 end
-  local transactionChanged=tonumber(transactionSummary.changed) or 0
-  for _,key in ipairs({"skipped","unavailable","failed"}) do summary[key]=summary[key]+(tonumber(type(omitted)=="table" and omitted[key]) or 0) end
+  local transactionSummary=self:GetResultDiffSummary(result);local summary=self:CopyDiffSummary(transactionSummary);local transactionChanged=summary.changed
+  summary.changed=0;summary.restored=0;self:MergeDiffSummary(summary,omitted)
   local compatible=transactionChanged+summary.identical;local blocked=summary.skipped+summary.unavailable
   if result.ok then summary.restored=transactionChanged;summary.changed=transactionChanged end
   result.data.restore=summary;result.data.transactionSummary=transactionSummary;result.data.transactionCode=result.code
@@ -87,7 +85,7 @@ function STBS:FinalizeBackupRestoreResult(id,modules,omitted,result)
 end
 
 function STBS:GetBackupRestoreFeedback(result)
-  local summary=type(result)=="table" and type(result.data)=="table" and type(result.data.restore)=="table" and result.data.restore or emptyRestoreSummary()
+  local summary=type(result)=="table" and type(result.data)=="table" and type(result.data.restore)=="table" and result.data.restore or emptyRestoreSummary(self)
   if result and result.code=="queued" then return self:L("RESTORE_QUEUED"),"warning" end
   if result and result.code=="restore-complete" then
     if summary.restored==0 then return self:L("SETTINGS_UNCHANGED"),"success" end
@@ -106,8 +104,8 @@ function STBS:RestoreBackupById(id, modules)
   modules = modules or backup.affectedModules
   local validModules, modulesWhy = self:ValidateModules(modules); if not validModules then return self:Result(false,modulesWhy) end
   local settings,omitted=self:BuildBackupRestorePayload(backup,modules)
-  if not next(settings) then local omittedCount=omitted.skipped+omitted.unavailable+omitted.failed;return self:FinalizeBackupRestoreResult(id,modules,omitted,self:Result(false,omittedCount>0 and "unavailable" or "no-settings",{summary=emptyRestoreSummary()})) end
-  local validSettings, settingsWhy = self:ValidateSettings(settings, false); if not validSettings then return self:FinalizeBackupRestoreResult(id,modules,omitted,self:Result(false,"restore-failed",{reason=settingsWhy,summary={failed=1}})) end
+  if not next(settings) then local omittedCount=omitted.skipped+omitted.unavailable+omitted.failed;return self:FinalizeBackupRestoreResult(id,modules,omitted,self:Result(false,omittedCount>0 and "unavailable" or "no-settings",{summary=emptyRestoreSummary(self)})) end
+  local validSettings, settingsWhy = self:ValidateSettings(settings, false); if not validSettings then local summary=self:NewDiffSummary();self:AddDiffSummaryCount(summary,"failed");return self:FinalizeBackupRestoreResult(id,modules,omitted,self:Result(false,"restore-failed",{reason=settingsWhy,summary=summary})) end
   local context={reason="backup-restore",backupId=id,restoreOmitted=omitted}
   local result = self:ApplySettings(settings, modules, "restore", { backupSource = "restore-safety",deferBackupTrim=true }, { kind="recovery",context=context })
   return self:FinalizeBackupRestoreResult(id,modules,omitted,result)

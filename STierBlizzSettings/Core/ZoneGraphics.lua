@@ -57,8 +57,8 @@ function STBS:ApplyZoneGraphics(trigger)
   local pendingKind=trigger=="zone-change" and "zone-auto" or "zone-manual"
   local result=self:ApplySettings(settings,{graphics=true},trigger,{backupSource=pendingKind=="zone-auto" and "zone-auto" or "zone-manual"},{kind=pendingKind,context={category=category,preset=preset,mode=mode}})
   if result.code=="unchanged" then local pending=self:GetPendingOperation();if pending and pending.kind=="zone-auto" then self:CancelPendingOperation("zone-auto") end end
-  local graphics=type(result.data)=="table" and type(result.data.graphics)=="table" and result.data.graphics or nil
-  self.zoneStatus={ok=result.ok,code=result.code,category=category,preset=preset,changed=result.ok and graphics and graphics.changed or 0}
+  local graphics=self:GetResultDiffSummary(result,"graphics")
+  self.zoneStatus={ok=result.ok,code=result.code,category=category,preset=preset,changed=result.ok and graphics.changed or 0}
   if result.ok then self:CommitActiveZoneGraphicsState(category,preset);self:CommitAppliedGraphicsState(mode,preset) else self:ClearActiveZoneGraphicsState() end
   if self.ui and self.ui:IsShown() and self.ui.currentPageKey=="graphics" and self.ui.currentGraphicsSection=="zones" then self:ShowZoneGraphics() end
   return result

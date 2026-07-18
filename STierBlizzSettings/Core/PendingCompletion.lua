@@ -3,9 +3,7 @@ local _, STBS = ...
 local handlers={}
 
 local function resultChanged(result,module)
-  local data=type(result.data)=="table" and result.data or nil
-  local stats=data and type(data[module])=="table" and data[module] or nil
-  return result.ok and stats and tonumber(stats.changed) or 0
+  return result.ok and STBS:GetResultDiffSummary(result,module).changed or 0
 end
 
 local function visible(self,page,section)
