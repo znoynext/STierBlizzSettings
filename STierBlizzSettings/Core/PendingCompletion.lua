@@ -58,11 +58,14 @@ handlers.recovery=function(self,operation,result)
     if visible(self,"fpsTest") then self:ShowFPSTest() end
     return
   end
+  local restoreResult=type(result.data)=="table" and type(result.data.restore)=="table";local message,kind
+  if restoreResult then message,kind=self:GetBackupRestoreFeedback(result)
+  elseif result.ok then message,kind=self:L(result.code=="unchanged" and "SETTINGS_UNCHANGED" or "RESTORE_COMPLETE"),"success"
+  else message,kind=failedMessage(self,"PENDING_RECOVERY_FAILED",result),"error" end
   if result.ok then
     if operation.modules and operation.modules.uiTweaks then self.uiTweaksDraft=nil end
-    if operation.modules and operation.modules.graphics then self:SyncAppliedGraphicsState() end
-    self.flashMessage=self:L(result.code=="unchanged" and "SETTINGS_UNCHANGED" or "RESTORE_COMPLETE");self.flashKind="success"
-  else self.flashMessage=failedMessage(self,"PENDING_RECOVERY_FAILED",result);self.flashKind="error" end
+    self.flashMessage=message;self.flashKind=kind
+  else self.flashMessage=message;self.flashKind=kind end
   if operation.modules and operation.modules.uiTweaks and not operation.modules.graphics then
     if visible(self,"uiTweaks") then self:ShowUITweaks() end
   elseif visible(self,"graphics") then self:ShowGraphics() end
@@ -71,6 +74,8 @@ end
 function STBS:HandlePendingOperationCompletion(operation,result)
   if type(operation)~="table" or type(result)~="table" then return self:Result(false,"pending-completion") end
   if result.code=="queued" then return self:Result(false,"queued",{operation=operation,result=result}) end
+  local context=type(operation.context)=="table" and operation.context or {}
+  if operation.kind=="recovery" and context.reason=="backup-restore" and type(context.restoreOmitted)=="table" then result=self:FinalizeBackupRestoreResult(context.backupId,operation.modules or {},context.restoreOmitted,result) end
   local handler=handlers[operation.kind];if not handler then return self:Result(false,"pending-kind",{operation=operation,result=result}) end
   handler(self,operation,result)
   return self:Result(result.ok==true,result.code,{operation=operation,result=result})

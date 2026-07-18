@@ -16,6 +16,7 @@ Entries below are version-scoped historical records, not a description of the cu
 - Scoped temporary FPS comparison backups by a collision-safe session ID. Successful and cancelled comparisons now remove only their own temporary records after verified restoration, queued restores wait for actual completion, and restore/rollback failures retain recovery data without deleting user or unrelated-session backups.
 - Guaranteed an exact pre-write value for every changed transaction target. Transactions now complete an immutable snapshot before backup or writes, fail closed with zero writes if a changed value cannot be captured, and use that snapshot for verified reverse rollback without blocking unrelated unavailable settings.
 - Removed no-op transaction side effects. Already-active settings now return explicit `unchanged` statistics without backups, writes, rollback, applied-change history, FPS measurement or Reload prompts; no-op restores also skip redundant safety backups.
+- Added explicit partial restore semantics. Backup recovery now distinguishes complete, partial and all-unavailable outcomes with restored/identical/skipped/unavailable/failed counts, restores compatible legacy values without hiding removed CVars, preserves stable IDs through queued completion, and never labels write or rollback failure as partial success.
 
 ## 0.4.19-alpha
 

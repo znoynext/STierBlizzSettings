@@ -418,7 +418,7 @@ end
 function STBS:ConfirmUndoUITweaks()
   local backupId=self:GetLatestBackupId("uiTweaks");if not backupId then self.flashMessage=self:L("UI_TWEAK_ALREADY");self.flashKind="warning";self:ShowUITweaks();return end
   self:ShowAddonDialog({title=self:L("UI_TWEAK_UNDO_CONFIRM"),message=self:L("UI_TWEAK_UNDO_CONFIRM_TEXT"),onAccept=function()
-    local result=STBS:RestoreBackupById(backupId,{uiTweaks=true});if result.ok then STBS.uiTweaksDraft=nil end;STBS.flashMessage=result.ok and STBS:L("UI_TWEAK_RESTORED") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowUITweaks()
+    local result=STBS:RestoreBackupById(backupId,{uiTweaks=true});if result.ok then STBS.uiTweaksDraft=nil end;STBS.flashMessage,STBS.flashKind=STBS:GetBackupRestoreFeedback(result);STBS:ShowUITweaks()
   end})
 end
 
@@ -560,7 +560,7 @@ end
 
 function STBS:ConfirmUndoGraphics()
   local backup=self:GetLatestUndoableBackup("graphics");local backupId=backup and backup.id;if not backupId then self.flashMessage=self:L("UNDO_UNAVAILABLE");self.flashKind="warning";self:ShowGraphics();return end
-  self:ShowAddonDialog({title=self:L("UNDO_CONFIRM"),message=self:L("UNDO_CONFIRM_TEXT"),onAccept=function()local result=STBS:RestoreBackupById(backupId,{graphics=true});STBS.flashMessage=result.ok and STBS:L(result.code=="unchanged" and "SETTINGS_UNCHANGED" or "RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end})
+  self:ShowAddonDialog({title=self:L("UNDO_CONFIRM"),message=self:L("UNDO_CONFIRM_TEXT"),onAccept=function()local result=STBS:RestoreBackupById(backupId,{graphics=true});STBS.flashMessage,STBS.flashKind=STBS:GetBackupRestoreFeedback(result);STBS:ShowGraphics()end})
 end
 
 function STBS:OpenSaveDialog()
@@ -580,7 +580,7 @@ function STBS:ConfirmDeleteBackup(backupId)
 end
 
 function STBS:ConfirmRestoreBackup(backupId)
-  self:ShowAddonDialog({title=self:L("RESTORE_SELECTED"),onAccept=function()local result=STBS:RestoreBackupById(backupId,{graphics=true});STBS.flashMessage=result.ok and STBS:L(result.code=="unchanged" and "SETTINGS_UNCHANGED" or "RESTORE_COMPLETE") or STBS:L("APPLY_FAILED");STBS.flashKind=result.ok and "success" or "error";STBS:ShowGraphics()end})
+  self:ShowAddonDialog({title=self:L("RESTORE_SELECTED"),onAccept=function()local result=STBS:RestoreBackupById(backupId,{graphics=true});STBS.flashMessage,STBS.flashKind=STBS:GetBackupRestoreFeedback(result);STBS:ShowGraphics()end})
 end
 
 function STBS:GetGraphicsProfiles()
