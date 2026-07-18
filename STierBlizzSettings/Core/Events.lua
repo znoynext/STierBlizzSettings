@@ -24,7 +24,7 @@ frame:SetScript("OnEvent",function(_,event,arg)
     local result=STBS:ApplySettings(pending.settings,pending.modules,pending.trigger,pending.options)
     if pending.trigger=="zone-change" or pending.trigger=="zone-enabled" or pending.trigger=="zone-manual" then
       STBS.zoneStatus={ok=result.ok,code=result.code,category=STBS:GetZoneCategory(),preset=STBS.activeZonePreset,changed=result.data and result.data.changed or 0}
-      if result.ok then STBS.reloadRecommended=true end
+      if result.ok then STBS:SetSelectedMode(STBS.GRAPHICS_MODE_UNIFIED);STBS:SetSelectedPreset(STBS.activeZonePreset) end
       if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="graphics" and STBS.ui.currentGraphicsSection=="zones" then STBS:ShowZoneGraphics() end
     end
     if pending.trigger=="fps-compare-restore" or pending.trigger=="fps-compare-cancel-restore" then
@@ -39,8 +39,8 @@ frame:SetScript("OnEvent",function(_,event,arg)
       if STBS.ui and STBS.ui:IsShown() and STBS.ui.currentPageKey=="uiTweaks" then STBS:ShowUITweaks() end
     end
     if result.ok and pending.options and pending.options.fpsBefore then
-      STBS.reloadRecommended=true;STBS.flashMessage=STBS:L("SETTINGS_APPLIED");STBS.flashKind="success"
-      STBS:StartFPSPostMeasurement(pending.options.fpsBefore,function()if STBS.ui and STBS.ui:IsShown() then STBS:ShowGraphics() end end)
+      STBS.flashMessage=STBS:L("SETTINGS_APPLIED");STBS.flashKind="success"
+      STBS:StartVisibleGraphicsFPSPostMeasurement(pending.options.fpsBefore)
     end
   end
 end)

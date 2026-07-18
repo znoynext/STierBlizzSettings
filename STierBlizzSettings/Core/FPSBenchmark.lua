@@ -69,11 +69,12 @@ function STBS:StartFPSBaselineSampling()
 end
 function STBS:TakeFPSBaseline() self:StopFPSBaselineSampling();local samples=self.fpsBaselineSamples or {};if #samples==0 then local value=self:ReadFramerate();if value then samples={value} end end;self.fpsBaselineSamples=nil;return samples end
 
-function STBS:StartFPSPostMeasurement(beforeSamples,callback)
+function STBS:StartFPSPostMeasurement(beforeSamples,callback,progressCallback)
   if type(beforeSamples)~="table" or #beforeSamples==0 then return false end
-  if self.fpsAfterTicker and self.fpsAfterTicker.Cancel then self.fpsAfterTicker:Cancel() end;self.fpsAfterMeasurement=true;local afterSamples,count={},0
-  local function finish()self.fpsAfterTicker=nil;self.fpsAfterMeasurement=nil;local metric=self:CalculateFPSMetric(beforeSamples,afterSamples);self:StoreFPSMetric(metric);if callback then callback(metric) end;self:StartFPSBaselineSampling()end
-  local function sample(ticker)local value=self:ReadFramerate();self:NotifyLiveFPS(value);if value then afterSamples[#afterSamples+1]=value end;count=count+1;if count>=QUICK_SAMPLES then if ticker and ticker.Cancel then ticker:Cancel() end;finish() end end
+  if self.fpsAfterTicker and self.fpsAfterTicker.Cancel then self.fpsAfterTicker:Cancel() end;self.fpsAfterMeasurement=true;local afterSamples,count={},0;local duration=QUICK_SAMPLES*QUICK_INTERVAL
+  if progressCallback then progressCallback(0,duration) end
+  local function finish()self.fpsAfterTicker=nil;self.fpsAfterMeasurement=nil;if progressCallback then progressCallback(duration,duration) end;local metric=self:CalculateFPSMetric(beforeSamples,afterSamples);self:StoreFPSMetric(metric);if callback then callback(metric) end;self:StartFPSBaselineSampling()end
+  local function sample(ticker)local value=self:ReadFramerate();self:NotifyLiveFPS(value);if value then afterSamples[#afterSamples+1]=value end;count=count+1;if progressCallback then progressCallback(math.min(duration,count*QUICK_INTERVAL),duration) end;if count>=QUICK_SAMPLES then if ticker and ticker.Cancel then ticker:Cancel() end;finish() end end
   if not C_Timer or type(C_Timer.NewTicker)~="function" then sample(nil);if count<QUICK_SAMPLES then finish() end;return true end
   self.fpsAfterTicker=C_Timer.NewTicker(QUICK_INTERVAL,sample,QUICK_SAMPLES);return true
 end
@@ -107,7 +108,7 @@ function STBS:StartPresetFPSComparison(preset,doneCallback)
   if type(_G.InCombatLockdown)=="function" and _G.InCombatLockdown() then return false,"combat" end
   if not self:IsGraphicsPreset(preset) then return false,"preset" end
   local original,failures=self:CaptureModules({graphics=true});if next(failures or {}) or not next(original or {}) then return false,"capture" end
-  local mode=self:GetSelectedMode() or self.GRAPHICS_MODE_SPLIT;local candidate=self:FlattenProfile(self:GetOfficialGraphics(mode,preset),{graphics=true});local valid,why=self:ValidateSettings(candidate,true);if not valid then return false,why end
+  local mode=self.GRAPHICS_MODE_UNIFIED;local candidate=self:FlattenProfile(self:GetOfficialGraphics(mode,preset),{graphics=true});local valid,why=self:ValidateSettings(candidate,true);if not valid then return false,why end
   local state={kind="comparison",preset=preset,original=original,candidate=candidate,candidateApplied=false};self.fpsTestRun=state;self.fpsPresetComparison=state;self.fpsTestMeasurement=true;self.fpsTestElapsed=0;self:StopFPSBaselineSampling()
   local function finish(comparison,restoreResult,errorResult)
     if self.fpsTestRun~=state then return end

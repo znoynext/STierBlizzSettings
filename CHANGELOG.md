@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.18-alpha
+
+- Added a centered, smoothly animated five-second progress bar after every successful Graphics preset apply.
+- Reload UI is now offered automatically when that measurement finishes (or immediately when measurement is unavailable); the redundant permanent menu button was removed.
+- Removed the duplicate lighter-raid checkbox. Built-in presets and FPS comparisons now use one active Blizzard graphics set, while Zone Graphics remains the single content-aware preset switcher.
+- Confirmed and regression-tested that all UI Tweaks remain autonomous and are never changed by PRO, Optimized, Quality or Zone Graphics preset application.
+
 ## 0.4.17-alpha
 
 - Added a concise post-comparison recommendation when a tested preset improves both Average FPS and 1% Low by at least 5%.

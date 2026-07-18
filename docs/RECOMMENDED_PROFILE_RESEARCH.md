@@ -17,7 +17,8 @@ The Blizzard source proves which controls exist, their CVar names, ranges, suppo
 | `*OutlineMode`, `*ProjectedTextures` | Outline Mode / Projected Textures | 2 / 1 in every preset | combat visibility; enforced safety rule |
 | `*SpellDensity` | Spell Density | 0 / 2 / 2 | PRO uses Blizzard's Essential option; only when the feature API says supported |
 | `*ViewDistance` | View Distance | 4 / 6 / 8 | CPU/GPU and world readability balance |
-| `*EnvironmentDetail`, `*GroundClutter` | detail sliders | 3/2, 4/3, 7/6 | visual/CPU-GPU; slider labels may differ from stored values |
+| `*EnvironmentDetail` | Environment Detail | 1 / 4 / 7 | PRO uses the minimum; higher presets restore useful world detail |
+| `*GroundClutter` | Ground Clutter | 1 in every preset | minimum decorative clutter while projected combat textures remain enabled |
 | `ffxAntiAliasingMode`, `MSAAQuality`, `msaaAlphaTest` | Antialiasing | best supported CMAA, MSAA off, alpha-test off | capability-gated image AA; avoids MSAA cost and disables its dependent option |
 | `cameraSmoothStyle` | Camera Follow Style | 0 | reversibly disables automatic camera adjustment |
 
@@ -37,9 +38,9 @@ The Blizzard source proves which controls exist, their CVar names, ranges, suppo
 | Graphics | Camera FOV | preserve | gameplay/comfort preference |
 | Graphics Quality | Shadow, Liquid, Particle Density, SSAO, Depth Effects, Compute Effects, Outline Mode, Texture Resolution, Spell Density, Projected Textures, View Distance, Environment Detail, Ground Clutter | optimize all individually | these are the independent quality controls exposed by `GraphicsOverrides.CreateAdvancedSettingsTable` |
 
-Ground Clutter is intentionally `1` in all base and raid presets: it primarily controls decorative ground objects, so the common minimum removes avoidable scene cost without disabling projected combat textures. PRO also sets Environment Detail to `1`. Blizzard's current `GetSpellDensityOptions` maps `0` to Essential, `1` to Reduced and `2` to Everything; PRO therefore uses `0` for both base and raid profiles.
+Ground Clutter is intentionally `1` in all retained base and compatibility raid preset data: it primarily controls decorative ground objects, so the common minimum removes avoidable scene cost without disabling projected combat textures. PRO also sets Environment Detail to `1`. Blizzard's current `GetSpellDensityOptions` maps `0` to Essential, `1` to Reduced and `2` to Everything; PRO therefore uses `0` in both retained sets.
 | Graphics Quality | master Graphics Quality number | do not write | Blizzard applies this proxy last and it overwrites the individual controls; after individual tuning the UI correctly reports Custom |
-| Graphics Quality | Raid and Battleground toggle and all raid quality controls | optimize in split mode | uses Blizzard's own separate raid profile and the same validated child controls |
+| Graphics Quality | Raid and Battleground toggle and raid quality controls | disable for official presets; retain compatibility | Zone Graphics is the single content-aware switcher; older personal/imported split profiles remain losslessly supported |
 | Advanced | Triple Buffering | preserve | coupled to V-Sync and frame-latency preference; requires graphics restart |
 | Advanced | Texture Filtering | 16x | high texture clarity with low cost on supported modern hardware; value validated by Blizzard UI |
 | Advanced | Ray Traced Shadows | off | removes a high-cost optional shadow path while regular shadows remain enabled |
@@ -49,7 +50,7 @@ Ground Clutter is intentionally `1` in all base and raid presets: it primarily c
 | Advanced | Foreground, Background and Target FPS controls | preserve | user caps are part of power, temperature and pacing policy, not raw quality |
 | Advanced | Contrast, Brightness and Gamma | preserve | calibration/accessibility controls |
 
-Each preset also contains a separate lower-cost raid/battleground set when split mode is selected. Zone Graphics reuses these exact reviewed presets; it never constructs hidden values. It is opt-in, detects Delves with the current `C_PartyInfo.IsDelveInProgress()` API, maps the documented `IsInInstance()` content types (`party`, `raid`, `pvp`, `arena`, `scenario`) and applies only when a real CVar diff exists. Unknown types fail back to the world mapping.
+The built-in Graphics flow uses one active Blizzard quality set. Lower-cost raid/battleground values remain in the schema only so older personal and imported split profiles stay compatible. Zone Graphics is the single content-aware switcher: it applies the selected preset's active set, never constructs hidden values, is opt-in, detects Delves with the current `C_PartyInfo.IsDelveInProgress()` API, maps the documented `IsInInstance()` content types (`party`, `raid`, `pvp`, `arena`, `scenario`) and applies only when a real CVar diff exists. Unknown types fail back to the world mapping.
 
 The audit covers every control registered in Retail `Graphics.lua`. Resolution is a Blizzard proxy backed by `C_VideoOptions`, not a normal CVar, so the addon deliberately does not pretend that it can safely port or restore it through the CVar registry.
 

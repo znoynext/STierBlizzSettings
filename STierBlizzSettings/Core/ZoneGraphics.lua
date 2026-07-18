@@ -38,7 +38,7 @@ function STBS:ApplyZoneGraphics(trigger)
   local config=self:GetZoneGraphicsConfig();if not config.enabled then return self:Result(false,"disabled") end
   local category=self:GetZoneCategory();local preset=config.assignments[category]
   if not self:IsGraphicsPreset(preset) then return self:Result(false,"preset") end
-  local mode=self:GetSelectedMode() or self.GRAPHICS_MODE_SPLIT
+  local mode=self.GRAPHICS_MODE_UNIFIED
   local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,preset),{graphics=true})
   local valid,why=self:ValidateSettings(settings,true);if not valid then return self:Result(false,why) end
   local plan=self:BuildDiff(settings);local changed=0
@@ -51,7 +51,7 @@ function STBS:ApplyZoneGraphics(trigger)
   end
   local result=self:ApplySettings(settings,{graphics=true},trigger or "zone-graphics")
   self.zoneStatus={ok=result.ok,code=result.code,category=category,preset=preset,changed=changed}
-  if result.ok then self:SetSelectedPreset(preset);self.reloadRecommended=true end
+  if result.ok then self:SetSelectedMode(mode);self:SetSelectedPreset(preset) end
   if self.ui and self.ui:IsShown() and self.ui.currentPageKey=="graphics" and self.ui.currentGraphicsSection=="zones" then self:ShowZoneGraphics() end
   return result
 end

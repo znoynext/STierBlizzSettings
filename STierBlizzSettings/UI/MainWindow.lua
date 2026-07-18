@@ -233,17 +233,26 @@ function STBS:CreateFPSTestModal()
 end
 
 function STBS:ShowFPSTestModal(kind,preset)
-  local modal=self:CreateFPSTestModal();local dialog=modal.dialog;dialog.title:SetText(kind=="comparison" and string.format(self:L("FPS_COMPARE_MODAL_TITLE"),self:GetPresetLabel(preset)) or self:L("FPS_TEST_MODAL_TITLE"));dialog.message:SetText(self:L("FPS_TEST_MODAL_HELP"));dialog.preset=preset;modal:Show();self:UpdateFPSTestModal(kind=="comparison" and "comparison-current" or "standalone",0,20,preset)
+  local modal=self:CreateFPSTestModal();local dialog=modal.dialog;local postApply=kind=="post-apply";dialog:SetHeight(postApply and 208 or 238);dialog.title:SetText(postApply and self:L("FPS_APPLY_MEASURE_TITLE") or kind=="comparison" and string.format(self:L("FPS_COMPARE_MODAL_TITLE"),self:GetPresetLabel(preset)) or self:L("FPS_TEST_MODAL_TITLE"));dialog.message:SetText(postApply and self:L("FPS_APPLY_MEASURE_HELP") or self:L("FPS_TEST_MODAL_HELP"));dialog.cancel:SetShown(not postApply);dialog.preset=preset;modal:Show();self:UpdateFPSTestModal(postApply and "post-apply" or kind=="comparison" and "comparison-current" or "standalone",0,postApply and 5 or 20,preset)
 end
 
 function STBS:UpdateFPSTestModal(phase,elapsed,duration,preset)
   local modal=self.fpsTestModal;if not modal or not modal:IsShown() then return end
-  local dialog=modal.dialog;local key=phase=="comparison-current" and "FPS_COMPARE_CURRENT" or phase=="comparison-switch" and "FPS_COMPARE_SWITCH" or phase=="comparison-preset" and "FPS_COMPARE_PRESET" or phase=="comparison-restore" and "FPS_COMPARE_RESTORE" or "FPS_TEST_MODAL_PHASE"
+  local dialog=modal.dialog;local key=phase=="post-apply" and "FPS_APPLY_MEASURE_PHASE" or phase=="comparison-current" and "FPS_COMPARE_CURRENT" or phase=="comparison-switch" and "FPS_COMPARE_SWITCH" or phase=="comparison-preset" and "FPS_COMPARE_PRESET" or phase=="comparison-restore" and "FPS_COMPARE_RESTORE" or "FPS_TEST_MODAL_PHASE"
   dialog.phase:SetText(string.format(self:L(key),self:GetPresetLabel(preset)))
   local maximum=(phase=="comparison-current" or phase=="comparison-preset") and 20 or (duration or 20);maximum=tonumber(maximum) or 20;local value=math.max(0,math.min(maximum,tonumber(elapsed) or 0));local reset=dialog.progressPhase~=phase or dialog.progressMaximum~=maximum;dialog.progressPhase=phase;dialog.progressMaximum=maximum;dialog.progress.maximum=maximum;dialog.progress:SetMinMaxValues(0,maximum);dialog.progress.targetValue=value;if reset then dialog.progress.displayValue=value;dialog.progress:SetValue(value) end;dialog.progressText:SetText(string.format(self:L("FPS_TEST_MODAL_PROGRESS"),math.floor(value+0.5),math.floor(maximum+0.5)))
 end
 
 function STBS:HideFPSTestModal() if self.fpsTestModal then self.fpsTestModal:Hide() end end
+
+function STBS:StartVisibleGraphicsFPSPostMeasurement(beforeSamples)
+  local showProgress=self.ui and self.ui:IsShown();local started=self:StartFPSPostMeasurement(beforeSamples,function()
+    STBS:HideFPSTestModal();if STBS.ui and STBS.ui:IsShown() then STBS:ShowGraphics() end;STBS:ConfirmReloadUI()
+  end,function(elapsed,duration)STBS:UpdateFPSTestModal("post-apply",elapsed,duration)end)
+  if started and self.fpsAfterMeasurement and showProgress then self:ShowFPSTestModal("post-apply") end
+  if not started then self:ConfirmReloadUI() end
+  return started
+end
 
 function STBS:SetPage(title,text,actions,status,options)
   self:CreateUI();local f=self.ui;options=options or {};f.currentPageKey=options.pageKey
@@ -308,7 +317,7 @@ end
 
 function STBS:ShowGraphics()
   self:StartFPSBaselineSampling()
-  local mode=self:GetSelectedMode();local preset=self:GetSelectedPreset()
+  local preset=self:GetSelectedPreset()
   local metric=self:GetLastFPSMetric();local measuring=self.fpsAfterMeasurement or self.fpsAccurateMeasurement or self.fpsTestMeasurement;local dashboard=self:BuildGraphicsFPSDashboard(metric,self:ReadFramerate(),measuring)
   local text="|cffffd36b"..self:L("QUICK_START").."|r\n"..self:L("QUICK_START_TEXT").."\n\n|cffffd36b"..self:L("SAVE_OWN_TITLE").."|r\n"..self:L("SAVE_OWN_TEXT").."\n\n|cff9aa7b8"..self:L("GRAPHICS_SELECTION_SUMMARY").."|r"
   local latest=self:GetLatestBackupIndex("graphics")
@@ -316,10 +325,8 @@ function STBS:ShowGraphics()
     {label=self:L("PRESET_PRO"),third=true,fn=function()STBS:SetSelectedPreset(STBS.GRAPHICS_PRESET_PRO);STBS.flashMessage=STBS:L("PRESET_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=preset==self.GRAPHICS_PRESET_PRO},
     {label=self:L("PRESET_OPTIMIZED"),third=true,fn=function()STBS:SetSelectedPreset(STBS.GRAPHICS_PRESET_OPTIMIZED);STBS.flashMessage=STBS:L("PRESET_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=preset==self.GRAPHICS_PRESET_OPTIMIZED},
     {label=self:L("PRESET_QUALITY"),third=true,fn=function()STBS:SetSelectedPreset(STBS.GRAPHICS_PRESET_QUALITY);STBS.flashMessage=STBS:L("PRESET_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end,active=preset==self.GRAPHICS_PRESET_QUALITY},
-    {kind="check",label=self:L("LIGHT_RAID_CHECK"),checked=mode==self.GRAPHICS_MODE_SPLIT,third=true,fn=function(checked)STBS:SetSelectedMode(checked and STBS.GRAPHICS_MODE_SPLIT or STBS.GRAPHICS_MODE_UNIFIED);STBS.flashMessage=STBS:L("MODE_SELECTED");STBS.flashKind="success";STBS:ShowGraphics()end},
     {label=self:L("APPLY_AND_MEASURE"),fn=function()STBS:ShowOfficialPreview("graphics")end,style="primary",wide=true,disabled=measuring},
   }
-  if self.reloadRecommended then table.insert(actions,{label=self:L("RELOAD_UI"),fn=function()STBS:ConfirmReloadUI()end,style="primary",wide=true,disabled=measuring and true or false}) end
   table.insert(actions,{label=self:L("UNDO"),fn=function()STBS:ConfirmUndoGraphics()end,disabled=not latest})
   table.insert(actions,{label=self:L("PROFILES"),fn=function()STBS:ShowProfiles()end})
   local phase=self.fpsAccuratePhase=="before" and self:L("FPS_MEASURING_BEFORE") or self.fpsAccuratePhase=="after" and self:L("FPS_MEASURING_AFTER") or self:L("FPS_MEASURING")
@@ -479,7 +486,7 @@ function STBS:ConfirmApplyFPSComparisonPreset(comparison)
 end
 
 function STBS:ShowOfficialPreview()
-  local mode=self:GetSelectedMode();if not mode then self:ShowGraphics();return end
+  local mode=self.GRAPHICS_MODE_UNIFIED
   local settings=self:FlattenProfile(self:GetOfficialGraphics(mode,self:GetSelectedPreset()),{graphics=true});local plan=self:BuildDiff(settings)
   self:SetLiveFPSCallback(nil)
   self:SetPage(self:L("PREVIEW"),self:FormatDiff(plan),{
@@ -489,7 +496,7 @@ function STBS:ShowOfficialPreview()
 end
 
 function STBS:ConfirmApplyGraphics(count)
-  StaticPopupDialogs["STBS_APPLY_GRAPHICS"]={text=self:L("APPLY_CONFIRM"),subText=string.format(self:L("APPLY_CONFIRM_TEXT"),count or 0),button1=ACCEPT,button2=CANCEL,OnAccept=function()STBS:ApplyGraphicsWithFPS()end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3}
+  StaticPopupDialogs["STBS_APPLY_GRAPHICS"]={text=self:L("APPLY_CONFIRM"),subText=string.format(self:L("APPLY_CONFIRM_TEXT"),count or 0),button1=ACCEPT,button2=CANCEL,OnAccept=function()local preset=STBS:GetSelectedPreset();local mode=STBS.GRAPHICS_MODE_UNIFIED;local settings=STBS:FlattenProfile(STBS:GetOfficialGraphics(mode,preset),{graphics=true});STBS:ApplyGraphicsWithFPS(settings,"official-graphics",mode,preset)end,timeout=0,whileDead=true,hideOnEscape=true,preferredIndex=3}
   StaticPopup_Show("STBS_APPLY_GRAPHICS")
 end
 
@@ -500,10 +507,9 @@ function STBS:ApplyGraphicsWithFPS(settings,trigger,selectedMode,selectedPreset)
   end
   local before=self:TakeFPSBaseline();local result=applyNow({fpsBefore=before})
   if result.ok then
-    self.reloadRecommended=true
     if selectedMode then self:SetSelectedMode(selectedMode) end
     if selectedPreset then self:SetSelectedPreset(selectedPreset) end
-    local measuring=self:StartFPSPostMeasurement(before,function()if STBS.ui and STBS.ui:IsShown() then STBS:ShowGraphics() end end)
+    local measuring=self:StartVisibleGraphicsFPSPostMeasurement(before)
     self.flashMessage=measuring and self:L("SETTINGS_APPLIED") or self:L("SETTINGS_APPLIED_NO_MEASURE");self.flashKind="success"
     self:ShowGraphics()
   elseif result.code=="queued" then
@@ -671,7 +677,7 @@ function STBS:ShowAddonImportPreview(payload)
   local text=string.format(self:L("BUNDLE_IMPORT_SUMMARY"),count,self:GetPresetLabel(payload.preferences.graphicsPreset))
   self:SetPage(self:L("IMPORT_ALL"),text,{{label=self:L("IMPORT_ALL_CONFIRM"),style="primary",wide=true,fn=function()
     local result=STBS:ApplyAddonBundle(STBS.pendingAddonBundle);STBS.pendingAddonBundle=nil
-    if result.ok then STBS.reloadRecommended=true;STBS.flashMessage=STBS:L("BUNDLE_IMPORTED");STBS.flashKind="success" else STBS.flashMessage=STBS:L("BUNDLE_IMPORT_FAILED").." ("..tostring(result.code)..")";STBS.flashKind="error" end
+    if result.ok then STBS.flashMessage=STBS:L("BUNDLE_IMPORTED");STBS.flashKind="success" else STBS.flashMessage=STBS:L("BUNDLE_IMPORT_FAILED").." ("..tostring(result.code)..")";STBS.flashKind="error" end
     STBS:ShowProfiles("transfer")
   end},{label=self:L("BACK"),fn=function()STBS.pendingAddonBundle=nil;STBS:ShowProfiles("transfer")end}},self:L("REVIEW_READY"),{pageKey="profiles",statusKind="warning"})
 end
