@@ -4,6 +4,7 @@ Entries below are version-scoped historical records, not a description of the cu
 
 ## 0.4.20-alpha
 
+- Cached actual PRO/Optimized/Quality detection across ordinary page renders instead of repeating a full Graphics/registry/capability scan. Verified graphics transactions invalidate the cache, applied-state sync and window open force a live refresh for external changes, and failed/rolled-back work cannot record the requested preset; no polling or preset/Diff values changed.
 - Replaced per-session frame-time capture frames with one reusable FPS sampler frame. Explicit lifecycle state now rejects overlapping captures, clears frame times and callbacks on completion/Cancel/error, and uses a generation guard so a stale update cannot affect a restarted test; measurement methodology and recommendation thresholds are unchanged.
 - Bounded repeated main-page rendering with typed reuse pools for dynamic buttons, checkboxes, sliders and section rows. Recycled controls now clear callbacks, tooltips, anchors, action references, text and interaction state so long sessions do not accumulate a new persistent frame or stale action on every page switch.
 - Corrected Graphics, personal-profile, FPS recommendation and import review counts to use only settings that actually require writes. Already-matching graphics now skip misleading confirmation, while full-addon import still explains that shared profiles and preferences remain importable.

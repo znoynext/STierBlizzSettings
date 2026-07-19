@@ -32,7 +32,7 @@ The production pipeline in `Settings/Transaction.lua` is:
 5. Unless `skipBackup` is set, capture all readable values in the selected modules and insert them into backup history with the workflow's normalized `backupSource` while retaining its diagnostic trigger. Exact changed-entry values from the transaction snapshot override duplicate backup reads.
 6. Write only `changed` entries through `Settings/Writer.lua`, passing the snapshotted previous value instead of discovering it inside or after the write; each write is immediately read back and compared with registry-aware equality.
 7. If a write or read-back fails, restore attempted entries in reverse order from the immutable pre-write snapshot and verify each rollback write. Record `rolled-back` or `rollback-failed` in the transaction log.
-8. If writes complete, record an `applied` transaction result. Immediate callers update their own persistent selection/applied-state fields; combat-delayed work delegates that commit to the typed completion handler after the transaction result is known.
+8. If writes complete, record an `applied` transaction result and invalidate actual-preset detection for Graphics. A verified Graphics no-op also invalidates because it establishes current client state, while a fully rolled-back failure keeps the prior cache and `rollback-failed` invalidates its uncertain state. Immediate callers update their own persistent selection/applied-state fields; combat-delayed work delegates that commit to the typed completion handler after the transaction result is known.
 
 This implements the desired `Validate -> Diff -> No-op/Queue or Snapshot/Backup -> Write -> Read-back Verify -> Rollback on Failure -> Commit Applied State` invariant. Graphics callers pass desired mode/preset as transaction context and use `CommitAppliedGraphicsState` only after a verified `applied` or `unchanged` result; the UI selection setters update a separate runtime draft and never write the applied SavedVariables. Remaining transaction gaps are:
 - Unsupported, unreadable, and non-writable entries do not fail the whole transaction; they are reported and the remaining changed entries may still apply.
@@ -55,6 +55,12 @@ The statuses mean:
 The transaction writes only `changed` entries. The other statuses remain distinct in previews and results so the UI and logs do not turn failed work into skipped/unavailable work or report inspected settings as writes.
 
 `Settings/DetailedDiff.lua` transforms a canonical plan and copied summary into a presentation-only model with separate `changed`, `unavailable`, `skipped`, and `failed` collections; `identical` remains in the summary but is omitted from the default detailed list. Formatting delegates human-readable values, explanations, and qualitative impact descriptions to registry helpers. The normal UI never renders the raw technical key as its primary text. `UI/MainWindow.lua` exposes this model only through optional **Show changes** actions, leaving the default review concise and keeping apply mutations on their existing transaction paths.
+
+## Current preset detection cache
+
+`Profiles/Recommended.lua` owns actual PRO/Optimized/Quality matching. The expensive path captures current Graphics values, derives unified/split mode, builds each supported official target, and checks readable/capable registry values. Its result—including Custom as a cached `nil`—is stored behind a separate validity flag, so repeated visible `SetPage` renders only update the header from cache.
+
+`ApplySettings` is the central invalidation boundary because built-in/personal apply, profile/full-addon import, Backup Restore, Zone Graphics and FPS candidate/restore writes all pass through it. Verified Graphics `applied` and `unchanged` results invalidate; failed validation, snapshot/backup failure and verified rollback do not claim a new state; `rollback-failed` invalidates because the client may be partially changed. `SyncAppliedGraphicsState` and inference inside `CommitAppliedGraphicsState` force actual detection rather than trusting an old cached result. `OnShow` also force-refreshes, providing an event-bounded path for manual Blizzard Settings or other-addon changes. No permanent `OnUpdate`, ticker, or CVar polling is used.
 
 ## Pending and combat architecture
 

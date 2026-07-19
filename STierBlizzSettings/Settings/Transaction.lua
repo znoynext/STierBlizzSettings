@@ -93,6 +93,7 @@ function STBS:ApplySettings(settings, modules, trigger, options, pending)
   local plan,summary=self:BuildDiff(settings,modules);local result=buildTransactionResult(self,plan,modules,summary);summary=result.summary
   if summary.changed==0 then
     local code=summary.failed>0 and "failed" or summary.unavailable>0 and "unavailable" or "unchanged"
+    if code=="unchanged" and modules.graphics then self:InvalidateCurrentGraphicsPreset() end
     return self:Result(code=="unchanged",code,result)
   end
   if InCombatLockdown and InCombatLockdown() then
@@ -125,10 +126,11 @@ function STBS:ApplySettings(settings, modules, trigger, options, pending)
       result.rollback=rollback
       local db=self:InitializeDatabase();table.insert(db.transactions,1,{time=time(),trigger=trigger,modules=self:Copy(modules),result=self:Copy(result),code=rollback.failed==0 and "rolled-back" or "rollback-failed"});while #db.transactions>20 do table.remove(db.transactions) end
       if options.deferBackupTrim==true then self:EndBackupRetentionDeferral() end
-      return self:Result(false,rollback.failed==0 and "rolled-back" or "rollback-failed",result)
+      local code=rollback.failed==0 and "rolled-back" or "rollback-failed";if code=="rollback-failed" and modules.graphics then self:InvalidateCurrentGraphicsPreset() end
+      return self:Result(false,code,result)
     end
   end end
-  local db=self:InitializeDatabase();table.insert(db.transactions,1,{time=time(),trigger=trigger,modules=self:Copy(modules),result=self:Copy(result),code="applied"});while #db.transactions>20 do table.remove(db.transactions) end;if options.deferBackupTrim==true then self:EndBackupRetentionDeferral() end;return self:Result(true,"applied",result)
+  local db=self:InitializeDatabase();table.insert(db.transactions,1,{time=time(),trigger=trigger,modules=self:Copy(modules),result=self:Copy(result),code="applied"});while #db.transactions>20 do table.remove(db.transactions) end;if options.deferBackupTrim==true then self:EndBackupRetentionDeferral() end;if modules.graphics then self:InvalidateCurrentGraphicsPreset() end;return self:Result(true,"applied",result)
 end
 
 function STBS:CompletePendingOperation()

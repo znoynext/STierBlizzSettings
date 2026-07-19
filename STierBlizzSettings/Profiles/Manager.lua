@@ -16,14 +16,14 @@ function STBS:GetCurrentGraphicsMode()
 end
 function STBS:CommitAppliedGraphicsState(mode,preset)
   mode=mode or self:GetCurrentGraphicsMode();if mode~=self.GRAPHICS_MODE_UNIFIED and mode~=self.GRAPHICS_MODE_SPLIT then return false end
-  if preset==nil then preset=self:GetCurrentGraphicsPreset() or self.GRAPHICS_PRESET_CUSTOM end
+  if preset==nil then preset=self:RefreshCurrentGraphicsPreset() or self.GRAPHICS_PRESET_CUSTOM end
   if not self:IsGraphicsPreset(preset) and preset~=self.GRAPHICS_PRESET_CUSTOM then return false end
   local db,databaseFailure=self:RequireWritableDatabase();if not db then return false,databaseFailure.code end
   local preferences=db.preferences;preferences.graphicsMode=mode;preferences.graphicsPreset=preset;return true
 end
 function STBS:SyncAppliedGraphicsState()
   local mode=self:GetCurrentGraphicsMode();if not mode then return false end
-  local committed=self:CommitAppliedGraphicsState(mode,self:GetCurrentGraphicsPreset() or self.GRAPHICS_PRESET_CUSTOM)
+  local committed=self:CommitAppliedGraphicsState(mode,self:RefreshCurrentGraphicsPreset() or self.GRAPHICS_PRESET_CUSTOM)
   if committed then self:InitializeDatabase().graphicsStateNeedsSync=nil end
   return committed
 end

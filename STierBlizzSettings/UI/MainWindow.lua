@@ -204,7 +204,7 @@ function STBS:CreateUI()
   f:SetSize(width,height);f:SetPoint("CENTER",UIParent,"CENTER",0,0);f:SetMovable(true);f:SetResizable(true);f:SetResizeBounds(minWidth,minHeight,maxWidth,maxHeight);f:SetClampedToScreen(false);f:EnableMouse(true);f:Hide()
   f:SetBackdrop({bgFile="Interface\\FrameGeneral\\UI-Background-Rock",edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border",tile=true,tileSize=256,edgeSize=32,insets={left=11,right=12,top=12,bottom=11}});f:SetBackdropColor(0.42,0.42,0.42,1);f:SetBackdropBorderColor(1,1,1,1)
   local fade=f:CreateAnimationGroup();fade:SetToFinalAlpha(true);local alpha=fade:CreateAnimation("Alpha");alpha:SetFromAlpha(0);alpha:SetToAlpha(1);alpha:SetDuration(0.18);alpha:SetSmoothing("OUT");f.fade=fade
-  f:SetScript("OnShow",function(self)self:SetAlpha(1);self.fade:Stop();self.fade:Play();STBS:RefreshCurrentPresetLabel()end)
+  f:SetScript("OnShow",function(self)self:SetAlpha(1);self.fade:Stop();self.fade:Play();STBS:RefreshCurrentPresetLabel(true)end)
   f:SetScript("OnHide",function()STBS:SetLiveFPSCallback(nil);STBS:StopFPSBaselineSampling()end)
 
   local top=CreateFrame("Frame",nil,f,"BackdropTemplate");top:SetPoint("TOPLEFT",18,-18);top:SetPoint("TOPRIGHT",-18,-18);top:SetHeight(62);top:EnableMouse(true);top:RegisterForDrag("LeftButton");top:SetScript("OnDragStart",function()f:StartMoving()end);top:SetScript("OnDragStop",function()f:StopMovingOrSizing()end);top:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=12,insets={left=3,right=3,top=3,bottom=3}});top:SetBackdropColor(0.05,0.04,0.025,0.98);top:SetBackdropBorderColor(0.72,0.52,0.2,1)
@@ -249,9 +249,9 @@ function STBS:CreateUI()
   f:SetScript("OnSizeChanged",function()STBS:LayoutUI()end);self:LayoutUI()
 end
 
-function STBS:RefreshCurrentPresetLabel()
+function STBS:RefreshCurrentPresetLabel(forceRefresh)
   local label=self.ui and self.ui.currentPreset;if not label then return end
-  local preset=self:GetCurrentGraphicsPreset();label:SetText(string.format(self:L("CURRENT_PRESET"),preset and self:GetPresetLabel(preset) or self:L("PRESET_CUSTOM")))
+  local preset;if forceRefresh then preset=self:RefreshCurrentGraphicsPreset() else preset=self:GetCurrentGraphicsPreset() end;label:SetText(string.format(self:L("CURRENT_PRESET"),preset and self:GetPresetLabel(preset) or self:L("PRESET_CUSTOM")))
 end
 
 function STBS:CreateFPSTestModal()
@@ -331,7 +331,7 @@ end
 
 function STBS:SetPage(title,text,actions,status,options)
   self:CreateUI();local f=self.ui;options=options or {};f.currentPageKey=options.pageKey
-  self:RefreshCurrentPresetLabel()
+  if f:IsShown() then self:RefreshCurrentPresetLabel() end
   f.pageFade:Stop();f.content:SetAlpha(1);f.pageFade:Play()
   f.header:SetText(title);f.status:SetText(status or "")
   if options.statusKind=="success" then f.status:SetTextColor(0.35,1,0.62) elseif options.statusKind=="error" then f.status:SetTextColor(1,0.35,0.3) elseif options.statusKind=="warning" then f.status:SetTextColor(1,0.78,0.24) else f.status:SetTextColor(0.78,0.72,0.58) end
