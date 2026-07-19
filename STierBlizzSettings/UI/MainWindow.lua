@@ -3,8 +3,8 @@ local _, STBS = ...
 local ASSET = "Interface\\AddOns\\STierBlizzSettings\\Assets\\"
 local categoryNames={graphics="BASE_GRAPHICS",raidGraphics="RAID_GRAPHICS"}
 local categoryOrder={"graphics","raidGraphics"}
-local MIN_WINDOW_WIDTH,MIN_WINDOW_HEIGHT=900,640
-local DEFAULT_WINDOW_WIDTH,DEFAULT_WINDOW_HEIGHT=1080,760
+local MIN_WINDOW_WIDTH,MIN_WINDOW_HEIGHT=STBS.MIN_WINDOW_WIDTH,STBS.MIN_WINDOW_HEIGHT
+local DEFAULT_WINDOW_WIDTH,DEFAULT_WINDOW_HEIGHT=STBS.DEFAULT_WINDOW_WIDTH,STBS.DEFAULT_WINDOW_HEIGHT
 
 local function button(parent,text,x,y,width,callback,style)
   local b=STBS:CreateModernButton(parent,text,width or 200,34,callback,style);b:SetPoint("TOPLEFT",x,y)
@@ -193,7 +193,8 @@ end
 function STBS:SaveWindowSize()
   if not self.ui then return end
   local db,databaseFailure=self:RequireWritableDatabase();if not db then return false,databaseFailure.code end
-  db.preferences.windowWidth=math.floor(self.ui:GetWidth()+0.5);db.preferences.windowHeight=math.floor(self.ui:GetHeight()+0.5);return true
+  local width,height=self.ui:GetWidth(),self.ui:GetHeight();if not self:IsValidSavedWindowSize(width,height) then return false,"window-size" end
+  db.preferences.windowWidth=math.floor(width+0.5);db.preferences.windowHeight=math.floor(height+0.5);return true
 end
 
 function STBS:CreateUI()
@@ -201,13 +202,13 @@ function STBS:CreateUI()
   local f=CreateFrame("Frame","STierBlizzSettingsFrame",UIParent,"BackdropTemplate")
   local screenWidth,screenHeight=UIParent:GetWidth(),UIParent:GetHeight();local maxWidth=math.max(760,math.min(1280,screenWidth-24));local maxHeight=math.max(560,math.min(900,screenHeight-24));local minWidth=math.min(MIN_WINDOW_WIDTH,maxWidth);local minHeight=math.min(MIN_WINDOW_HEIGHT,maxHeight)
   local preferences=self:InitializeDatabase().preferences;local width=clamp(preferences.windowWidth or DEFAULT_WINDOW_WIDTH,minWidth,maxWidth);local height=clamp(preferences.windowHeight or DEFAULT_WINDOW_HEIGHT,minHeight,maxHeight)
-  f:SetSize(width,height);f:SetPoint("CENTER",UIParent,"CENTER",0,0);f:SetMovable(true);f:SetResizable(true);f:SetResizeBounds(minWidth,minHeight,maxWidth,maxHeight);f:SetClampedToScreen(false);f:EnableMouse(true);f:Hide()
+  f:SetSize(width,height);local x,y=self:ResolveSavedWindowPosition(preferences.windowPosition,width,height,screenWidth,screenHeight);if x then f:SetPoint("CENTER",UIParent,"CENTER",x,y) else f:SetPoint("CENTER",UIParent,"CENTER",0,0);if preferences.windowPosition then local db=self:RequireWritableDatabase();if db then db.preferences.windowPosition=nil end end end;f:SetMovable(true);f:SetResizable(true);f:SetResizeBounds(minWidth,minHeight,maxWidth,maxHeight);f:SetClampedToScreen(false);f:EnableMouse(true);f:Hide()
   f:SetBackdrop({bgFile="Interface\\FrameGeneral\\UI-Background-Rock",edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border",tile=true,tileSize=256,edgeSize=32,insets={left=11,right=12,top=12,bottom=11}});f:SetBackdropColor(0.42,0.42,0.42,1);f:SetBackdropBorderColor(1,1,1,1)
   local fade=f:CreateAnimationGroup();fade:SetToFinalAlpha(true);local alpha=fade:CreateAnimation("Alpha");alpha:SetFromAlpha(0);alpha:SetToAlpha(1);alpha:SetDuration(0.18);alpha:SetSmoothing("OUT");f.fade=fade
   f:SetScript("OnShow",function(self)self:SetAlpha(1);self.fade:Stop();self.fade:Play();STBS:RefreshCurrentPresetLabel(true)end)
   f:SetScript("OnHide",function()STBS:SetLiveFPSCallback(nil);STBS:StopFPSBaselineSampling()end)
 
-  local top=CreateFrame("Frame",nil,f,"BackdropTemplate");top:SetPoint("TOPLEFT",18,-18);top:SetPoint("TOPRIGHT",-18,-18);top:SetHeight(62);top:EnableMouse(true);top:RegisterForDrag("LeftButton");top:SetScript("OnDragStart",function()f:StartMoving()end);top:SetScript("OnDragStop",function()f:StopMovingOrSizing()end);top:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=12,insets={left=3,right=3,top=3,bottom=3}});top:SetBackdropColor(0.05,0.04,0.025,0.98);top:SetBackdropBorderColor(0.72,0.52,0.2,1)
+  local top=CreateFrame("Frame",nil,f,"BackdropTemplate");top:SetPoint("TOPLEFT",18,-18);top:SetPoint("TOPRIGHT",-18,-18);top:SetHeight(62);top:EnableMouse(true);top:RegisterForDrag("LeftButton");top:SetScript("OnDragStart",function()f:StartMoving()end);top:SetScript("OnDragStop",function()f:StopMovingOrSizing();STBS:SaveWindowPosition()end);top:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background-Dark",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=12,insets={left=3,right=3,top=3,bottom=3}});top:SetBackdropColor(0.05,0.04,0.025,0.98);top:SetBackdropBorderColor(0.72,0.52,0.2,1)
   f.logo=top:CreateTexture(nil,"ARTWORK");f.logo:SetTexture(ASSET.."STierIcon");f.logo:SetSize(48,48);f.logo:SetPoint("LEFT",12,0)
   f.title=top:CreateFontString(nil,"OVERLAY","GameFontNormalLarge");f.title:SetPoint("LEFT",68,8);f.title:SetText(self:L("TITLE"));f.title:SetTextColor(1,0.82,0)
   f.version=top:CreateFontString(nil,"OVERLAY","GameFontNormalSmall");f.version:SetPoint("LEFT",69,-15);f.version:SetText("v"..self.VERSION);f.version:SetTextColor(0.68,0.62,0.5)

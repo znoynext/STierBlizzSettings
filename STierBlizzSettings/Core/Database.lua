@@ -170,9 +170,11 @@ local function normalizeDatabase(self,db)
   db.preferences.performanceWidgetEnabled=db.preferences.performanceWidgetEnabled==true
   local widgetPosition=db.preferences.performanceWidgetPosition
   if type(widgetPosition)~="table" or type(widgetPosition.x)~="number" or type(widgetPosition.y)~="number" or widgetPosition.x~=widgetPosition.x or widgetPosition.y~=widgetPosition.y or widgetPosition.x<0 or widgetPosition.x>1 or widgetPosition.y<0 or widgetPosition.y>1 then db.preferences.performanceWidgetPosition=nil end
+  local windowPosition=db.preferences.windowPosition
+  if type(windowPosition)~="table" or windowPosition.point~="CENTER" or type(windowPosition.x)~="number" or type(windowPosition.y)~="number" or windowPosition.x~=windowPosition.x or windowPosition.y~=windowPosition.y or windowPosition.x==math.huge or windowPosition.x==-math.huge or windowPosition.y==math.huge or windowPosition.y==-math.huge then db.preferences.windowPosition=nil end
   local width,height=tonumber(db.preferences.windowWidth),tonumber(db.preferences.windowHeight)
-  db.preferences.windowWidth=width and width==width and math.max(900,math.min(1280,math.floor(width+0.5))) or nil
-  db.preferences.windowHeight=height and height==height and math.max(640,math.min(900,math.floor(height+0.5))) or nil
+  db.preferences.windowWidth=width and width==width and width>=900 and width<=1280 and math.floor(width+0.5) or nil
+  db.preferences.windowHeight=height and height==height and height>=640 and height<=900 and math.floor(height+0.5) or nil
   if type(db.preferences.zoneGraphics)~="table" then db.preferences.zoneGraphics={} end
   local zone=db.preferences.zoneGraphics;zone.enabled=zone.enabled==true
   if type(zone.assignments)~="table" then zone.assignments={} end

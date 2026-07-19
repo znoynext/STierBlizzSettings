@@ -12,6 +12,7 @@ frame:SetScript("OnEvent",function(_,event,arg)
       elseif msg=="fps" or msg=="test" then STBS:ShowFPSTest()
       elseif msg=="about" then STBS:ShowAbout()
       elseif msg=="debug" then STBS:ShowDiagnostics()
+      elseif msg=="reset" then STBS:ResetUILayoutAndShow()
       else STBS:ShowGraphics() end
     end
   end

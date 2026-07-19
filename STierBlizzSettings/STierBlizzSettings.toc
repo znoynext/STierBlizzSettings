@@ -28,6 +28,7 @@ Core/Database.lua
 Core/FPSBenchmark.lua
 Core/ZoneGraphics.lua
 UI/Style.lua
+UI/LayoutRecovery.lua
 Settings/Registry.lua
 Settings/Validator.lua
 Settings/Reader.lua

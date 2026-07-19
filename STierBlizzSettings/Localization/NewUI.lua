@@ -243,3 +243,18 @@ STBS.Locale.ruRU.RESTORE_ROLLED_BACK="Не удалось восстановит
 STBS.Locale.ruRU.RESTORE_ROLLBACK_FAILED="Не удалось восстановить бэкап, а откат завершился не полностью. Сохраните страховочный бэкап для восстановления."
 STBS.Locale.ruRU.LIVE_FPS_FORMAT="%d FPS"
 STBS.Locale.ruRU.FPS_READING="-- FPS"
+
+local layoutRecovery={RESET_WINDOW_POSITION="Reset Window Position",LAYOUT_RESET_SUCCESS="Window and Performance Widget positions reset.",LAYOUT_RESET_FAILED="Layout reset was not saved because this database version is unsupported."}
+for _,values in pairs(STBS.Locale)do for key,value in pairs(layoutRecovery)do values[key]=value end end
+local localizedLayoutRecovery={
+  ruRU={"Сбросить положение окна","Положение окна и виджета производительности сброшено.","Сброс интерфейса не сохранён: эта версия базы данных не поддерживается."},
+  frFR={"Réinitialiser la position de la fenêtre","Les positions de la fenêtre et de l'indicateur de performances ont été réinitialisées.","La réinitialisation n'a pas été enregistrée : cette version de la base de données n'est pas prise en charge."},
+  deDE={"Fensterposition zurücksetzen","Die Positionen des Fensters und der Leistungsanzeige wurden zurückgesetzt.","Das Layout wurde nicht gespeichert: Diese Datenbankversion wird nicht unterstützt."},
+  esES={"Restablecer posición de la ventana","Se restablecieron las posiciones de la ventana y del indicador de rendimiento.","No se guardó el restablecimiento: esta versión de la base de datos no es compatible."},
+  esMX={"Restablecer posición de la ventana","Se restablecieron las posiciones de la ventana y del indicador de rendimiento.","No se guardó el restablecimiento: esta versión de la base de datos no es compatible."},
+  ptBR={"Redefinir posição da janela","As posições da janela e do indicador de desempenho foram redefinidas.","A redefinição não foi salva: esta versão do banco de dados não é compatível."},
+  koKR={"창 위치 초기화","창과 성능 위젯 위치를 초기화했습니다.","지원되지 않는 데이터베이스 버전이므로 초기화가 저장되지 않았습니다."},
+  zhCN={"重置窗口位置","已重置主窗口和性能小组件的位置。","数据库版本不受支持，未保存布局重置。"},
+  zhTW={"重設視窗位置","已重設主視窗與效能小工具的位置。","資料庫版本不受支援，未儲存版面重設。"},
+}
+for locale,values in pairs(localizedLayoutRecovery)do local target=STBS.Locale[locale];target.RESET_WINDOW_POSITION=values[1];target.LAYOUT_RESET_SUCCESS=values[2];target.LAYOUT_RESET_FAILED=values[3] end

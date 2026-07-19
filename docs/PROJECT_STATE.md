@@ -92,9 +92,9 @@ The registry is the source for exact CVar names and value ranges; this snapshot 
 
 - `UI/Style.lua` supplies the shared scalable button and checkbox system. `UI/MainWindow.lua` owns the lazily created page shell, responsive action layout, graphics sub-tabs, FPS dashboards, and the current slider wrapper. Dynamic page buttons, checkboxes, sliders, and section rows use typed pools capped by the greatest simultaneously rendered page; release clears callbacks, tooltips, anchors, action references, text, visibility, and interaction state before reuse.
 - `ShowAddonDialog` is the reusable confirmation/text-entry component. FPS tests use a separate reusable progress modal.
-- The main window opens centered, is resizable within screen-derived bounds, saves its size, and is deliberately not clamped to screen edges.
+- The main window opens from a saved center-relative position when enough of its header remains usable, is resizable within screen-derived bounds, saves valid position/size, and is deliberately not clamped while dragging. Corrupted or unusable saved positions fall back to screen center. `/stier reset` and **Reset Window Position** in Blizzard Settings clear the saved main/widget positions, center the main window, return the Performance Widget to its default bottom anchor, preserve a complete valid saved window size, and replace an invalid/incomplete size with the safe default. The guarded reset changes no other preferences or user data and fails closed on a future unsupported database schema.
 - The minimap button opens Graphics on left click and Profiles on right click; Ctrl is not required to drag it around the minimap.
-- The Blizzard Settings launcher is registered lazily when Graphics is first shown.
+- The Blizzard Settings integration is registered lazily when Graphics is first shown and exposes both the launcher and the layout-recovery action.
 - The optional performance widget shows live FPS and the greater Home/World latency every 0.5 seconds. Ctrl + drag moves it; enabled state and normalized position persist locally.
 
 ## Current tests and validation
